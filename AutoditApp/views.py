@@ -5,7 +5,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from .constants import Cognito
 from rest_framework import status
-<<<<<<< HEAD
+from django.conf import settings
+
 
 class BaseLogin(APIView):
     login_type_password, login_type_otp = "password", "otp"
@@ -15,23 +16,8 @@ class BaseLogin(APIView):
     def authenticate_cognito_users(self, username, password):
         try:
             response = Cognito.CLIENT.admin_initiate_auth(
-                UserPoolId=Cognito.COGNITO_USERPOOL_ID,
-                ClientId=Cognito.COGNITO_APP_CLIENT_ID,
-=======
-from django.conf import settings
-
-
-class PasswordLogin(APIView):
-
-    def post(self, request):
-        username = request.data.get("username")
-        password = request.data.get("password")
-
-        try:
-            response = Cognito.CLIENT.admin_initiate_auth(
                 UserPoolId=settings.COGNITO_USERPOOL_ID,
                 ClientId=settings.COGNITO_APP_CLIENT_ID,
->>>>>>> origin/master
                 AuthFlow='ADMIN_USER_PASSWORD_AUTH',
                 AuthParameters={
                     'USERNAME': username,
@@ -46,7 +32,30 @@ class PasswordLogin(APIView):
         return Response(response)
 
 
-<<<<<<< HEAD
+class PasswordLogin(APIView):
+
+    def post(self, request):
+        username = request.data.get("username")
+        password = request.data.get("password")
+
+        try:
+            response = Cognito.CLIENT.admin_initiate_auth(
+                UserPoolId=settings.COGNITO_USERPOOL_ID,
+                ClientId=settings.COGNITO_APP_CLIENT_ID,
+                AuthFlow='ADMIN_USER_PASSWORD_AUTH',
+                AuthParameters={
+                    'USERNAME': username,
+                    'PASSWORD': password,
+
+                }
+            )
+        except Exception as exe:
+            return Response({"detail":
+                                 "Username or password did not match"},
+                            status=status.HTTP_400_BAD_REQUEST)
+        return Response(response)
+
+
 class PasswordLogin(BaseLogin):
     def post(self, request):
         username = request.data.get("username")
@@ -56,9 +65,5 @@ class PasswordLogin(BaseLogin):
         if cognito_auth:
             return self.authenticate_cognito_users(username, password)
 
-
         return self.get_user_data(request, username, password,
                                   self.login_type_password)
-
-=======
->>>>>>> origin/master

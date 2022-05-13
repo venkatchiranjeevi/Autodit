@@ -14,21 +14,13 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-<<<<<<< HEAD
-from django.conf.urls import url
+from django.conf.urls import url, include
 from AutoditApp.views import PasswordLogin
 
-urlpatterns = [
-    url('admin/', admin.site.urls),
-    url('login/', )
-=======
-from django.conf.urls import url, include
-from AutoditApp import views
 
 urlpatterns = [
     url('admin/', admin.site.urls),
     url(r'^auth/', include('AutoditApp.auth.urls')),
+    url(r'Autodit/', include('AutoditApp.urls'))
 
-
->>>>>>> origin/master
 ]
