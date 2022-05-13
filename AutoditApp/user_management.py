@@ -38,3 +38,6 @@ class UsersList(APIView):
 
         response = UsersList.add_new_user_to_cognito_userpool(new_user_data)
         return Response(response)
+
+
+

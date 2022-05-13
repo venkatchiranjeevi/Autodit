@@ -32,3 +32,16 @@ class PasswordLogin(APIView):
         return Response(response)
 
 
+class PasswordChange(APIView):
+
+    def post(self, request):
+        username = request.data.get("username")
+        password = request.data.get("password")
+        password_response = Cognito.CLIENT.admin_set_user_password(
+            UserPoolId=settings.COGNITO_USERPOOL_ID,
+            Username=username,
+            Password=password,
+            Permanent=True
+        )
+        return Response({"status": "Password Updated Successfully"})
+

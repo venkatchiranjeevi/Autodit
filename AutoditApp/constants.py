@@ -9,7 +9,7 @@ class Cognito:
     def __init__(self):
         pass
 
-    COGNITO_USERPOOL_ID = ""
+    COGNITO_USERPOOL_ID = "ap-south-1_rlvv48z1c"
 
     FETCH_COGNITO_TOKEN_CACHE_KEYS = "core:verify_cognito_token:{}"
     COGNITO_CLIENT = 'cognito-idp'
