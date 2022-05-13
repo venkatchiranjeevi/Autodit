@@ -78,6 +78,16 @@ WSGI_APPLICATION = 'Autodit.wsgi.application'
 
 DATABASES = {
     'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'PORT': '3306',
+        'CONN_MAX_AGE': 3600,  # 1 Hour
+        'NAME': 'AutoDit',
+
+        'HOST': 'stageautodit.cqu0hotxmatf.ap-south-1.rds.amazonaws.com',
+        'USER': 'admin',
+        'PASSWORD': 'Auto!#%dit',
+    },
+    'default_sqlite': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
     }

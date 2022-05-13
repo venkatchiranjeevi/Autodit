@@ -2,6 +2,7 @@ from rest_framework.views import APIView
 from AutoditApp.constants import Cognito
 from django.conf import settings
 from rest_framework.response import Response
+from django.db import connection
 
 
 class UsersList(APIView):
@@ -41,3 +42,5 @@ class UsersList(APIView):
 
 
 
+class UserProfile(APIView):
+    pass
