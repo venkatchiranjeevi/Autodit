@@ -121,3 +121,8 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/2.2/howto/static-files/
 
 STATIC_URL = '/static/'
+<<<<<<< HEAD
+=======
+COGNITO_USERPOOL_ID = "ap-south-1_rlvv48z1c"
+COGNITO_APP_CLIENT_ID = "7pltei3d7c1mv81janamqovij5"
+>>>>>>> origin/master
