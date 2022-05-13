@@ -6,8 +6,6 @@ from rest_framework.views import APIView
 from .constants import Cognito
 from rest_framework import status
 
-
-
 class BaseLogin(APIView):
     login_type_password, login_type_otp = "password", "otp"
     alert_msg = {"message_body": "You have logged in from new device",

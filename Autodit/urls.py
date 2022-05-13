@@ -15,6 +15,8 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.conf.urls import url
+from AutoditApp.views import PasswordLogin
+
 urlpatterns = [
     url('admin/', admin.site.urls),
     url('login/', )
