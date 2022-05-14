@@ -47,6 +47,7 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
+    'AutoditApp.middleware.AutoDitAuthenticationMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -132,5 +133,26 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
+AWS_ACCESS_KEY_ID = "AKIATZFC3A3LGLBZMAKV"
+REGION = "ap-south-1"
+AWS_SECRET_KEY = "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"
 COGNITO_USERPOOL_ID = "ap-south-1_rlvv48z1c"
 COGNITO_APP_CLIENT_ID = "7pltei3d7c1mv81janamqovij5"
+COGNITO_USERPOOL_KEYS = [
+        {
+            "alg": "RS256",
+            "e": "AQAB",
+            "kid": "ZVv/Zq0FnFl5fBdvk0iJOze00FGCZGmGfdS3uUEeppw=",
+            "kty": "RSA",
+            "n": "omwh6SPIIdycJwTvjHOzsgFV5jxO3FTGhgMS5sec2nr5EVA2-7CaT2vcAZPru-dSkjbnNWGYdxS6W3TmYwQxi4zBqdPCy1K-QXZ4RyZ-jk9kiIiwE_4O5zd5AQG8V_MV7cJ4k3L-dQOWHWwMlPvtNeklIP2e53RM49SmnMuPlvyPfRFos0r-W1Q5qa6Wstg68SvoJM91LJkLOcVnYD-lyYqd7BGB688KktPZek8mAB52k-oszTJIro4yGiiDVjcFAGsLIx5PTMCB0V9HwKC032Tl6YvuVsZu5-krTVyhhRBh6-QiAeBNFQKYsiyDzOkvuPVlxlfvFHxECKAlBFXEKQ",
+            "use": "sig"
+        },
+        {
+            "alg": "RS256",
+            "e": "AQAB",
+            "kid": "QZl1PQ8iuWjI0mcGUT9RVcrw+FGPzwNzCQSJ0LlTiwo=",
+            "kty": "RSA",
+            "n": "vYwIqjGmqeIHyRn3Z107_voUgBTWT2pTa_TjogAZtNzAAgt6CBjjkDh-XIqkRpcX05HBQdSds4ueuuBrtPIgX-wAx7yy83s9BX8JeZWZjqw3FsacNMFFcU6QCt0DogEVxFQj5jZRQ228YXe9MLAIa0FRGJpL7k6gptyHLr0p_kA22-d8Tfkat-nd6QsFbM1ZovkY-mitSm5TWZFbppd0JuP0OiLS6ZPKddHcx4Ic9GZkZB9H36DTyOrDr-wJ5f0B5Jo3g7Aa9jWH78t3U-yLU1ckuHLmJgSDUkPUoJlAdEcPgIJwfqxqPKRkLRf3cF8I61OUy5S8JwcUey2T0Pk8vQ",
+            "use": "sig"
+        }
+    ]

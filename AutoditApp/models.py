@@ -47,5 +47,45 @@ class RolePolicies(Base):
         db_table = "Roles_policies"
 
 
+class Users(models.Model):
+    userid = models.AutoField(db_column='UserId', primary_key=True)
+    mobnmbr = models.CharField(db_column='MobNmbr', max_length=20, null=True, blank=True, unique=True)
+    email = models.EmailField(db_column='Email', null=True, blank=True, unique=True)
+    name = models.CharField(db_column='Name', max_length=15, blank=True)
+    role_id = models.IntegerField(db_column='Role_ID')
+    markedfordeletion = models.BooleanField(db_column='MarkedForDeletion', default=False)
+    firstname = models.CharField(db_column='FirstName', max_length=30, blank=True)
+    lastname = models.CharField(db_column='LastName', max_length=30, blank=True)
+    nickname = models.CharField(db_column='NickName', max_length=30, blank=True)
+    gender = models.CharField(db_column='Gender', max_length=6, blank=True)
+    department_id = models.CharField(db_column='DepartmentID', max_length=20, blank=True)
+    status = models.CharField(db_column='Status', max_length=40, blank=True)
+    ###
+    # _permissions_cache_key = 'permissions_cache'
+    # _flights_cache_key = 'flights_cache'
+    # _equipments_cache_key = 'equipments_cache'
+    # _activities_cache_key = 'activities_cache'
+    # _views_cache_key = 'views_cache'
+    # _alerts_cache_key = "alerts_cache"
+
+    __permissions_fetched = False
+
+    def __str__(self):
+        return "{}|{}".format(self.userid, self.name)
+
+    @property
+    def is_authenticated(self):
+        return True
+
+
+
+    class Meta:
+        db_table = 'Users'
+        index_together = [
+            ['mobnmbr', 'email']
+        ]
+
+
+
 
 
