@@ -2,6 +2,8 @@ from django.db import connections
 from collections import defaultdict, OrderedDict
 from AutoditApp.Utils import coalesce
 from AutoditApp.sql_queries import ROLE_POLICIES
+from AutoditApp.models import Departments
+
 
 def dict_fetch_all(cursor):
     """Return all rows from a cursor as a dict"""
@@ -29,3 +31,8 @@ def get_policies_by_role(role_id):
     query = ROLE_POLICIES.format(role_id)
     policies = fetch_data(query)
     return policies
+
+
+def get_department_data():
+    department_data = Departments.objects.all().values("id", "name", "code")
+    return department_data

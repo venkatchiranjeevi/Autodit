@@ -81,11 +81,16 @@ class Users(models.Model):
 
     class Meta:
         db_table = 'Users'
-        index_together = [
-            ['mobnmbr', 'email']
-        ]
 
 
+class Departments(models.Model):
+    id = models.AutoField(primary_key=True, db_column='id')
+    name = models.CharField(db_column='name', max_length=100)
+    code = models.CharField(db_column='code', max_length=100)
 
 
+    def __int__(self):
+        return self.id
 
+    class Meta:
+        db_table = 'Departments'

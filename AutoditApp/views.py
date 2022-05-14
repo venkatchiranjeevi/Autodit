@@ -6,6 +6,8 @@ from rest_framework.views import APIView
 from .constants import Cognito
 from rest_framework import status
 from django.conf import settings
+from AutoditApp.mixins import AuthMixin
+from .core import get_department_data
 
 
 class BaseLogin(APIView):
@@ -56,14 +58,8 @@ class PasswordLogin(APIView):
         return Response(response)
 
 
-class PasswordLogin(BaseLogin):
-    def post(self, request):
-        username = request.data.get("username")
-        password = request.data.get("password")
-        cognito_code = request.data.get("cognito_code")
-        cognito_auth = request.data.get("cognito_auth")
-        if cognito_auth:
-            return self.authenticate_cognito_users(username, password)
+class Departments(AuthMixin):
 
-        return self.get_user_data(request, username, password,
-                                  self.login_type_password)
+    def get(self, request):
+        departments_data = get_department_data()
+        return Response(departments_data)
