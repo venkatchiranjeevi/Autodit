@@ -7,6 +7,7 @@ urlpatterns = [
     url("user/", user_management.UsersList.as_view()),
     url("^users/profile/", UserProfile.as_view()),
     url("^departments/", Departments.as_view()),
+    url("^roles/", Departments.as_view()),
 
 
 ]

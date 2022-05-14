@@ -7,7 +7,7 @@ from .constants import Cognito
 from rest_framework import status
 from django.conf import settings
 from AutoditApp.mixins import AuthMixin
-from .core import get_department_data
+from .core import get_department_data, get_roles_data
 
 
 class BaseLogin(APIView):
@@ -63,3 +63,10 @@ class Departments(AuthMixin):
     def get(self, request):
         departments_data = get_department_data()
         return Response(departments_data)
+
+
+class Roles(AuthMixin):
+
+    def get(self, request):
+        roles_data = get_roles_data()
+        return Response(roles_data)

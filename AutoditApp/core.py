@@ -2,7 +2,7 @@ from django.db import connections
 from collections import defaultdict, OrderedDict
 from AutoditApp.Utils import coalesce
 from AutoditApp.sql_queries import ROLE_POLICIES
-from AutoditApp.models import Departments
+from AutoditApp.models import Departments, Roles
 
 
 def dict_fetch_all(cursor):
@@ -36,3 +36,8 @@ def get_policies_by_role(role_id):
 def get_department_data():
     department_data = Departments.objects.all().values("id", "name", "code")
     return department_data
+
+
+def get_roles_data():
+    roles_data = Roles.objects.all().values("role_id", "role_name", "code")
+    return roles_data
