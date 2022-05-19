@@ -21,6 +21,6 @@ from AutoditApp.views import PasswordLogin
 urlpatterns = [
     url('admin/', admin.site.urls),
     url(r'^auth/', include('AutoditApp.auth.urls')),
-    url(r'AutoditApp/', include('AutoditApp.auth.urls')),
+    url(r'AutoditApp/', include('AutoditApp.urls')),
 
 ]
