@@ -77,21 +77,67 @@ class Users(models.Model):
     def is_authenticated(self):
         return True
 
-
-
     class Meta:
         db_table = 'Users'
 
 
-class Departments(models.Model):
+class Departments(Base):
     id = models.AutoField(primary_key=True, db_column='id')
     name = models.CharField(db_column='name', max_length=100)
     code = models.CharField(db_column='code', max_length=100)
-
+    tenant_id = models.IntegerField(db_column='tenant_id', blank=True)
+    is_active = models.IntegerField(db_column='is_active', blank=True, default=None)
+    description = models.TextField(db_column="dep_description", blank=True)
 
     def __int__(self):
         return self.id
 
     class Meta:
         db_table = 'Departments'
+
+
+class TenantDocumentMaster(Base):
+    id = models.AutoField(primary_key=True, db_column='id')
+    tenant_id = models.IntegerField(db_column='tenant_id')
+    t_document_name = models.CharField(db_column='tenantDocumentName', max_length=100)
+    document_url = models.IntegerField(db_column='document_url', blank=True)
+    version = models.IntegerField(db_column='version', blank=True, default=None)
+    created_by = models.CharField(db_column='created_by', max_length=100)
+    description = models.TextField(db_column="dep_description", blank=True)
+
+    def __int__(self):
+        return self.id
+
+    class Meta:
+        db_table = 'TenantDocumentMaster'
+
+
+class TenantGlobalVariables(Base):
+    id = models.AutoField(primary_key=True, db_column='id')
+    key = models.CharField(db_column='key', max_length=120)
+    key_type = models.CharField(db_column='key_type', max_length=120, blank=True)
+    value = models.CharField(db_column='value', max_length=120, blank=True)
+    result  = models.CharField(db_column='result', max_length=120, blank=True, default=None)
+    created_by = models.CharField(db_column='created_by', max_length=120)
+
+    def __int__(self):
+        return self.id
+
+    class Meta:
+        db_table = 'TenantGlobalVariables'
+
+
+class Tenant(Base):
+    id = models.AutoField(primary_key=True, db_column='id')
+    name = models.CharField(db_column='name', max_length=100)
+    tenant_details = models.CharField(db_column='tenant_details', max_length=100)
+    properties = models.TextField(db_column='properties', null=True)
+
+    def __int__(self):
+        return self.id
+
+    class Meta:
+        db_table = 'Tenant'
+
+
 
