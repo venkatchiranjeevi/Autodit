@@ -81,7 +81,7 @@ class Users(models.Model):
         db_table = 'Users'
 
 
-class Departments(Base):
+class TenantDepartment(Base):
     id = models.AutoField(primary_key=True, db_column='id')
     name = models.CharField(db_column='name', max_length=100)
     code = models.CharField(db_column='code', max_length=100)
@@ -93,7 +93,7 @@ class Departments(Base):
         return self.id
 
     class Meta:
-        db_table = 'Departments'
+        db_table = 'TenantDepartment'
 
 
 class TenantDocumentMaster(Base):

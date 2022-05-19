@@ -2,7 +2,7 @@ from django.db import connections
 from collections import defaultdict, OrderedDict
 from AutoditApp.Utils import coalesce
 from AutoditApp.sql_queries import ROLE_POLICIES
-from AutoditApp.models import Departments, Roles, TenantGlobalVariables
+from AutoditApp.models import TenantDepartment as Departments, Roles, TenantGlobalVariables
 from django.db.models import Q
 
 
