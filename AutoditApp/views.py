@@ -9,8 +9,9 @@ from django.conf import settings
 from AutoditApp.mixins import AuthMixin
 from AutoditApp.models import TenantGlobalVariables
 from .core import get_department_data, get_roles_data, save_department_data, update_department_data, delete_department, \
-    get_tenant_global_varialbles, save_tenant_global_varialble
+    get_tenant_global_varialbles, save_tenant_global_varialble, save_roles_info
 from django.db.models import Q
+from AutoditApp.constants import RolesConstant as RC
 
 
 class BaseLogin(APIView):
@@ -68,7 +69,16 @@ class Departments(AuthMixin):
 
     def post(self, request):
         data = request.data
+        dep_code = data.get("code")
         save_department_data(data)
+        default_roles = []
+
+        for each_role in RC.Default_Roles.keys():
+            role = {"role_name": "{}_{}".format(dep_code, each_role), "role_code": "{}_{}".format(dep_code,
+                                                                            RC.Default_Roles.get(each_role))}
+            default_roles.append(role)
+        save_roles_info(default_roles)
+
         return Response({"message": "Department Inserted Successfully", "status": True})
 
     def patch(self, request):
@@ -112,6 +122,12 @@ class Roles(AuthMixin):
     def get(self, request):
         roles_data = get_roles_data()
         return Response(roles_data)
+
+    def post(self, request):
+        data = request.data
+        result = save_roles_info([data])
+        return Response({{"message": "Roles created  successfully", "status": result}})
+
 
 
 class TenantDetails(AuthMixin):

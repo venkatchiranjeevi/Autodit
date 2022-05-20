@@ -41,6 +41,7 @@ def get_department_data():
 
 def save_department_data(data):
     result = Departments.objects.create(name=data.get("name"), code=data.get("code"), tenant_id=data.get("tenant_id"))
+
     return result
 
 
@@ -67,6 +68,16 @@ def delete_department(dep_id):
 def get_roles_data():
     roles_data = Roles.objects.all().values("role_id", "role_name", "code")
     return roles_data
+
+
+def save_roles_info(data):
+    roles_instances = []
+    for each_role in data:
+        role_obj = Roles(role_name=each_role.get("role_name"), code=each_role.get("role_code"))
+        roles_instances.append(role_obj)
+    Roles.objects.bulk_create(roles_instances)
+    return True
+
 
 
 def get_tenant_global_varialbles(query):

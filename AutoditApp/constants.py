@@ -6,15 +6,12 @@ from time import time as current_time
 from AutoditApp.models import Users
 
 
-class Cognito:
-    def __init__(self):
-        pass
-
 
 class Cognito:
 
     def __init__(self):
         pass
+
 
     CLIENT = botoclient('cognito-idp',
                         aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
@@ -118,3 +115,5 @@ class Cognito:
         return user
 
 
+class RolesConstant:
+    Default_Roles = {'Editor': 'ED', 'reviewer': 'RV', 'Approver': 'AP'}

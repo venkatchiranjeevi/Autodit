@@ -16,7 +16,7 @@ class UsersList(APIView):
         ph_num = new_user_data.get("mobnmbr")
         email = new_user_data.get("email")
         attributes = [
-            {"Name": 'custom:role_id', "Value": str(role)},
+            {"Name": 'custom:role_id', "Value": str([role])},
             {"Name": 'gender', "Value": new_user_data.get("gender")},
             {"Name": 'name', "Value": new_user_data.get("name")},
             {"Name": 'nickname', "Value": new_user_data.get("nickname")},
