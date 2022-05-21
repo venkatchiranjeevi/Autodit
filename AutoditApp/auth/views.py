@@ -57,8 +57,10 @@ class SignUp(APIView):
         tenant_data = {"tenant_name": user_name}
         tenant_obj = TenantMasterData.save_tenant_master_data(tenant_data)
         role_data = {'role_name': user_name + " ADMIN", "role_code":  user_name + "AD"}
-        role_obj = RolesData.save_single_role([role_data])
-        # new_user_data['tenant_id'] = tenant_obj.id
+        role_obj = RolesData.save_single_role(role_data)
+        new_user_data['tenant_id'] = tenant_obj.id
         new_user_data['role_id'] = role_obj.role_id
+        default_views = None
+
         response = UsersList.add_new_user_to_cognito_userpool(new_user_data)
         return Response({"message": "User registration completed Successfully", "status": True})

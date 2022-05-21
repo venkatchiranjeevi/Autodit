@@ -7,6 +7,11 @@ class BaseConstant:
         pass
 
 
+class AccessPolicy(BaseConstant):
+    @staticmethod
+    def create_access_policy(role_id, policy, policy_type=None):
+        roles_policies = None
+
 class RolesData(BaseConstant):
 
     @staticmethod
@@ -28,7 +33,6 @@ class RolesData(BaseConstant):
         role_obj = Roles(role_name=data.get("role_name"), code=data.get("role_code"))
         role_obj.save()
         return role_obj
-
 
 class TenantMasterData(BaseConstant):
 
@@ -91,5 +95,6 @@ class TenantGlobalVariableData(BaseConstant):
     def save_tenant_global_varialble(data):
         tbv_obj = TenantGlobalVariables.objects.create(key=data.get("key"), value=data.get("value"),
                                                        key_type=data.get("key_type"),
-                                                       result=data.get("result"), created_by=data.get("created_by"))
+                                                       result=data.get("result"), created_by=data.get("username"),
+                                                       tenant_id=data.get("tenant_id"))
         return tbv_obj

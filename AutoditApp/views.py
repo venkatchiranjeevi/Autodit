@@ -93,6 +93,7 @@ class DepartmentsAPI(AuthMixin):
 
 
 class TenantGlobalVariablesAPI(AuthMixin):
+
     def get(self, request):
         tenant_id = request.GET.get("tenant_id")
         query = Q()
@@ -102,7 +103,11 @@ class TenantGlobalVariablesAPI(AuthMixin):
         return Response(t_global_var_data)
 
     def post(self, request):
+        user = request.user
         data = request.data
+        tenant_id = user.tenant_id
+        data['tenant_id'] = tenant_id
+        data['username'] = user.username
         result = TenantGlobalVariableData.save_tenant_global_varialble(data)
         return Response({"message": "Global variable inserted successfully", "status": True})
 

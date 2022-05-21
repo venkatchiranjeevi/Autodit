@@ -117,8 +117,8 @@ class TenantGlobalVariables(Base):
     key = models.CharField(db_column='key', max_length=120)
     key_type = models.CharField(db_column='key_type', max_length=120, blank=True)
     value = models.CharField(db_column='value', max_length=120, blank=True)
-    result  = models.CharField(db_column='result', max_length=120, blank=True, default=None)
-    created_by = models.CharField(db_column='created_by', max_length=120)
+    result = models.CharField(db_column='result', max_length=120, blank=True, default=None)
+    tenant_id = models.IntegerField(db_column='tenant_id', null=True, blank=True)
 
     def __int__(self):
         return self.id
@@ -140,4 +140,17 @@ class Tenant(Base):
         db_table = 'Tenant'
 
 
+class GlobalVariables(models.Model):
+    id = models.AutoField(primary_key=True, db_column='id')
+    key = models.CharField(db_column='key', max_length=120)
+    key_type = models.CharField(db_column='key_type', max_length=120, blank=True)
+    value = models.CharField(db_column='value', max_length=120, blank=True)
+    result = models.CharField(db_column='result', max_length=120, blank=True, default=None)
+    description = models.TextField(db_column='Description', null=True, blank=True)
+    created_by = models.CharField(db_column='created_by', max_length=120, null=True, blank=True)
 
+    def __int__(self):
+        return self.id
+
+    class Meta:
+        db_table = 'GlobalVariables'
