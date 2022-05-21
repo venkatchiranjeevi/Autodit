@@ -61,6 +61,5 @@ class SignUp(APIView):
         new_user_data['tenant_id'] = tenant_obj.id
         new_user_data['role_id'] = role_obj.role_id
         default_views = None
-
-        response = UsersList.add_new_user_to_cognito_userpool(new_user_data)
-        return Response({"message": "User registration completed Successfully", "status": True})
+        message, status = UsersList.add_new_user_to_cognito_userpool(new_user_data)
+        return Response({"message": message, "status": status} )

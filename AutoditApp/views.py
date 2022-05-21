@@ -102,6 +102,7 @@ class TenantGlobalVariablesAPI(AuthMixin):
         t_global_var_data = TenantGlobalVariableData.get_tenant_global_varialbles(query)
         return Response(t_global_var_data)
 
+
     def post(self, request):
         user = request.user
         data = request.data

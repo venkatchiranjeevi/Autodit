@@ -6,6 +6,8 @@ from time import time as current_time
 from AutoditApp.models import Users
 
 
+User_Exist_Exception = "An error occurred (UsernameExistsException) " \
+                       "when calling the AdminCreateUser operation: User account already exists"
 
 class Cognito:
 
