@@ -2,8 +2,12 @@ from django.db import connections
 from collections import defaultdict, OrderedDict
 from AutoditApp.Utils import coalesce
 from AutoditApp.sql_queries import ROLE_POLICIES
-from AutoditApp.models import TenantDepartment as Departments, Roles, TenantGlobalVariables
+from AutoditApp.models import TenantDepartment as Departments, Roles, TenantGlobalVariables, Tenant
 from django.db.models import Q
+
+class BaseConstant:
+    def __init__(self):
+        pass
 
 
 def dict_fetch_all(cursor):
@@ -14,7 +18,7 @@ def dict_fetch_all(cursor):
         for row in cursor.fetchall()
     ]
 
-def fetch_data(query):
+def fetch_data_from_sql_query(query):
     with connections['default'].cursor() as cursor:
         cursor.execute(query)
         data = dict_fetch_all(cursor)
@@ -30,62 +34,10 @@ def get_session_value(request):
 
 def get_policies_by_role(role_id):
     query = ROLE_POLICIES.format(role_id)
-    policies = fetch_data(query)
+    policies = fetch_data_from_sql_query(query)
     return policies
 
 
-def get_department_data():
-    department_data = Departments.objects.all().values("id", "name", "code", "tenant_id")
-    return department_data
-
-
-def save_department_data(data):
-    result = Departments.objects.create(name=data.get("name"), code=data.get("code"), tenant_id=data.get("tenant_id"))
-
-    return result
-
-
-def update_department_data(data):
-    department_obj = Departments.objects.get(id=id)
-    is_active = data.get("is_active")
-    description = data.get("description")
-    if is_active:
-        department_obj.is_active = is_active
-    if description:
-        department_obj.description = description
-    department_obj.name = data.get("name")
-    department_obj.code = data.code("code")
-    department_obj.tenant_id = data.get("tenant_id")
-    department_obj.save()
-    return True
-
-
-def delete_department(dep_id):
-    Departments.objects.filter(id=dep_id).delete()
-    return True
-
-
-def get_roles_data():
-    roles_data = Roles.objects.all().values("role_id", "role_name", "code")
-    return roles_data
-
-
-def save_roles_info(data):
-    roles_instances = []
-    for each_role in data:
-        role_obj = Roles(role_name=each_role.get("role_name"), code=each_role.get("role_code"))
-        roles_instances.append(role_obj)
-    Roles.objects.bulk_create(roles_instances)
-    return True
 
 
 
-def get_tenant_global_varialbles(query):
-    t_global_var_data = TenantGlobalVariables.objects.objects.filter(query).values()
-    return t_global_var_data
-
-
-def save_tenant_global_varialble(data):
-    tbv_obj = TenantGlobalVariables.objects.create(key=data.get("key"), value=data.get("value"), key_type=data.get("key_type"),
-                                         result=data.get("result"), created_by=data.get("created_by"))
-    return tbv_obj

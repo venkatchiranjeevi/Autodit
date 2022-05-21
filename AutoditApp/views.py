@@ -8,8 +8,8 @@ from rest_framework import status
 from django.conf import settings
 from AutoditApp.mixins import AuthMixin
 from AutoditApp.models import TenantGlobalVariables
-from .core import get_department_data, get_roles_data, save_department_data, update_department_data, delete_department, \
-    get_tenant_global_varialbles, save_tenant_global_varialble, save_roles_info
+
+from AutoditApp.dal import DeparmentsData, TenantGlobalVariableData, TenantMasterData, RolesData
 from django.db.models import Q
 from AutoditApp.constants import RolesConstant as RC
 
@@ -61,49 +61,49 @@ class PasswordLogin(APIView):
         return Response(response)
 
 
-class Departments(AuthMixin):
+class DepartmentsAPI(AuthMixin):
 
     def get(self, request):
-        departments_data = get_department_data()
+        departments_data = DeparmentsData.get_department_data()
         return Response(departments_data)
 
     def post(self, request):
         data = request.data
         dep_code = data.get("code")
-        save_department_data(data)
+        DeparmentsData.save_department_data(data)
         default_roles = []
 
         for each_role in RC.Default_Roles.keys():
             role = {"role_name": "{}_{}".format(dep_code, each_role), "role_code": "{}_{}".format(dep_code,
                                                                             RC.Default_Roles.get(each_role))}
             default_roles.append(role)
-        save_roles_info(default_roles)
+        RolesData.save_roles_info(default_roles)
 
         return Response({"message": "Department Inserted Successfully", "status": True})
 
     def patch(self, request):
         data = request.data
-        result = update_department_data(data)
+        result = DeparmentsData.update_department_data(data)
         return Response({"message": "Updated Successfully", "status": result})
 
     def delete(self, request):
         dep_id = request.GET.get("id")
-        delete_department(dep_id)
+        DeparmentsData.delete_department(dep_id)
         return Response({"message": "Deleted Successfully", "status": True})
 
 
-class TenantGlobalVariablesData(AuthMixin):
+class TenantGlobalVariablesAPI(AuthMixin):
     def get(self, request):
         tenant_id = request.GET.get("tenant_id")
         query = Q()
         if tenant_id:
             query &= Q(id=tenant_id)
-        t_global_var_data = get_tenant_global_varialbles(query)
+        t_global_var_data = TenantGlobalVariableData.get_tenant_global_varialbles(query)
         return Response(t_global_var_data)
 
     def post(self, request):
         data = request.data
-        result = save_tenant_global_varialble(data)
+        result = TenantGlobalVariableData.save_tenant_global_varialble(data)
         return Response({"message": "Global variable inserted successfully", "status": True})
 
     def patch(self, request):
@@ -117,21 +117,28 @@ class TenantGlobalVariablesData(AuthMixin):
         return Response({"message": "Deleted Successfully", "status": True})
 
 
-class Roles(AuthMixin):
+class RolesAPI(AuthMixin):
 
     def get(self, request):
-        roles_data = get_roles_data()
+        roles_data = RolesData.get_roles_data()
         return Response(roles_data)
 
     def post(self, request):
         data = request.data
-        result = save_roles_info([data])
+        result = RolesData.save_roles_info([data])
         return Response({{"message": "Roles created  successfully", "status": result}})
 
 
+class TenantMasterAPI(AuthMixin):
+    # def get(self, request):
+    #     roles_data = get_roles_data()
+    #     return Response(roles_data)
 
-class TenantDetails(AuthMixin):
-    def get(self, request):
-        roles_data = get_roles_data()
-        return Response(roles_data)
+    def post(self, request):
+        data = request.data
+        tenant_obj = TenantMasterData.save_tenant_master_data(data)
+        return Response({"message": "Tenant details created Successfully", "status": True})
+
+
+
 

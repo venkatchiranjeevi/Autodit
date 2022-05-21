@@ -20,6 +20,8 @@ class UsersList(APIView):
             {"Name": 'gender', "Value": new_user_data.get("gender")},
             {"Name": 'name', "Value": new_user_data.get("name")},
             {"Name": 'nickname', "Value": new_user_data.get("nickname")},
+            {"Name": 'custom:tenant_id', "Value": new_user_data.get("tenant_id")}
+
             # {"Name": 'custom:department_id', "Value": new_user_data.get("department_id")}
             ]
         if ph_num and ph_num != "":
@@ -42,7 +44,7 @@ class UsersList(APIView):
         new_user_data = request.data
 
         response = UsersList.add_new_user_to_cognito_userpool(new_user_data)
-        return Response(response)
+        return Response({"message": "User created Successfully", "status": True})
 
 
 class UserProfile(AuthMixin):
