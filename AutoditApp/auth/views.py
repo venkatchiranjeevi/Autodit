@@ -3,8 +3,9 @@ from django.shortcuts import render
 # Create your views here.
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from AutoditApp.constants import Cognito
+from AutoditApp.constants import Cognito, DEFAULT_VIEWS
 from AutoditApp.dal import TenantMasterData, RolesData
+from AutoditApp.models import AccessPolicy, RolePolicies
 from rest_framework import status
 from django.conf import settings
 
@@ -60,6 +61,9 @@ class SignUp(APIView):
         role_obj = RolesData.save_single_role(role_data)
         new_user_data['tenant_id'] = tenant_obj.id
         new_user_data['role_id'] = role_obj.role_id
-        default_views = None
+
+        access_policy = AccessPolicy.objects.create(policyname=user_name,
+                                                    policy={"views": DEFAULT_VIEWS, 'actions': []}, type="GENERAL")
+        role_policies = RolePolicies.objects.create(role_id=role_obj.role_id, accesspolicy_id=access_policy.logid)
         message, status = UsersList.add_new_user_to_cognito_userpool(new_user_data)
         return Response({"message": message, "status": status} )

@@ -9,6 +9,9 @@ from AutoditApp.models import Users
 User_Exist_Exception = "An error occurred (UsernameExistsException) " \
                        "when calling the AdminCreateUser operation: User account already exists"
 
+DEFAULT_POLICIES = ['views', 'actions']
+DEFAULT_VIEWS = ["Dashboard", "Settings", "Admin"]
+
 class Cognito:
 
     def __init__(self):

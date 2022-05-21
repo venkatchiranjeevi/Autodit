@@ -9,8 +9,8 @@ class BaseConstant:
 
 class AccessPolicy(BaseConstant):
     @staticmethod
-    def create_access_policy(role_id, policy, policy_type=None):
-        roles_policies = None
+    def create_access_policy(role_id):
+        pass
 
 class RolesData(BaseConstant):
 
