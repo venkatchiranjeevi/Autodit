@@ -43,5 +43,5 @@ class PasswordChange(APIView):
             Password=password,
             Permanent=True
         )
-        return Response({"status": "Password Updated Successfully"})
+        return Response({"message": "Password Updated Successfully", "status": True})
 
