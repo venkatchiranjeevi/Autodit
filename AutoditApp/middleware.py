@@ -5,7 +5,8 @@ from django.contrib.auth.middleware import AuthenticationMiddleware
 from django.contrib.auth.models import AnonymousUser
 from django.core.cache import cache
 from django.utils.functional import SimpleLazyObject
-from AutoditApp.constants import Cognito
+# from AutoditApp.constants import Cognito
+from AutoditApp.AWSCognito import Cognito
 
 profiler = getattr(settings, 'PROFILER', {})
 profiler_enabled = profiler.get('enabled', False)

@@ -2,8 +2,10 @@ from django.db import connections
 from collections import defaultdict, OrderedDict
 from AutoditApp.Utils import coalesce
 from AutoditApp.sql_queries import ROLE_POLICIES
+from .dal import RolesData
 from AutoditApp.models import TenantDepartment as Departments, Roles, TenantGlobalVariables, Tenant
 from django.db.models import Q
+
 
 class BaseConstant:
     def __init__(self):
@@ -40,6 +42,7 @@ def get_policies_by_role(role_id):
 
 
 def get_users_by_tenant_id(all_users, tenant_id):
+    final_users = list()
     for each_user in all_users:
         user_record = dict()
         all_attributes = dict()
@@ -49,18 +52,17 @@ def get_users_by_tenant_id(all_users, tenant_id):
         if all_attributes.get('custom:tenant_id') == str(tenant_id):
             user_record['mobnmbr'] = all_attributes.get('phone_number')[3:] if all_attributes.get('phone_number') \
                 else None
-            user_record['email'] = all_attributes.get('email', all_attributes.get("custom:Email_Address"))
-            name = all_attributes.get("custom:Name") if all_attributes.get("custom:Name") else \
-                all_attributes.get("name")
-            user_record['name'] = name
-            role = all_attributes.get('custom:role')
-            user_record['roles'] = [roles_data.get(int(role))] if role and roles_data.get(int(role)) else []
-            entity = all_attributes.get('custom:Entity')
-            user_record['entity'] = int(entity) if entity else entity
-            operation_unit = all_attributes.get('custom:Operation_Unit')
-            user_record['operation_unit'] = int(operation_unit) if operation_unit else operation_unit
+            user_record['email'] = all_attributes.get('email')
+            user_record['name'] = all_attributes.get("name")
+            role_details = RolesData.get_role_details(eval(all_attributes.get('custom:role_id', '[]')))
+            user_record['role_details'] = role_details
+            user_record['tenant_id'] = all_attributes.get('custom:tenant_id')
             user_record['userid'] = all_attributes.get("sub")
-    pass
+            final_users.append(user_record)
+
+    return final_users
+
+
 
 
 

@@ -20,19 +20,30 @@ class RolesData(BaseConstant):
         return roles_data
 
     @staticmethod
+    def get_role_details(roles_ids):
+        query = Q()
+        if roles_ids:
+            query &= Q(role_id__in=roles_ids)
+        roles_data = Roles.objects.filter(query).values("role_id", "role_name", "code")
+        return roles_data
+
+
+    @staticmethod
     def save_roles_info(data):
         roles_instances = []
         for each_role in data:
-            role_obj = Roles(role_name=each_role.get("role_name"), code=each_role.get("role_code"))
+            role_obj = Roles(role_name=each_role.get("role_name"), code=each_role.get("role_code"),
+                             tenant_id=each_role.get("role_code"))
             roles_instances.append(role_obj)
         Roles.objects.bulk_create(roles_instances)
         return True
 
     @staticmethod
     def save_single_role(data):
-        role_obj = Roles(role_name=data.get("role_name"), code=data.get("role_code"))
+        role_obj = Roles(role_name=data.get("role_name"), code=data.get("role_code"), tenant_id=data.get("tenant_id"))
         role_obj.save()
         return role_obj
+
 
 class TenantMasterData(BaseConstant):
 

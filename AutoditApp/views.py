@@ -2,20 +2,18 @@ import json
 
 from django.shortcuts import render
 from django.db import connection
-
-# Create your views here.
+from django.db.models import Q
 from rest_framework.response import Response
-from rest_framework.views import APIView
-from .constants import Cognito
-from rest_framework import status
-from django.conf import settings
 from AutoditApp.mixins import AuthMixin
 from AutoditApp.models import TenantGlobalVariables, TenantDepartment, Roles, FrameworkMaster, TenantFrameworkMaster, \
     TenantHierarchyMapping
-
 from AutoditApp.dal import DeparmentsData, TenantGlobalVariableData, TenantMasterData, RolesData, GlobalVariablesData
-from django.db.models import Q
 from AutoditApp.constants import RolesConstant as RC
+from .AWSCognito import Cognito
+from django.conf import settings
+
+# Create your views here.
+from .core import get_users_by_tenant_id
 
 
 class DepartmentsAPI(AuthMixin):
@@ -107,10 +105,11 @@ class TenantMasterAPI(AuthMixin):
         tenant_obj = TenantMasterData.save_tenant_master_data(data)
         return Response({"message": "Tenant details created Successfully", "status": True})
 
+
 class SettingManagementAPI(AuthMixin):
     def get(self, request):
-        # TODO tenant_id get it from  session
-        tenant_id = request.GET.get("tenant_id")
+        user = request.user
+        tenant_id = user.tenant_id
         t_global_var_data = TenantGlobalVariables.objects.get(tenant_id=int(tenant_id)).result
         global_varialbles_data = eval(t_global_var_data)
         departments = list(TenantDepartment.objects.filter(tenant_id=int(tenant_id)).values('name', 'code'))
@@ -123,14 +122,15 @@ class SettingManagementAPI(AuthMixin):
             entry = det
             entry['isSubscribed'] = True if entry['id'] in select_framework_ids else False
             framework_details.append(entry)
-        # TODO need to add users details
-        users_lists = []
+
+        all_users = Cognito.get_all_cognito_users_by_userpool_id(settings.COGNITO_USERPOOL_ID)
+        tenant_users = get_users_by_tenant_id(all_users, tenant_id)
 
         return Response({'globalVarialbes': global_varialbles_data,
                          'departments': departments,
                          'frameworkDetails': framework_details,
                          'groups': tenant_roles,
-                         'userDetails': users_lists})
+                         'userDetails': tenant_users})
 
     def post(self, post):
         # UPDATE
@@ -160,6 +160,16 @@ class ControlsManagementAPI(AuthMixin):
                                                                                                    'master_hierarchy_id')
         custom_selected_control = {entry['master_hierarchy_id'] : entry for entry in selected_controls}
         final_details = []
+        selected_frameworks = TenantFrameworkMaster.objects.filter(is_active=1).values('master_framework_id')
+        select_framework_ids = [entry['master_framework_id'] for entry in selected_frameworks]
+        total_frameworks = FrameworkMaster.objects.filter(is_active=1).values('id', 'framework_name', 'framework_type',
+                                                                              'description')
+        framework_details = []
+        for det in total_frameworks:
+            entry = det
+            entry['isSubscribed'] = True if entry['id'] in select_framework_ids else False
+            framework_details.append(entry)
+
         for item in data:
             entry = {'frameworkId':item[0],
                      'principleId': item[1],
@@ -178,7 +188,7 @@ class ControlsManagementAPI(AuthMixin):
                 entry['policyReference'] = custom_selected_control[item[8]]['policy_reference']
                 entry['customTags'] = []
             final_details.append(entry)
-        return Response(final_details)
+        return Response({'controlDetails':final_details, 'frameworkDetails': framework_details})
 
     def post(self, request):
         pass

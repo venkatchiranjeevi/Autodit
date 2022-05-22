@@ -1,7 +1,8 @@
 import json
 
 from rest_framework.views import APIView
-from AutoditApp.constants import Cognito, User_Exist_Exception
+from AutoditApp.constants import User_Exist_Exception
+from AutoditApp.AWSCognito import Cognito
 from django.conf import settings
 from rest_framework.response import Response
 from django.db import connection
@@ -49,6 +50,9 @@ class UsersList(APIView):
 
         return message, status
 
+    def get(self, request):
+        pass
+
     def post(self, request):
         new_user_data = request.data
 
@@ -81,5 +85,5 @@ class UserProfile(AuthMixin):
                          "status": user.markedfordeletion,
                          "tenantDetails": tenant_details,
                          "role_policies": {'screenPermissions': screen_policies,
-                                           'viewPermissions':action_permissions }
+                                           'ActionPermissions':action_permissions }
                          })

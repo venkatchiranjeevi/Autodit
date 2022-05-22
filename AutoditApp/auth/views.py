@@ -3,7 +3,8 @@ from django.shortcuts import render
 # Create your views here.
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from AutoditApp.constants import Cognito, DEFAULT_VIEWS
+from AutoditApp.constants import DEFAULT_VIEWS
+from AutoditApp.AWSCognito import Cognito
 from AutoditApp.dal import TenantMasterData, RolesData
 from AutoditApp.models import AccessPolicy, RolePolicies
 from rest_framework import status
@@ -57,7 +58,7 @@ class SignUp(APIView):
         user_name = new_user_data.get("name", "")
         tenant_data = {"tenant_name": user_name}
         tenant_obj = TenantMasterData.save_tenant_master_data(tenant_data)
-        role_data = {'role_name': user_name + " ADMIN", "role_code":  user_name + "AD"}
+        role_data = {'role_name': user_name + " ADMIN", "role_code":  user_name + "AD", "tenant_id": tenant_obj.id}
         role_obj = RolesData.save_single_role(role_data)
         new_user_data['tenant_id'] = tenant_obj.id
         new_user_data['role_id'] = role_obj.role_id
@@ -66,5 +67,11 @@ class SignUp(APIView):
                                                     policy={"views": DEFAULT_VIEWS, 'actions': []}, type="GENERAL")
         role_policies = RolePolicies.objects.create(role_id=role_obj.role_id, accesspolicy_id=access_policy.logid)
         message, status = UsersList.add_new_user_to_cognito_userpool(new_user_data)
+        password_response = Cognito.CLIENT.admin_set_user_password(
+            UserPoolId=settings.COGNITO_USERPOOL_ID,
+            Username=user_name,
+            Password=new_user_data.get("password"),
+            Permanent=True
+        )
         # TODO import all global variable
         return Response({"message": message, "status": status} )
