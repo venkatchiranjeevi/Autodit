@@ -95,7 +95,7 @@ class TenantGlobalVariableData(BaseConstant):
 
     @staticmethod
     def get_tenant_global_varialbles(query):
-        t_global_var_data = TenantGlobalVariables.objects.objects.filter(query).values()
+        t_global_var_data = TenantGlobalVariables.objects.filter(query).values()
         return t_global_var_data
 
     @staticmethod
