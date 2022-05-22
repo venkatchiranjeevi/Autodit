@@ -88,7 +88,7 @@ class TenantDepartment(Base):
     name = models.CharField(db_column='name', max_length=100)
     code = models.CharField(db_column='code', max_length=100)
     tenant_id = models.IntegerField(db_column='tenant_id', blank=True)
-    is_active = models.IntegerField(db_column='is_active', blank=True, default=None)
+    is_active = models.IntegerField(db_column='is_active', blank=True, default=True)
     description = models.TextField(db_column="dep_description", blank=True)
 
     def __int__(self):

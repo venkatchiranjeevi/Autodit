@@ -2,7 +2,6 @@ from django.db import connections
 from collections import defaultdict, OrderedDict
 from AutoditApp.Utils import coalesce
 from AutoditApp.sql_queries import ROLE_POLICIES
-from .dal import RolesData
 from AutoditApp.models import TenantDepartment as Departments, Roles, TenantGlobalVariables, Tenant
 from django.db.models import Q
 
@@ -53,6 +52,7 @@ def get_users_by_tenant_id(all_users, tenant_id):
             user_record['mobnmbr'] = all_attributes.get('phone_number')[3:] if all_attributes.get('phone_number') \
                 else None
             user_record['email'] = all_attributes.get('email')
+            from .dal import RolesData
             user_record['name'] = all_attributes.get("name")
             role_details = RolesData.get_role_details(eval(all_attributes.get('custom:role_id', '[]')))
             user_record['role_details'] = role_details

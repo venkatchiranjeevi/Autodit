@@ -58,14 +58,15 @@ class SignUp(APIView):
         user_name = new_user_data.get("name", "")
         tenant_data = {"tenant_name": user_name}
         tenant_obj = TenantMasterData.save_tenant_master_data(tenant_data)
-        role_data = {'role_name': user_name + " ADMIN", "role_code":  user_name + "AD", "tenant_id": tenant_obj.id}
-        role_obj = RolesData.save_single_role(role_data)
-        new_user_data['tenant_id'] = tenant_obj.id
-        new_user_data['role_id'] = role_obj.role_id
-
-        access_policy = AccessPolicy.objects.create(policyname=user_name,
-                                                    policy={"views": DEFAULT_VIEWS, 'actions': []}, type="GENERAL")
-        role_policies = RolePolicies.objects.create(role_id=role_obj.role_id, accesspolicy_id=access_policy.logid)
+        role_data = {'role_name': user_name + " ADMIN", "role_code":  user_name + "AD", "tenant_id": tenant_obj.id,
+                     "policy_name": user_name, "departments": [], "global_variables": {}}
+        result = RolesData.save_single_role(role_data)
+        # new_user_data['tenant_id'] = tenant_obj.id
+        # new_user_data['role_id'] = role_obj.role_id
+        #
+        # access_policy = AccessPolicy.objects.create(policyname=user_name,
+        #                                             policy={"views": DEFAULT_VIEWS, 'actions': []}, type="GENERAL")
+        # role_policies = RolePolicies.objects.create(role_id=role_obj.role_id, accesspolicy_id=access_policy.logid)
         message, status = UsersList.add_new_user_to_cognito_userpool(new_user_data)
         password_response = Cognito.CLIENT.admin_set_user_password(
             UserPoolId=settings.COGNITO_USERPOOL_ID,

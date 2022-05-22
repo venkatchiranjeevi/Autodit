@@ -1,5 +1,8 @@
-from AutoditApp.models import TenantDepartment as Departments, Roles, TenantGlobalVariables, Tenant, GlobalVariables
+from AutoditApp.models import TenantDepartment as Departments, Roles, TenantGlobalVariables, Tenant, GlobalVariables, \
+    RolePolicies, AccessPolicy
 from django.db.models import Q
+from .constants import DEFAULT_VIEWS
+from .core import get_policies_by_role
 
 
 class BaseConstant:
@@ -7,7 +10,7 @@ class BaseConstant:
         pass
 
 
-class AccessPolicy(BaseConstant):
+class AccessPolicyData(BaseConstant):
     @staticmethod
     def create_access_policy(role_id):
         pass
@@ -33,16 +36,26 @@ class RolesData(BaseConstant):
         roles_instances = []
         for each_role in data:
             role_obj = Roles(role_name=each_role.get("role_name"), code=each_role.get("role_code"),
-                             tenant_id=each_role.get("role_code"))
-            roles_instances.append(role_obj)
-        Roles.objects.bulk_create(roles_instances)
+                             tenant_id=each_role.get("tenant_id"))
+            role_obj.save()
+
+
+        # Roles.objects.bulk_create(roles_instances)
+
         return True
 
     @staticmethod
     def save_single_role(data):
         role_obj = Roles(role_name=data.get("role_name"), code=data.get("role_code"), tenant_id=data.get("tenant_id"))
         role_obj.save()
-        return role_obj
+
+        access_policy = AccessPolicy.objects.create(policyname=data.get("policy_name"),
+                                                    policy={"views": DEFAULT_VIEWS, 'actions': [],
+                                                    "departments": data.get("departments", [])},
+                                                    type="GENERAL")
+        role_policies = RolePolicies.objects.create(role_id=role_obj.role_id, accesspolicy_id=access_policy.logid)
+
+        return True
 
 
 class TenantMasterData(BaseConstant):
@@ -73,10 +86,10 @@ class DeparmentsData(BaseConstant):
 
     @staticmethod
     def save_department_data(data):
-        result = Departments.objects.create(name=data.get("name"), code=data.get("code"),
+        dep_obj, created = Departments.objects.get_or_create(name=data.get("department_name"), code=data.get("code"),
                                             tenant_id=data.get("tenant_id"))
 
-        return result
+        return dep_obj, created
 
     @staticmethod
     def update_department_data(data):
@@ -115,8 +128,20 @@ class TenantGlobalVariableData(BaseConstant):
 
     @staticmethod
     def save_tenant_global_varialble(data):
-        tbv_obj = TenantGlobalVariables.objects.create(key=data.get("key"), value=data.get("value"),
-                                                       key_type=data.get("key_type"),
-                                                       result=data.get("result"), created_by=data.get("username"),
-                                                       tenant_id=data.get("tenant_id"))
+        tbv_obj, created = TenantGlobalVariables.objects.get_or_create(tenant_id=data.get("tenant_id"))
+        tbv_obj.result = data.get("globalVarialbes")
+        tbv_obj.save()
+        roles = data.get("role_id", '[]')
+        for each_role in eval(roles):
+            role_policies = RolePolicies.objects.filter(role_id=each_role).values()
+            for each_policy in role_policies:
+                access_policy_obj = AccessPolicy.objects.get(logid=each_policy.get("accesspolicy_id"))
+                existing_policy = eval(access_policy_obj.policy)
+                existing_policy['globalVarialbes'] = data.get("globalVarialbes")
+                access_policy_obj.policy = existing_policy
+                access_policy_obj.save()
+        # role_policies = get_policies_by_role(role_id=each_role)
+        # role_policies[0]["globalVarialbes"] = data.get("globalVarialbes")
         return tbv_obj
+
+

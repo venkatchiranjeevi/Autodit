@@ -24,15 +24,21 @@ class DepartmentsAPI(AuthMixin):
 
     def post(self, request):
         data = request.data
+        tenant_id = request.user.tenant_id
+        data['tenant_id'] = tenant_id
         dep_code = data.get("code")
-        DeparmentsData.save_department_data(data)
-        default_roles = []
+        dep_name = data.get("department_name")
+        dep_obj, created = DeparmentsData.save_department_data(data)
+        if not created:
+            Response({"message": "Department Already Exists", "status": False})
 
         for each_role in RC.Default_Roles.keys():
             role = {"role_name": "{}_{}".format(dep_code, each_role), "role_code": "{}_{}".format(dep_code,
-                                                                            RC.Default_Roles.get(each_role))}
-            default_roles.append(role)
-        RolesData.save_roles_info(default_roles)
+                                                        RC.Default_Roles.get(each_role)), "tenant_id": tenant_id,
+                                                        "role_for": each_role, "departments": [dep_obj.id],
+                    "policy_name": dep_name}
+            # default_roles.append(role)
+            RolesData.save_single_role(role)
 
         return Response({"message": "Department Inserted Successfully", "status": True})
 
@@ -68,7 +74,7 @@ class TenantGlobalVariablesAPI(AuthMixin):
         data = request.data
         tenant_id = user.tenant_id
         data['tenant_id'] = tenant_id
-        data['username'] = user.username
+        data['role_id'] = user.role_id
         result = TenantGlobalVariableData.save_tenant_global_varialble(data)
         return Response({"message": "Global variable inserted successfully", "status": True})
 
@@ -111,7 +117,7 @@ class SettingManagementAPI(AuthMixin):
         user = request.user
         tenant_id = user.tenant_id
         t_global_var_data = TenantGlobalVariables.objects.get(tenant_id=int(tenant_id)).result
-        global_varialbles_data = eval(t_global_var_data)
+        global_varialbles_data = eval(t_global_var_data if t_global_var_data else '{}')
         departments = list(TenantDepartment.objects.filter(tenant_id=int(tenant_id)).values('name', 'code'))
         tenant_roles = list(Roles.objects.filter(tenant_id=int(tenant_id)).values('role_name', 'code'))
         selected_frameworks = TenantFrameworkMaster.objects.filter(is_active=1).values('master_framework_id')
@@ -132,7 +138,9 @@ class SettingManagementAPI(AuthMixin):
                          'groups': tenant_roles,
                          'userDetails': tenant_users})
 
-    def post(self, post):
+    def post(self, request):
+        data = request.body
+
         # UPDATE
         # 1)Global varialbes
         # 2)Frameworks add or remove.
