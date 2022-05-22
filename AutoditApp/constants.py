@@ -8,6 +8,8 @@ from AutoditApp.models import Users
 
 User_Exist_Exception = "An error occurred (UsernameExistsException) " \
                        "when calling the AdminCreateUser operation: User account already exists"
+PASSWOIRD_POLICY = "'An error occurred (InvalidPasswordException) when calling the AdminCreateUser operation: " \
+                   "Password did not conform with password policy: Password must have uppercase characters'"
 
 DEFAULT_POLICIES = ['views', 'actions']
 DEFAULT_VIEWS = ["Dashboard", "Settings", "Admin", "M_ITM_DASH","M_ITM_PLCM", "M_ITM_PLCM", "M_ITM_CTRLM",
