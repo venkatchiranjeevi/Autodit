@@ -1,2 +1,2 @@
 ROLE_POLICIES = """select r.RoleId , r.role_name ,r.Code ,r.is_active ,rp.accesspolicy_id ,ap.Policy  from Roles r left join 
-                  Roles_policies rp  on r.RoleId = rp.roles_id left join AccessPolicy ap on rp.accesspolicy_id = ap.LogId  where r.RoleId = {} """
+                  Roles_policies rp  on r.RoleId = rp.roles_id left join AccessPolicy ap on rp.accesspolicy_id = ap.LogId  where r.RoleId in ({}) """
