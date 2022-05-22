@@ -1,3 +1,5 @@
+import json
+
 from rest_framework.views import APIView
 from AutoditApp.constants import Cognito, User_Exist_Exception
 from django.conf import settings
@@ -58,12 +60,26 @@ class UserProfile(AuthMixin):
 
     def get(self, request):
         user = request.user
-        role_policies = get_policies_by_role(user.role_id) if user.role_id else []
-
+        role_id = user.role_id
+        if not user.role_id:
+            role_id = 1
+        role_policies = get_policies_by_role(role_id) if role_id else []
+        screen_policies = []
+        tenant_details = {}
+        action_permissions = {}
+        for po in role_policies:
+            policy = json.loads(po.get('Policy'))
+            screen_policies +=  policy.get('views', [])
+            if policy.get('tenantDetails'):
+                tenant_details = policy['tenantDetails']
+            if policy.get('actionPermissions'):
+                action_permissions.update(policy.get('actionPermissions', {}))
         return Response({"username": user.name,
                          "email": user.email,
                          "mobile_number": user.mobnmbr,
                          "gender": user.gender,
                          "status": user.markedfordeletion,
-                         "role_policies": role_policies
+                         "tenantDetails": tenant_details,
+                         "role_policies": {'screenPermissions': screen_policies,
+                                           'viewPermissions':action_permissions }
                          })

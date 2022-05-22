@@ -1,5 +1,6 @@
 from django.db import models
 
+
 # Create your models here.
 
 
@@ -20,6 +21,7 @@ class Roles(Base):
     role_id = models.AutoField(db_column='RoleId', primary_key=True)
     role_name = models.CharField(max_length=50, null=False, blank=False, default="NA")
     code = models.CharField(db_column='Code', max_length=5, null=True, default=None)
+    tenant_id = models.IntegerField(db_column='tenantId')
 
     def __str__(self):
         return self.role_name
@@ -118,7 +120,7 @@ class TenantGlobalVariables(Base):
     key_type = models.CharField(db_column='key_type', max_length=120, blank=True)
     value = models.CharField(db_column='value', max_length=120, blank=True)
     result = models.CharField(db_column='result', max_length=120, blank=True, default=None)
-    tenant_id = models.IntegerField(db_column='tenant_id', null=True, blank=True)
+    tenant_id = models.IntegerField(db_column='TenantId', null=True, blank=True)
 
     def __int__(self):
         return self.id
@@ -140,13 +142,51 @@ class Tenant(Base):
         db_table = 'Tenant'
 
 
-class GlobalVariables(models.Model):
+class TenantFrameworkMaster(Base):
+    id = models.AutoField(primary_key=True, db_column='id')
+    tenant_framework_name = models.CharField(db_column='TenantFrameworkName', max_length=50)
+    master_framework_id = models.IntegerField(db_column='MasterFId')
+    framework_type = models.CharField(db_column='type', max_length=50, blank=True)
+    description = models.TextField(db_column='Description', default='')
+    is_deleted = models.IntegerField(db_column='IsDeleted', default=0)
+    is_active = models.IntegerField(db_column='IsActive', default=1)
+    tenant_id = models.IntegerField(db_column='tenant_id', null=True, blank=True)
+
+    def __int__(self):
+        return self.id
+
+    class Meta:
+        db_table = 'TenantFrameworkMaster'
+
+
+class TenantHierarchyMapping(Base):
+    id = models.AutoField(primary_key=True, db_column='id')
+    controller_id = models.IntegerField(db_column='controller_id', null=True, blank=True)
+    controller_name = models.CharField(db_column='controller_name', max_length=120)
+    principle_id = models.IntegerField(db_column='principle_id', null=True, blank=True)
+    framework_id = models.IntegerField(db_column='framework_id', null=True, blank=True)
+    department_id = models.IntegerField(db_column='department_id', null=True, blank=True)
+    controller_description = models.TextField(db_column='controller_description', null=True, blank=True)
+    created_by = models.CharField(db_column='created_by', max_length=120, null=True, blank=True)
+    policy_reference = models.CharField(db_column='PolicyReference', max_length=500)
+    tenant_id = models.IntegerField(db_column='tenantId')
+    master_hierarchy_id = models.IntegerField(db_column='masterHierarchyId')
+
+    def __int__(self):
+        return self.id
+
+    class Meta:
+        db_table = 'TenantHierarchyMapping'
+
+
+class GlobalVariables(Base):
     id = models.AutoField(primary_key=True, db_column='id')
     key = models.CharField(db_column='key', max_length=120)
     key_type = models.CharField(db_column='key_type', max_length=120, blank=True)
     value = models.CharField(db_column='value', max_length=120, blank=True)
     result = models.CharField(db_column='result', max_length=120, blank=True, default=None)
     description = models.TextField(db_column='Description', null=True, blank=True)
+    category = models.CharField(db_column='Category', max_length=100, blank=True)
     created_by = models.CharField(db_column='created_by', max_length=120, null=True, blank=True)
 
     def __int__(self):
@@ -154,3 +194,55 @@ class GlobalVariables(models.Model):
 
     class Meta:
         db_table = 'GlobalVariables'
+
+
+class FrameworkMaster(Base):
+    id = models.AutoField(primary_key=True, db_column='id')
+    framework_name = models.CharField(db_column='FrameworkName', max_length=120)
+    framework_type = models.CharField(db_column='type', max_length=120, blank=True)
+    description = models.TextField(db_column='Description', null=True, blank=True)
+    is_deleted = models.IntegerField(db_column='IsDeleted', default=0)
+    is_active = models.IntegerField(db_column='IsActive', default=1)
+
+    def __int__(self):
+        return self.id
+
+    class Meta:
+        db_table = 'FrameworkMaster'
+
+
+class ControlMaster(Base):
+    id = models.AutoField(primary_key=True, db_column='id')
+    control_name = models.CharField(db_column='ControlName', max_length=120)
+    control_type = models.CharField(db_column='type', max_length=120, blank=True)
+    description = models.TextField(db_column='Description', null=True, blank=True)
+    is_deleted = models.IntegerField(db_column='IsDeleted', default=0)
+    is_active = models.IntegerField(db_column='IsActive', default=1)
+
+    def __int__(self):
+        return self.id
+
+    class Meta:
+        db_table = 'ControlMaster'
+
+
+class HirerecyMapper(Base):
+    id = models.AutoField(primary_key=True, db_column='id')
+    f_id = models.IntegerField(db_column='Fid', null=True, blank=True)
+    c_id = models.IntegerField(db_column='Pid', null=True, blank=True)
+    p_id = models.IntegerField(db_column='Cid', null=True, blank=True)
+    policy_reference = models.CharField(db_column='PolicyReference', max_length=500)
+    is_deleted = models.IntegerField(db_column='IsDeleted', default=0)
+    is_active = models.IntegerField(db_column='IsActive', default=1)
+
+    def __int__(self):
+        return self.id
+
+    class Meta:
+        db_table = 'HirerecyMapper'
+
+# PRINICIPLE MASTER
+# ADMIN AUDIT
+# CUSTOM TAGS
+# CKEDITOR API'S
+# POLICY STATES

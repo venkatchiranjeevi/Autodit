@@ -10,7 +10,8 @@ User_Exist_Exception = "An error occurred (UsernameExistsException) " \
                        "when calling the AdminCreateUser operation: User account already exists"
 
 DEFAULT_POLICIES = ['views', 'actions']
-DEFAULT_VIEWS = ["Dashboard", "Settings", "Admin"]
+DEFAULT_VIEWS = ["Dashboard", "Settings", "Admin", "M_ITM_DASH","M_ITM_PLCM", "M_ITM_PLCM", "M_ITM_CTRLM",
+                 "M_ITM_EVDCM","M_ITM_CALDM", "M_ITM_STNGS"]
 
 class Cognito:
 

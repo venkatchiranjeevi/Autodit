@@ -66,4 +66,5 @@ class SignUp(APIView):
                                                     policy={"views": DEFAULT_VIEWS, 'actions': []}, type="GENERAL")
         role_policies = RolePolicies.objects.create(role_id=role_obj.role_id, accesspolicy_id=access_policy.logid)
         message, status = UsersList.add_new_user_to_cognito_userpool(new_user_data)
+        # TODO import all global variable
         return Response({"message": message, "status": status} )
