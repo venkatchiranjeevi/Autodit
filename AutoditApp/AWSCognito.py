@@ -3,6 +3,8 @@ from jose import jwk, jwt, JWTError
 from jose.utils import base64url_decode
 from django.conf import settings
 from time import time as current_time
+
+from .core import get_policies_by_role
 from .models import Users
 
 class Cognito:
@@ -42,6 +44,7 @@ class Cognito:
     CONSTANT_TRUE_VALUE = ["true", "True"]
     CONSTANT_FALSE_VALUE = "false"
     MOBILE_NUM_PREFIX = "+91"
+
 
     @staticmethod
     def claims_token(access_token):
@@ -105,12 +108,15 @@ class Cognito:
             "mobnmbr": user_model_dict.get("phone_number", None),
             "email": user_model_dict.get("email", user_model_dict.get('custom:Email_Address')),
             "name": user_model_dict.get('name', user_model_dict.get("cognito_username")),
-            "role_id": user_model_dict.get('custom:role_id', None),
+            "role_id": user_model_dict.get('custom:role_id', "[]"),
             "department_id": user_model_dict.get('custom:department_id', None),
             "gender": user_model_dict.get('gender', None),
             "markedfordeletion": user_model_dict.get('markedfordeletion', None),
             "username_cognito": user_model_dict.get('cognito_username', None),
             "gender": user_model_dict.get("gender"),
+            "policy":  eval(get_policies_by_role(user_model_dict.get('custom:role_id', "[]"))[0].get("Policy", '{}')),
+
+            # "policy":  eval(get_policies_by_role(user_model_dict.get('custom:role_id', "[]"))[0].get("Policy", '{}')),
             "is_authenticated": True,
             "is_active": True,
             "tenant_id": user_model_dict.get("custom:tenant_id"),

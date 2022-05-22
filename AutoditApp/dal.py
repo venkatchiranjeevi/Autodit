@@ -46,7 +46,9 @@ class RolesData(BaseConstant):
 
     @staticmethod
     def save_single_role(data):
-        role_obj = Roles(role_name=data.get("role_name"), code=data.get("role_code"), tenant_id=data.get("tenant_id"))
+        department_id = data.get("departments", [])
+        role_obj = Roles(role_name=data.get("role_name"), code=data.get("role_code"), tenant_id=data.get("tenant_id"),
+                         department_id=department_id[0] if department_id else None)
         role_obj.save()
 
         access_policy = AccessPolicy.objects.create(policyname=data.get("policy_name"),
@@ -55,7 +57,20 @@ class RolesData(BaseConstant):
                                                     type="GENERAL")
         role_policies = RolePolicies.objects.create(role_id=role_obj.role_id, accesspolicy_id=access_policy.logid)
 
-        return True
+        return role_obj
+
+
+class RolePoliciesData(BaseConstant):
+
+    @staticmethod
+    def get_acceess_policy_id_by_role_id(role_id):
+        try:
+            access_policy_id = RolePolicies.objects.get(role_id=eval(role_id)[0]).accesspolicy_id
+        except:
+            return None
+        return access_policy_id
+
+
 
 
 class TenantMasterData(BaseConstant):

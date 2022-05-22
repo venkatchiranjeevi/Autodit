@@ -22,6 +22,7 @@ class Roles(Base):
     role_name = models.CharField(max_length=50, null=False, blank=False, default="NA")
     code = models.CharField(db_column='Code', max_length=5, null=True, default=None)
     tenant_id = models.IntegerField(db_column='tenantId')
+    department_id = models.IntegerField(db_column='DepartmentId',null=True)
 
     def __str__(self):
         return self.role_name

@@ -7,10 +7,12 @@ from rest_framework.response import Response
 from AutoditApp.mixins import AuthMixin
 from AutoditApp.models import TenantGlobalVariables, TenantDepartment, Roles, FrameworkMaster, TenantFrameworkMaster, \
     TenantHierarchyMapping
-from AutoditApp.dal import DeparmentsData, TenantGlobalVariableData, TenantMasterData, RolesData, GlobalVariablesData
+from AutoditApp.dal import DeparmentsData, TenantGlobalVariableData, TenantMasterData, RolesData, GlobalVariablesData,\
+    RolePoliciesData
 from AutoditApp.constants import RolesConstant as RC
 from .AWSCognito import Cognito
 from django.conf import settings
+from .models import AccessPolicy
 
 # Create your views here.
 from .core import get_users_by_tenant_id
@@ -24,11 +26,18 @@ class DepartmentsAPI(AuthMixin):
 
     def post(self, request):
         data = request.data
-        tenant_id = request.user.tenant_id
+        user = request.user
+        tenant_id = user.tenant_id
         data['tenant_id'] = tenant_id
+        role_id = user.role_id
         dep_code = data.get("code")
         dep_name = data.get("department_name")
         dep_obj, created = DeparmentsData.save_department_data(data)
+        access_policy_id = RolePoliciesData.get_acceess_policy_id_by_role_id(role_id)
+        existing_policy_dep = user.policy
+        departments = existing_policy_dep.get("departments", [])
+        existing_policy_dep['departments'] = departments
+        AccessPolicy.objects.filter(logid=access_policy_id).update(policy=existing_policy_dep)
         if not created:
             Response({"message": "Department Already Exists", "status": False})
 
