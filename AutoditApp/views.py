@@ -145,7 +145,8 @@ class ControlsManagementAPI(AuthMixin):
 
     def get(self, request):
         # TODO change
-        tenant_id = request.GET.get("tenant_id")
+        user = request.user
+        tenant_id = user.tenant_id
         cursor = connection.cursor()
         cursor.execute('''SELECT hm.Fid, hm.Pid, hm.Cid, fm.FrameworkName, fm.`type` as frameworkType, 
                 fm.Description as frameworkDescription, cm.ControlName, cm.Description, hm.id from HirerecyMapper hm Inner JOIN 
@@ -195,6 +196,8 @@ class PolicyManagementAPI(AuthMixin):
 class ControlsCostomTagsAPI(AuthMixin):
     def get(self, request):
         # TODO tennant_id needs to come from user object
+        user = request.user
+        tenant_id = user.tenant_id
         cursor = connection.cursor()
         result = cursor.execute('''SELECT hm.Fid, hm.Pid, hm.Cid, fm.FrameworkName, fm.`type` as frameworkType, 
         fm.Description as frameworkDescription, cm.ControlName, cm.Description from HirerecyMapper hm Inner JOIN 
