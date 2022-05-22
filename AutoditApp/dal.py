@@ -51,7 +51,8 @@ class TenantMasterData(BaseConstant):
     def get_tenant_details(tenant_id=None):
         query = Q()
         if tenant_id:
-            pass
+            query &= Q(id=tenant_id)
+        return Tenant.objects.filter(query).values()
 
     @staticmethod
     def save_tenant_master_data(data):

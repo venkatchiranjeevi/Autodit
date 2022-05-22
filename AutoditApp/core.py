@@ -34,7 +34,7 @@ def get_session_value(request):
                     )
 
 
-def get_policies_by_role(role_id):
+def get_policies_by_role(role_id=[]):
     role_id = "','".join([str(i) for i in eval(role_id)])
     query = ROLE_POLICIES.format(role_id)
     policies = fetch_data_from_sql_query(query)

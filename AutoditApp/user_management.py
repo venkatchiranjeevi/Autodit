@@ -6,7 +6,7 @@ from AutoditApp.AWSCognito import Cognito
 from django.conf import settings
 from rest_framework.response import Response
 from django.db import connection
-
+from AutoditApp.dal import TenantMasterData
 from AutoditApp.core import get_policies_by_role
 from AutoditApp.mixins import AuthMixin
 
@@ -65,17 +65,15 @@ class UserProfile(AuthMixin):
     def get(self, request):
         user = request.user
         role_id = user.role_id
-        if not user.role_id:
-            role_id = 1
+        tenant_id = user.tenant_id
+
         role_policies = get_policies_by_role(role_id) if role_id else []
         screen_policies = []
-        tenant_details = {}
+        tenant_details = TenantMasterData.get_tenant_details(tenant_id)
         action_permissions = {}
         for po in role_policies:
             policy = eval(po.get('Policy'))
             screen_policies += policy.get('views', [])
-            if policy.get('tenantDetails'):
-                tenant_details = policy['tenantDetails']
             if policy.get('actionPermissions'):
                 action_permissions.update(policy.get('actionPermissions', {}))
         return Response({"username": user.name,

@@ -96,7 +96,7 @@ class RolesAPI(AuthMixin):
 
 
 class TenantMasterAPI(AuthMixin):
-    # def get(self, request):
+    # # def get(self, request):
     #     roles_data = get_roles_data()
     #     return Response(roles_data)
 
