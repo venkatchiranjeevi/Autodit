@@ -1,7 +1,7 @@
 import json
 
 from rest_framework.views import APIView
-from AutoditApp.constants import User_Exist_Exception
+from AutoditApp.constants import User_Exist_Exception, PASSWOIRD_POLICY
 from AutoditApp.AWSCognito import Cognito
 from django.conf import settings
 from rest_framework.response import Response
@@ -47,8 +47,11 @@ class UsersList(APIView):
         except Exception as e:
             if str(e) == User_Exist_Exception:
                 message, status = "Username is already exist.Please try with another UserName", False
-            else:
-                message, status = str(e), False
+            elif str(e) == 'An error occurred (InvalidPasswordException) when calling the AdminCreateUser operation:' \
+                           ' Password did not conform with password policy: Password must have uppercase characters':
+                message, status = "Password did not conform with password policy: " \
+                                  "Password must have uppercase characters'",\
+                                  False
 
         return message, status
 
@@ -58,8 +61,8 @@ class UsersList(APIView):
     def post(self, request):
         new_user_data = request.data
 
-        response = UsersList.add_new_user_to_cognito_userpool(new_user_data)
-        return Response({"message": "User created Successfully", "status": True})
+        message, status = UsersList.add_new_user_to_cognito_userpool(new_user_data)
+        return Response({"message": "User Created Successfully Created" if status else message, "status": status})
 
 
 class UserProfile(AuthMixin):
