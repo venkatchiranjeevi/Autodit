@@ -6,7 +6,7 @@ from AutoditApp.AWSCognito import Cognito
 from django.conf import settings
 from rest_framework.response import Response
 from django.db import connection
-from AutoditApp.dal import TenantMasterData
+from AutoditApp.dal import TenantMasterData, DeparmentsData
 from AutoditApp.core import get_policies_by_role
 from AutoditApp.mixins import AuthMixin
 
@@ -21,10 +21,10 @@ class UsersList(APIView):
         email = new_user_data.get("email")
         attributes = [
             {"Name": 'custom:role_id', "Value": str([role])},
-            {"Name": 'gender', "Value": new_user_data.get("gender")},
+            {"Name": 'gender', "Value": new_user_data.get("gender", "")},
             {"Name": 'name', "Value": new_user_data.get("name")},
-            {"Name": 'nickname', "Value": new_user_data.get("nickname")},
-            {"Name": 'custom:tenant_id', "Value": str(new_user_data.get("tenant_id"))},
+            {"Name": 'nickname', "Value": new_user_data.get("nickname", "")},
+            {"Name": 'custom:tenant_id', "Value": str(new_user_data.get("tenant_id", ""))},
             {"Name": 'custom:first_name', "Value": str(new_user_data.get("FirstName", ""))},
             {"Name": 'custom:last_name', "Value": str(new_user_data.get("LastName", ""))},
             {"Name": 'custom:job_title', "Value": str(new_user_data.get("JobTitle", ""))},
@@ -73,12 +73,16 @@ class UserProfile(AuthMixin):
         role_policies = get_policies_by_role(role_id) if role_id else []
         screen_policies = []
         tenant_details = TenantMasterData.get_tenant_details(tenant_id)
+        department_ids = []
+
         action_permissions = {}
         for po in role_policies:
             policy = eval(po.get('Policy'))
             screen_policies += policy.get('views', [])
+            department_ids += policy.get("departments", [])
             if policy.get('actionPermissions'):
                 action_permissions.update(policy.get('actionPermissions', {}))
+        department_details = DeparmentsData.get_department_data(department_ids)
         return Response({"username": user.name,
                          "email": user.email,
                          "mobile_number": user.mobnmbr,
@@ -87,6 +91,7 @@ class UserProfile(AuthMixin):
                          "job_title": user.job_title,
                          "gender": user.gender,
                          "status": user.markedfordeletion,
+                         "departments": department_details,
                          "tenantDetails": tenant_details,
                          "role_policies": {'screenPermissions': screen_policies,
                                            'ActionPermissions':action_permissions }
