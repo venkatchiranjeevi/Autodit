@@ -24,7 +24,10 @@ class UsersList(APIView):
             {"Name": 'gender', "Value": new_user_data.get("gender")},
             {"Name": 'name', "Value": new_user_data.get("name")},
             {"Name": 'nickname', "Value": new_user_data.get("nickname")},
-            {"Name": 'custom:tenant_id', "Value": str(new_user_data.get("tenant_id"))}
+            {"Name": 'custom:tenant_id', "Value": str(new_user_data.get("tenant_id"))},
+            {"Name": 'custom:first_name', "Value": str(new_user_data.get("FirstName", ""))},
+            {"Name": 'custom:last_name', "Value": str(new_user_data.get("LastName", ""))},
+            {"Name": 'custom:job_title', "Value": str(new_user_data.get("JobTitle", ""))},
 
             # {"Name": 'custom:department_id', "Value": new_user_data.get("department_id")}
         ]
