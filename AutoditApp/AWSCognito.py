@@ -113,7 +113,10 @@ class Cognito:
             "gender": user_model_dict.get("gender"),
             "is_authenticated": True,
             "is_active": True,
-            "tenant_id" : user_model_dict.get("custom:tenant_id")
+            "tenant_id": user_model_dict.get("custom:tenant_id"),
+            "first_name": user_model_dict.get('custom:first_name'),
+            "last_name": user_model_dict.get('custom:last_name'),
+            "job_title": user_model_dict.get('custom:job_title')
 
             # "_permissions_cache_key": 'permissions_cache',
             # "_flights_cache_key": 'flights_cache',
