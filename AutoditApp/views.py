@@ -9,56 +9,9 @@ from django.conf import settings
 from AutoditApp.mixins import AuthMixin
 from AutoditApp.models import TenantGlobalVariables
 
-from AutoditApp.dal import DeparmentsData, TenantGlobalVariableData, TenantMasterData, RolesData
+from AutoditApp.dal import DeparmentsData, TenantGlobalVariableData, TenantMasterData, RolesData, GlobalVariablesData
 from django.db.models import Q
 from AutoditApp.constants import RolesConstant as RC
-
-
-class BaseLogin(APIView):
-    login_type_password, login_type_otp = "password", "otp"
-    alert_msg = {"message_body": "You have logged in from new device",
-                 "message_title": "AviLeap-alert"}
-
-    def authenticate_cognito_users(self, username, password):
-        try:
-            response = Cognito.CLIENT.admin_initiate_auth(
-                UserPoolId=settings.COGNITO_USERPOOL_ID,
-                ClientId=settings.COGNITO_APP_CLIENT_ID,
-                AuthFlow='ADMIN_USER_PASSWORD_AUTH',
-                AuthParameters={
-                    'USERNAME': username,
-                    'PASSWORD': password,
-
-                }
-            )
-        except Exception as exe:
-            return Response({"detail":
-                                 "Username or password did not match"},
-                            status=status.HTTP_400_BAD_REQUEST)
-        return Response(response)
-
-
-class PasswordLogin(APIView):
-
-    def post(self, request):
-        username = request.data.get("username")
-        password = request.data.get("password")
-
-        try:
-            response = Cognito.CLIENT.admin_initiate_auth(
-                UserPoolId=settings.COGNITO_USERPOOL_ID,
-                ClientId=settings.COGNITO_APP_CLIENT_ID,
-                AuthFlow='ADMIN_USER_PASSWORD_AUTH',
-                AuthParameters={
-                    'USERNAME': username,
-                    'PASSWORD': password,
-
-                }
-            )
-        except Exception as exe:
-            return Response({"message": "Username or password did not match"},
-                            status=status.HTTP_400_BAD_REQUEST)
-        return Response(response)
 
 
 class DepartmentsAPI(AuthMixin):
@@ -94,7 +47,8 @@ class DepartmentsAPI(AuthMixin):
 
 class GlobalVariablesAPI(AuthMixin):
     def get(self, request):
-        global_variables = None
+        global_variables = GlobalVariablesData()
+        return global_variables
 
 
 class TenantGlobalVariablesAPI(AuthMixin):
