@@ -68,8 +68,8 @@ class UserProfile(AuthMixin):
         tenant_details = {}
         action_permissions = {}
         for po in role_policies:
-            policy = json.loads(po.get('Policy'))
-            screen_policies +=  policy.get('views', [])
+            policy = eval(po.get('Policy'))
+            screen_policies += policy.get('views', [])
             if policy.get('tenantDetails'):
                 tenant_details = policy['tenantDetails']
             if policy.get('actionPermissions'):
