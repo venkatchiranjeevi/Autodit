@@ -151,7 +151,7 @@ class TenantFrameworkMaster(Base):
     description = models.TextField(db_column='Description', default='')
     is_deleted = models.IntegerField(db_column='IsDeleted', default=0)
     is_active = models.IntegerField(db_column='IsActive', default=1)
-    tenant_id = models.IntegerField(db_column='tenant_id', null=True, blank=True)
+    tenant_id = models.IntegerField(db_column='tenantId', null=True, blank=True)
 
     def __int__(self):
         return self.id

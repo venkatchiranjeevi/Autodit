@@ -8,11 +8,13 @@ from AutoditApp.mixins import AuthMixin
 from AutoditApp.models import TenantGlobalVariables, TenantDepartment, Roles, FrameworkMaster, TenantFrameworkMaster, \
     TenantHierarchyMapping
 from AutoditApp.dal import DeparmentsData, TenantGlobalVariableData, TenantMasterData, RolesData, GlobalVariablesData,\
-    RolePoliciesData
+    RolePoliciesData, FrameworkMasterData, TenantFrameworkData
 from AutoditApp.constants import RolesConstant as RC
 from .AWSCognito import Cognito
 from django.conf import settings
 from .models import AccessPolicy
+from .Utils import list_of_dict_to_dict
+
 
 # Create your views here.
 from .core import get_users_by_tenant_id
@@ -244,7 +246,17 @@ class ControlsCostomTagsAPI(AuthMixin):
         pass
 
 
+class TenantFrameworkMasterAPI(AuthMixin):
 
+    def post(self, request):
+        user = request.user
+        tenant_id = user.tenant_id
+        framework_ids = request.data.get("framework_ids", [])
+        master_frameworks = FrameworkMasterData.get_frameworks_data_by_ids(framework_ids)
+        formatted_framework_data = list_of_dict_to_dict(master_frameworks, "id")
+        TenantFrameworkData.in_active_tenant_framework_data(tenant_id, framework_ids, formatted_framework_data)
+
+        return Response({"message": "Frameworks Added Successfully", "status": True})
 
 
 

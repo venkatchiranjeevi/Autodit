@@ -1,5 +1,5 @@
 from AutoditApp.models import TenantDepartment as Departments, Roles, TenantGlobalVariables, Tenant, GlobalVariables, \
-    RolePolicies, AccessPolicy
+    RolePolicies, AccessPolicy, FrameworkMaster, TenantFrameworkMaster
 from django.db.models import Q
 from .constants import DEFAULT_VIEWS
 from .core import get_policies_by_role
@@ -159,4 +159,43 @@ class TenantGlobalVariableData(BaseConstant):
         # role_policies[0]["globalVarialbes"] = data.get("globalVarialbes")
         return tbv_obj
 
+
+class FrameworkMasterData(BaseConstant):
+
+    @staticmethod
+    def get_frameworks_data_by_ids(master_ids):
+        master_frameworks = list(FrameworkMaster.objects.filter(id__in=master_ids, is_active=True,
+                                                           is_deleted=False).values())
+        return master_frameworks
+
+
+class TenantFrameworkData(BaseConstant):
+
+    @staticmethod
+    def in_active_tenant_framework_data(tenant_id, tenant_master_ids, new_teanant_framworks):
+        tenant_frameworks_objs = TenantFrameworkMaster.objects.filter(tenant_id=tenant_id).update(is_active=False)
+        for each_frame in tenant_master_ids:
+            master_data = new_teanant_framworks.get(each_frame)
+            tenant_obj , created = TenantFrameworkMaster.objects.get_or_create(master_framework_id=master_data.get("id"),
+                                                                                tenant_id=tenant_id)
+            if created:
+                tenant_obj.tenant_framework_name = master_data.get("framework_name")
+                tenant_obj.description = master_data.get("description")
+                tenant_obj.framework_type = master_data.get("framework_type")
+                tenant_obj.is_active = True
+            else:
+                tenant_obj.is_active= True
+            tenant_obj.save()
+
+    @staticmethod
+    def create_tenant_frameworks(framworks_data):
+        tenant_frame_instancess = []
+        for each_frame in framworks_data:
+            tenant_frame_obj = TenantFrameworkMaster(tenant_framework_name=each_frame.get("framework_name"),
+                                       description=each_frame.get("description"), tenant_id=each_frame.get("tenant_id"),
+                                                     master_framework_id=each_frame.get("master_framework_id"),
+                                                     framework_type=each_frame.get("framework_type"))
+            tenant_frame_instancess.append(tenant_frame_obj)
+        result = TenantFrameworkMaster.objects.bulk_create(tenant_frame_instancess)
+        return result
 

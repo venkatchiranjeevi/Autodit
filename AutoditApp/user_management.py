@@ -60,7 +60,9 @@ class UsersList(APIView):
 
     def post(self, request):
         new_user_data = request.data
-
+        user = request.user
+        tenant_id = user.tenant_id
+        new_user_data['tenant_id'] = tenant_id
         message, status = UsersList.add_new_user_to_cognito_userpool(new_user_data)
         return Response({"message": "User Created Successfully Created" if status else message, "status": status})
 
