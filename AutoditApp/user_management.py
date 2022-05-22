@@ -80,7 +80,7 @@ class UserProfile(AuthMixin):
         department_ids = []
         action_permissions = {}
         for po in role_policies:
-            policy = eval(po.get('Policy'))
+            policy = eval(po.get('Policy', '{}'))
             screen_policies += policy.get('views', [])
             department_ids += policy.get("departments", [])
             if policy.get('actionPermissions'):
