@@ -165,20 +165,29 @@ class ControlsManagementAPI(AuthMixin):
         user = request.user
         tenant_id = user.tenant_id
         cursor = connection.cursor()
-        cursor.execute('''SELECT hm.Fid, hm.Pid, hm.Cid, fm.FrameworkName, fm.`type` as frameworkType, 
-                fm.Description as frameworkDescription, cm.ControlName, cm.Description, hm.id from HirerecyMapper hm Inner JOIN 
-                FrameworkMaster fm on hm.Fid = fm.id Left  JOIN ControlMaster cm on hm.CId = cm.Id ''')
-        data = cursor.fetchall()
-        selected_controls = TenantHierarchyMapping.objects.filter(tenant_id=int(tenant_id)).values('controller_description',
-                                                                                                   'policy_reference',
-                                                                                                   'framework_id',
-                                                                                                   'controller_id',
-                                                                                                   'controller_name',
-                                                                                                   'master_hierarchy_id')
-        custom_selected_control = {entry['master_hierarchy_id'] : entry for entry in selected_controls}
-        final_details = []
         selected_frameworks = TenantFrameworkMaster.objects.filter(is_active=1).values('master_framework_id')
         select_framework_ids = [entry['master_framework_id'] for entry in selected_frameworks]
+        selected_controls = TenantHierarchyMapping.objects.filter(tenant_id=int(tenant_id)).values(
+            'controller_description',
+            'policy_reference',
+            'framework_id',
+            'controller_id',
+            'controller_name',
+            'master_hierarchy_id')
+        controls_query ='''SELECT hm.Fid, hm.Pid, hm.Cid, fm.FrameworkName, fm.`type` as frameworkType, 
+                fm.Description as frameworkDescription, cm.ControlName, cm.Description, hm.id from HirerecyMapper hm Inner JOIN 
+                FrameworkMaster fm on hm.Fid = fm.id Inner JOIN ControlMaster cm on hm.CId = cm.Id and hm.Fid in {Fids}'''
+        if select_framework_ids:
+            if len(select_framework_ids) == 1:
+                select_framework_ids += select_framework_ids
+            controls_query = controls_query.format(Fids=str(tuple(select_framework_ids)))
+            cursor.execute(controls_query)
+            data = cursor.fetchall()
+        else:
+            data = tuple()
+
+        custom_selected_control = {entry['master_hierarchy_id'] : entry for entry in selected_controls}
+        final_details = []
         total_frameworks = FrameworkMaster.objects.filter(is_active=1).values('id', 'framework_name', 'framework_type',
                                                                               'description')
         framework_details = []
