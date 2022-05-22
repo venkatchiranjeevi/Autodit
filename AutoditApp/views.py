@@ -92,6 +92,11 @@ class DepartmentsAPI(AuthMixin):
         return Response({"message": "Deleted Successfully", "status": True})
 
 
+class GlobalVariablesAPI(AuthMixin):
+    def get(self, request):
+        global_variables = None
+
+
 class TenantGlobalVariablesAPI(AuthMixin):
 
     def get(self, request):
@@ -101,7 +106,6 @@ class TenantGlobalVariablesAPI(AuthMixin):
             query &= Q(id=tenant_id)
         t_global_var_data = TenantGlobalVariableData.get_tenant_global_varialbles(query)
         return Response(t_global_var_data)
-
 
     def post(self, request):
         user = request.user
@@ -144,6 +148,9 @@ class TenantMasterAPI(AuthMixin):
         data = request.data
         tenant_obj = TenantMasterData.save_tenant_master_data(data)
         return Response({"message": "Tenant details created Successfully", "status": True})
+
+
+
 
 
 

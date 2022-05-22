@@ -1,4 +1,4 @@
-from AutoditApp.models import TenantDepartment as Departments, Roles, TenantGlobalVariables, Tenant
+from AutoditApp.models import TenantDepartment as Departments, Roles, TenantGlobalVariables, Tenant, GlobalVariables
 from django.db.models import Q
 
 
@@ -82,6 +82,13 @@ class DeparmentsData(BaseConstant):
     def delete_department(dep_id):
         Departments.objects.filter(id=dep_id).delete()
         return True
+
+
+class GlobalVariablesData(BaseConstant):
+    @staticmethod
+    def get_global_variables():
+        global_variables = list(GlobalVariables.objects.all().values())
+        return global_variables
 
 
 class TenantGlobalVariableData(BaseConstant):
