@@ -129,8 +129,8 @@ class SettingManagementAPI(AuthMixin):
         tenant_id = user.tenant_id
         t_global_var_data = TenantGlobalVariables.objects.get(tenant_id=int(tenant_id)).result
         global_varialbles_data = eval(t_global_var_data if t_global_var_data else '{}')
-        departments = list(TenantDepartment.objects.filter(tenant_id=int(tenant_id)).values('name', 'code'))
-        tenant_roles = list(Roles.objects.filter(tenant_id=int(tenant_id)).values('role_name', 'code'))
+        departments = list(TenantDepartment.objects.filter(tenant_id=int(tenant_id)).values('name', 'code', 'id'))
+        tenant_roles = list(Roles.objects.filter(tenant_id=int(tenant_id)).values('role_name', 'code', 'department_id'))
         selected_frameworks = TenantFrameworkMaster.objects.filter(is_active=1).values('master_framework_id')
         select_framework_ids = [entry['master_framework_id'] for entry in selected_frameworks]
         total_frameworks = FrameworkMaster.objects.filter(is_active=1).values('id', 'framework_name', 'framework_type', 'description')
