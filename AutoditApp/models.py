@@ -172,6 +172,8 @@ class TenantHierarchyMapping(Base):
     policy_reference = models.CharField(db_column='PolicyReference', max_length=500)
     tenant_id = models.IntegerField(db_column='tenantId')
     master_hierarchy_id = models.IntegerField(db_column='masterHierarchyId')
+    category = models.CharField(db_column='Category', max_length=150)
+    tenant_policy_id = models.IntegerField(db_column='TenantPolicyId')
 
     def __int__(self):
         return self.id
@@ -242,7 +244,48 @@ class HirerecyMapper(Base):
     class Meta:
         db_table = 'HirerecyMapper'
 
-# PRINICIPLE MASTER
+
+class PolicyMaster(Base):
+    id = models.AutoField(primary_key=True, db_column='id')
+    policy_name = models.CharField(db_column='PolicyName', max_length=120)
+    category = models.CharField(db_column='Category', max_length=120)
+    policy_reference = models.CharField(db_column='policyReference', max_length=500)
+    created_by = models.CharField(db_column='created_by', max_length=120)
+    version = models.IntegerField(db_column='version', default=1)
+    user_id = models.CharField(db_column='UserId', max_length=150)
+
+    def __int__(self):
+        return self.id
+
+    class Meta:
+        db_table = 'PolicyMaster'
+
+
+class TenantPolicyManager(Base):
+    id = models.AutoField(primary_key=True, db_column='id')
+    tenant_id = models.IntegerField(db_column='tenant_id', null=False)
+    tenant_policy_name = models.CharField(db_column='tenantPolicyName', max_length=120)
+    category = models.CharField(db_column='Category', max_length=120)
+    policy_reference = models.CharField(db_column='policyReference', max_length=500)
+    created_by = models.CharField(db_column='created_by', max_length=120)
+    version = models.IntegerField(db_column='version', default=1)
+    editor = models.IntegerField(db_column='editor')
+    reviewer = models.IntegerField(db_column='reviewer')
+    approver = models.IntegerField(db_column='approver')
+    status = models.IntegerField(db_column='Status')
+    departments = models.TextField(db_column='Departments')
+    is_active = models.IntegerField(db_column='IsActive')
+    state = models.CharField(db_column='State', max_length=50)
+    user_id = models.CharField(db_column='UserId', max_length=150)
+
+
+    def __int__(self):
+        return self.id
+
+    class Meta:
+        db_table = 'PolicyMaster'
+
+
 # ADMIN AUDIT
 # CUSTOM TAGS
 # CKEDITOR API'S

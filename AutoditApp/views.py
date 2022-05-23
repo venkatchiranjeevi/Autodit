@@ -130,7 +130,7 @@ class SettingManagementAPI(AuthMixin):
         t_global_var_data = TenantGlobalVariables.objects.get(tenant_id=int(tenant_id)).result
         global_varialbles_data = eval(t_global_var_data if t_global_var_data else '{}')
         departments = list(TenantDepartment.objects.filter(tenant_id=int(tenant_id)).values('name', 'code', 'id'))
-        tenant_roles = list(Roles.objects.filter(tenant_id=int(tenant_id)).values('role_name', 'code', 'department_id'))
+        tenant_roles = list(Roles.objects.filter(tenant_id=int(tenant_id)).values('role_id','role_name', 'code', 'department_id'))
         selected_frameworks = TenantFrameworkMaster.objects.filter(is_active=1).values('master_framework_id')
         select_framework_ids = [entry['master_framework_id'] for entry in selected_frameworks]
         total_frameworks = FrameworkMaster.objects.filter(is_active=1).values('id', 'framework_name', 'framework_type', 'description')
@@ -176,6 +176,8 @@ class ControlsManagementAPI(AuthMixin):
             'controller_id',
             'controller_name',
             'master_hierarchy_id')
+        # TODO need to change to single query
+        # selected_policies = ""
         controls_query ='''SELECT hm.Fid, hm.Pid, hm.Cid, fm.FrameworkName, fm.`type` as frameworkType, 
                 fm.Description as frameworkDescription, cm.ControlName, cm.Description, hm.id from HirerecyMapper hm Inner JOIN 
                 FrameworkMaster fm on hm.Fid = fm.id Inner JOIN ControlMaster cm on hm.CId = cm.Id and hm.Fid in {Fids}'''

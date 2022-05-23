@@ -52,6 +52,9 @@ class UsersList(APIView):
                 message, status = "Password did not conform with password policy: " \
                                   "Password must have uppercase characters'",\
                                   False
+            else:
+                message, status = "User Creation Failed", False
+            return message, status
 
         return message, status
 
@@ -64,7 +67,7 @@ class UsersList(APIView):
         tenant_id = user.tenant_id
         new_user_data['tenant_id'] = tenant_id
         message, status = UsersList.add_new_user_to_cognito_userpool(new_user_data)
-        return Response({"message": "User Created Successfully Created" if status else message, "status": status})
+        return Response({"message": message, "status": status})
 
 
 class UserProfile(AuthMixin):
