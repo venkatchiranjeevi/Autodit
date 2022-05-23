@@ -32,7 +32,7 @@ def get_session_value(request):
                     request.META.get('HTTP_SESSION', None)
                     )
 
-
+# TODO need to check with mani this
 def get_policies_by_role(role_id=[]):
     role_id = "','".join([str(i) for i in eval(role_id)])
     query = ROLE_POLICIES.format(role_id)

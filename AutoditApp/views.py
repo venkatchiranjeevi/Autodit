@@ -6,7 +6,7 @@ from django.db.models import Q
 from rest_framework.response import Response
 from AutoditApp.mixins import AuthMixin
 from AutoditApp.models import TenantGlobalVariables, TenantDepartment, Roles, FrameworkMaster, TenantFrameworkMaster, \
-    TenantHierarchyMapping
+    TenantHierarchyMapping, TenantPolicyManager
 from AutoditApp.dal import DeparmentsData, TenantGlobalVariableData, TenantMasterData, RolesData, GlobalVariablesData,\
     RolePoliciesData, FrameworkMasterData, TenantFrameworkData
 from AutoditApp.constants import RolesConstant as RC
@@ -215,8 +215,21 @@ class ControlsManagementAPI(AuthMixin):
 
 class PolicyManagementAPI(AuthMixin):
     def get(self, request):
-
-        return Response({'data': 'got success'})
+        policy_response = {}
+        # TODO need to link with user details and reviewr and editor and approver details
+        # TOOD get role departments and send all users
+        # TODO need to add controls linked and controls opted
+        policies = list(TenantPolicyManager.objects.filter(is_active=1).values('id',
+                                                                               'tenant_policy_name',
+                                                                               'category',
+                                                                               'policy_reference',
+                                                                               'version',
+                                                                               'editor',
+                                                                               'reviewer',
+                                                                               'approver',
+                                                                               'state',
+                                                                               'user_id'))
+        return Response(policies)
 
     def post(self, request):
         pass
