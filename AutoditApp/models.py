@@ -283,7 +283,7 @@ class TenantPolicyManager(Base):
         return self.id
 
     class Meta:
-        db_table = 'PolicyMaster'
+        db_table = 'TenantPolicyManager'
 
 
 # ADMIN AUDIT

@@ -149,21 +149,10 @@ class SettingManagementAPI(AuthMixin):
                          'groups': tenant_roles,
                          'userDetails': tenant_users})
 
-    def post(self, request):
-        data = request.body
-
-        # UPDATE
-        # 1)Global varialbes
-        # 2)Frameworks add or remove.
-        # 3)Departments add/remove already url is der use that
-        # 4)USERS add and assign department and role --> I dont know
-        pass
-
 
 class ControlsManagementAPI(AuthMixin):
 
     def get(self, request):
-        # TODO change
         user = request.user
         tenant_id = user.tenant_id
         cursor = connection.cursor()
@@ -175,7 +164,7 @@ class ControlsManagementAPI(AuthMixin):
             'framework_id',
             'controller_id',
             'controller_name',
-            'master_hierarchy_id')
+            'master_hierarchy_id','tenant_policy_id')
         # TODO need to change to single query
         # selected_policies = ""
         controls_query ='''SELECT hm.Fid, hm.Pid, hm.Cid, fm.FrameworkName, fm.`type` as frameworkType, 
