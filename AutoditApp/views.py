@@ -17,7 +17,7 @@ from .Utils import list_of_dict_to_dict
 
 
 # Create your views here.
-from .core import get_users_by_tenant_id
+from .core import get_users_by_tenant_id, fetch_data_from_sql_query
 
 
 class DepartmentsAPI(AuthMixin):
@@ -215,21 +215,23 @@ class ControlsManagementAPI(AuthMixin):
 
 class PolicyManagementAPI(AuthMixin):
     def get(self, request):
-        policy_response = {}
+        policies_data = fetch_data_from_sql_query('select a.tenant_id, a.tenantPolicyName, a.version, '
+                                                  'a.editor, a.reviewer, a.approver, a.Departments,a.PolicyReference,'
+                                                  ' a.State,b.id as FrameworkId, b.FrameworkName, b.Description '
+                                                  'from TenantPolicyManager a'
+                                                  ' Inner Join FrameworkMaster b on a.MasterFrameworkId = b.id')
+        data = {'policiesData': policies_data}
+
+        selected_frameworks = TenantFrameworkMaster.objects.filter(is_active=1).values('tenant_framework_name',
+                                                                                       'master_framework_id',
+                                                                                       'framework_type',
+                                                                                       'description')
+        select_framework_data = {entry['master_framework_id']: entry for entry in selected_frameworks}
         # TODO need to link with user details and reviewr and editor and approver details
-        # TOOD get role departments and send all users
+        # TODO get role departments and send all users
         # TODO need to add controls linked and controls opted
-        policies = list(TenantPolicyManager.objects.filter(is_active=1).values('id',
-                                                                               'tenant_policy_name',
-                                                                               'category',
-                                                                               'policy_reference',
-                                                                               'version',
-                                                                               'editor',
-                                                                               'reviewer',
-                                                                               'approver',
-                                                                               'state',
-                                                                               'user_id'))
-        return Response(policies)
+        data['frameworkDetails'] = select_framework_data
+        return Response(data)
 
     def post(self, request):
         pass
