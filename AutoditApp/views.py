@@ -2,6 +2,7 @@ import json
 
 from django.shortcuts import render
 from django.db import connection
+from django.conf import settings
 from django.db.models import Q
 from rest_framework.response import Response
 from AutoditApp.mixins import AuthMixin
@@ -9,12 +10,14 @@ from AutoditApp.models import TenantGlobalVariables, TenantDepartment, Roles, Fr
     TenantHierarchyMapping
 from AutoditApp.dal import DeparmentsData, TenantGlobalVariableData, TenantMasterData, RolesData, GlobalVariablesData,\
     RolePoliciesData, FrameworkMasterData, TenantFrameworkData
-from AutoditApp.constants import RolesConstant as RC
+from AutoditApp.constants import RolesConstant as RC, TENANT_LOGOS_BUCKET, S3_ROOT
 from .AWSCognito import Cognito
 from django.conf import settings
 from .models import AccessPolicy
 from .Utils import list_of_dict_to_dict
+import boto3
 
+from .S3_FileHandler import S3FileHandlerConstant
 
 # Create your views here.
 from .core import get_users_by_tenant_id
@@ -259,7 +262,21 @@ class TenantFrameworkMasterAPI(AuthMixin):
         return Response({"message": "Frameworks Added Successfully", "status": True})
 
 
+class TenantLogoUploaderAPI(AuthMixin):
 
-
+    def post(self, request):
+        file = request.FILES['file']
+        s3 = boto3.resource('s3', aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+                            aws_secret_access_key=settings.AWS_SECRET_KEY)
+        s3_bucket_obj = s3.Bucket(TENANT_LOGOS_BUCKET)
+        key_name = request.user.name +  ".png"
+        s3_bucket_obj.put_object(Key=key_name, Body=file)
+        logo_url = S3_ROOT.format(key_name)
+        tenant_obj = TenantGlobalVariables.objects.get(tenant_id=request.user.tenant_id)
+        tenant_result = eval(tenant_obj.result)
+        tenant_result['logo_url'] = logo_url
+        tenant_obj.result = tenant_result
+        tenant_obj.save()
+        return Response({"message": "Logo Uploaded Successfully", "status": True})
 
 
