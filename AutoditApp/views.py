@@ -7,7 +7,7 @@ from django.db.models import Q
 from rest_framework.response import Response
 from AutoditApp.mixins import AuthMixin
 from AutoditApp.models import TenantGlobalVariables, TenantDepartment, Roles, FrameworkMaster, TenantFrameworkMaster, \
-    TenantHierarchyMapping
+    TenantHierarchyMapping, TenantPolicyManager
 from AutoditApp.dal import DeparmentsData, TenantGlobalVariableData, TenantMasterData, RolesData, GlobalVariablesData,\
     RolePoliciesData, FrameworkMasterData, TenantFrameworkData
 from AutoditApp.constants import RolesConstant as RC, TENANT_LOGOS_BUCKET, S3_ROOT
@@ -133,7 +133,7 @@ class SettingManagementAPI(AuthMixin):
         t_global_var_data = TenantGlobalVariables.objects.get(tenant_id=int(tenant_id)).result
         global_varialbles_data = eval(t_global_var_data if t_global_var_data else '{}')
         departments = list(TenantDepartment.objects.filter(tenant_id=int(tenant_id)).values('name', 'code', 'id'))
-        tenant_roles = list(Roles.objects.filter(tenant_id=int(tenant_id)).values('role_name', 'code', 'department_id'))
+        tenant_roles = list(Roles.objects.filter(tenant_id=int(tenant_id)).values('role_id','role_name', 'code', 'department_id'))
         selected_frameworks = TenantFrameworkMaster.objects.filter(is_active=1).values('master_framework_id')
         select_framework_ids = [entry['master_framework_id'] for entry in selected_frameworks]
         total_frameworks = FrameworkMaster.objects.filter(is_active=1).values('id', 'framework_name', 'framework_type', 'description')
@@ -152,21 +152,10 @@ class SettingManagementAPI(AuthMixin):
                          'groups': tenant_roles,
                          'userDetails': tenant_users})
 
-    def post(self, request):
-        data = request.body
-
-        # UPDATE
-        # 1)Global varialbes
-        # 2)Frameworks add or remove.
-        # 3)Departments add/remove already url is der use that
-        # 4)USERS add and assign department and role --> I dont know
-        pass
-
 
 class ControlsManagementAPI(AuthMixin):
 
     def get(self, request):
-        # TODO change
         user = request.user
         tenant_id = user.tenant_id
         cursor = connection.cursor()
@@ -178,7 +167,9 @@ class ControlsManagementAPI(AuthMixin):
             'framework_id',
             'controller_id',
             'controller_name',
-            'master_hierarchy_id')
+            'master_hierarchy_id','tenant_policy_id')
+        # TODO need to change to single query
+        # selected_policies = ""
         controls_query ='''SELECT hm.Fid, hm.Pid, hm.Cid, fm.FrameworkName, fm.`type` as frameworkType, 
                 fm.Description as frameworkDescription, cm.ControlName, cm.Description, hm.id from HirerecyMapper hm Inner JOIN 
                 FrameworkMaster fm on hm.Fid = fm.id Inner JOIN ControlMaster cm on hm.CId = cm.Id and hm.Fid in {Fids}'''
@@ -227,8 +218,21 @@ class ControlsManagementAPI(AuthMixin):
 
 class PolicyManagementAPI(AuthMixin):
     def get(self, request):
-
-        return Response({'data': 'got success'})
+        policy_response = {}
+        # TODO need to link with user details and reviewr and editor and approver details
+        # TOOD get role departments and send all users
+        # TODO need to add controls linked and controls opted
+        policies = list(TenantPolicyManager.objects.filter(is_active=1).values('id',
+                                                                               'tenant_policy_name',
+                                                                               'category',
+                                                                               'policy_reference',
+                                                                               'version',
+                                                                               'editor',
+                                                                               'reviewer',
+                                                                               'approver',
+                                                                               'state',
+                                                                               'user_id'))
+        return Response(policies)
 
     def post(self, request):
         pass

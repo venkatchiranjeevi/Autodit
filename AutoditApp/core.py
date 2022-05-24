@@ -32,7 +32,7 @@ def get_session_value(request):
                     request.META.get('HTTP_SESSION', None)
                     )
 
-
+# TODO need to check with mani this
 def get_policies_by_role(role_id=[]):
     role_id = "','".join([str(i) for i in eval(role_id)])
     query = ROLE_POLICIES.format(role_id)
@@ -67,6 +67,7 @@ def get_users_by_tenant_id(all_users, tenant_id):
             user_record['role_details'] = role_details
             user_record['tenant_id'] = all_attributes.get('custom:tenant_id')
             user_record['userid'] = all_attributes.get("sub")
+            user_record['status'] = 'NEW' if each_user['UserStatus'] == 'FORCE_CHANGE_PASSWORD' else each_user['UserStatus']
             final_users.append(user_record)
 
     return final_users
