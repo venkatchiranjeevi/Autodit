@@ -229,11 +229,11 @@ class PolicyManagementAPI(AuthMixin):
                                                                                        'master_framework_id',
                                                                                        'framework_type',
                                                                                        'description')
-        select_framework_data = {entry['master_framework_id']: entry for entry in selected_frameworks}
+        # select_framework_data = {entry['master_framework_id']: entry for entry in selected_frameworks}
         # TODO need to link with user details and reviewr and editor and approver details
         # TODO get role departments and send all users
         # TODO need to add controls linked and controls opted
-        data['frameworkDetails'] = select_framework_data
+        data['frameworkDetails'] = selected_frameworks
         return Response(data)
 
     def post(self, request):
