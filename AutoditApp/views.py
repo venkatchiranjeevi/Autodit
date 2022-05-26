@@ -135,7 +135,7 @@ class SettingManagementAPI(AuthMixin):
         global_varialbles_data = eval(t_global_var_data if t_global_var_data else '{}')
         departments = list(TenantDepartment.objects.filter(tenant_id=int(tenant_id)).values('name', 'code', 'id'))
         tenant_roles = list(Roles.objects.filter(tenant_id=int(tenant_id)).values('role_id','role_name', 'code', 'department_id'))
-        selected_frameworks = TenantFrameworkMaster.objects.filter(is_active=1).values('master_framework_id')
+        selected_frameworks = TenantFrameworkMaster.objects.filter(is_active=1).filter(tenant_id=int(tenant_id)).values('master_framework_id')
         select_framework_ids = [entry['master_framework_id'] for entry in selected_frameworks]
         total_frameworks = FrameworkMaster.objects.filter(is_active=1).values('id', 'framework_name', 'framework_type', 'description')
         framework_details = []
@@ -241,16 +241,50 @@ class ControlsManagementAPI(AuthMixin):
             TenantHierarchyMapping.objects.filter(master_hierarchy_id__in = hirarecy_in_active_ids).update(is_active=1)
         if new_hirarecy_insert_ids:
             query = '''select hm.id as hirarecyId, hm.Fid as frameworkId, hm.Cid as controlId, cm.ControlName, 
-            cm.Description, hm.PolicyId as ParentPolicyId  from HirerecyMapper hm Inner Join ControlMaster
+            cm.Description, hm.PolicyId as masterPolicyId  from HirerecyMapper hm Inner Join ControlMaster
              cm on hm.Cid = cm.Id and hm.id in {hirerecy_ids}'''
             if len(new_hirarecy_insert_ids) == 1:
                 new_hirarecy_insert_ids += new_hirarecy_insert_ids
             query = query.format(hirerecy_ids=str(tuple(new_hirarecy_insert_ids)))
             new_insertion_data = fetch_data_from_sql_query(query)
-            # parent_policy_ids =
+            parent_policy_ids = [entry['masterPolicyId'] for entry in new_insertion_data]
+            policy_details_query = '''select pm.id, pm.PolicyName, pm.Category, tpm.ParentPolicyID from 
+            PolicyMaster pm left Join TenantPolicyManager tpm on tpm.ParentPolicyID = pm.id and 
+            tpm.tenant_id =16 where pm.id in {pids}'''
+            if len(parent_policy_ids) ==1:
+                parent_policy_ids += parent_policy_ids
+            policy_details_query = policy_details_query.format(pids=str(tuple(parent_policy_ids)))
+            policy_details = fetch_data_from_sql_query(policy_details_query)
+            insert_polices = []
+            for det in policy_details:
+
+                if not det.get('ParentPolicyID'):
+                    insert_polices.append(
+                    TenantPolicyManager(tenant_id=int(tenant_id),
+                                        tenant_policy_name=det['PolicyName'],
+                                        category=det['Category'],
+                                        version=1,
+                                        policy_reference='',
+                                        parent_policy_id=det['id']))
+            if insert_polices:
+                TenantPolicyManager.objects.bulk_create(insert_polices)
+
+            existing_policy = TenantPolicyManager.objects.filter(parent_policy_id__in=parent_policy_ids).values()
+            existing_policy_format = {entry['parent_policy_id']: entry for entry in existing_policy}
+            inserts_controls_data = []
             for entry in new_insertion_data:
+                TenantHierarchyMapping(controller_id='',
+                                       controller_name='',
+                                       controller_description='',
+                                       tenant_id='',
+                                       master_hierarchy_id='',
+                                       category='',
+                                       tenant_policy_id='',
+                                       is_active=1
+                                       )
 
                 print(entry)
+
             # TenantHierarchyMapping.objects.bulk_create([
 
             # ])
