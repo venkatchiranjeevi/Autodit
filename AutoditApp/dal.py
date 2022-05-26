@@ -1,5 +1,5 @@
 from AutoditApp.models import TenantDepartment as Departments, Roles, TenantGlobalVariables, Tenant, GlobalVariables, \
-    RolePolicies, AccessPolicy, FrameworkMaster, TenantFrameworkMaster
+    RolePolicies, AccessPolicy, FrameworkMaster, TenantFrameworkMaster, TenantHierarchyMapping
 from django.db.models import Q
 from .constants import DEFAULT_VIEWS
 from .core import get_policies_by_role
@@ -14,6 +14,7 @@ class AccessPolicyData(BaseConstant):
     @staticmethod
     def create_access_policy(role_id):
         pass
+
 
 class RolesData(BaseConstant):
 
@@ -30,7 +31,6 @@ class RolesData(BaseConstant):
         roles_data = Roles.objects.filter(query).values("role_id", "role_name", "code")
         return roles_data
 
-
     @staticmethod
     def save_roles_info(data):
         roles_instances = []
@@ -38,7 +38,6 @@ class RolesData(BaseConstant):
             role_obj = Roles(role_name=each_role.get("role_name"), code=each_role.get("role_code"),
                              tenant_id=each_role.get("tenant_id"))
             role_obj.save()
-
 
         # Roles.objects.bulk_create(roles_instances)
 
@@ -53,7 +52,7 @@ class RolesData(BaseConstant):
 
         access_policy = AccessPolicy.objects.create(policyname=data.get("policy_name"),
                                                     policy={"views": DEFAULT_VIEWS, 'actions': [],
-                                                    "departments": data.get("departments", [])},
+                                                            "departments": data.get("departments", [])},
                                                     type="GENERAL")
         role_policies = RolePolicies.objects.create(role_id=role_obj.role_id, accesspolicy_id=access_policy.logid)
 
@@ -69,8 +68,6 @@ class RolePoliciesData(BaseConstant):
         except:
             return None
         return access_policy_id
-
-
 
 
 class TenantMasterData(BaseConstant):
@@ -104,7 +101,7 @@ class DeparmentsData(BaseConstant):
     @staticmethod
     def save_department_data(data):
         dep_obj, created = Departments.objects.get_or_create(name=data.get("department_name"), code=data.get("code"),
-                                            tenant_id=data.get("tenant_id"))
+                                                             tenant_id=data.get("tenant_id"))
 
         return dep_obj, created
 
@@ -167,7 +164,7 @@ class FrameworkMasterData(BaseConstant):
     @staticmethod
     def get_frameworks_data_by_ids(master_ids):
         master_frameworks = list(FrameworkMaster.objects.filter(id__in=master_ids, is_active=True,
-                                                           is_deleted=False).values())
+                                                                is_deleted=False).values())
         return master_frameworks
 
 
@@ -178,15 +175,15 @@ class TenantFrameworkData(BaseConstant):
         tenant_frameworks_objs = TenantFrameworkMaster.objects.filter(tenant_id=tenant_id).update(is_active=False)
         for each_frame in tenant_master_ids:
             master_data = new_teanant_framworks.get(each_frame)
-            tenant_obj , created = TenantFrameworkMaster.objects.get_or_create(master_framework_id=master_data.get("id"),
-                                                                                tenant_id=tenant_id)
+            tenant_obj, created = TenantFrameworkMaster.objects.get_or_create(master_framework_id=master_data.get("id"),
+                                                                              tenant_id=tenant_id)
             if created:
                 tenant_obj.tenant_framework_name = master_data.get("framework_name")
                 tenant_obj.description = master_data.get("description")
                 tenant_obj.framework_type = master_data.get("framework_type")
                 tenant_obj.is_active = True
             else:
-                tenant_obj.is_active= True
+                tenant_obj.is_active = True
             tenant_obj.save()
 
     @staticmethod
@@ -194,10 +191,30 @@ class TenantFrameworkData(BaseConstant):
         tenant_frame_instancess = []
         for each_frame in framworks_data:
             tenant_frame_obj = TenantFrameworkMaster(tenant_framework_name=each_frame.get("framework_name"),
-                                       description=each_frame.get("description"), tenant_id=each_frame.get("tenant_id"),
+                                                     description=each_frame.get("description"),
+                                                     tenant_id=each_frame.get("tenant_id"),
                                                      master_framework_id=each_frame.get("master_framework_id"),
                                                      framework_type=each_frame.get("framework_type"))
             tenant_frame_instancess.append(tenant_frame_obj)
         result = TenantFrameworkMaster.objects.bulk_create(tenant_frame_instancess)
         return result
 
+
+class TennatControlHelpers(BaseConstant):
+
+    @staticmethod
+    def get_tenant_selected_control(tenant_id, key='master_hierarchy_id', all=False):
+        select_controls = TenantHierarchyMapping.objects.filter(tenant_id=int(tenant_id))
+        if not all:
+            select_controls = select_controls.filter(is_active=1)
+
+        selected_controls = select_controls.values(
+            'controller_description',
+            'controller_id',
+            'controller_name',
+            'master_hierarchy_id',
+            'tenant_policy_id',
+            'id',
+            'is_active')
+        custom_selected_control = {entry[key]: entry for entry in selected_controls}
+        return custom_selected_control

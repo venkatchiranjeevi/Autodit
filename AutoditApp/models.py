@@ -169,11 +169,12 @@ class TenantHierarchyMapping(Base):
     department_id = models.IntegerField(db_column='department_id', null=True, blank=True)
     controller_description = models.TextField(db_column='controller_description', null=True, blank=True)
     created_by = models.CharField(db_column='created_by', max_length=120, null=True, blank=True)
-    policy_reference = models.CharField(db_column='PolicyReference', max_length=500)
     tenant_id = models.IntegerField(db_column='tenantId')
     master_hierarchy_id = models.IntegerField(db_column='masterHierarchyId')
     category = models.CharField(db_column='Category', max_length=150)
     tenant_policy_id = models.IntegerField(db_column='TenantPolicyId')
+    is_deleted = models.IntegerField(db_column='is_delete', default=0)
+    is_active = models.IntegerField(db_column='is_active', default=1)
 
     def __int__(self):
         return self.id
@@ -234,7 +235,8 @@ class HirerecyMapper(Base):
     f_id = models.IntegerField(db_column='Fid', null=True, blank=True)
     c_id = models.IntegerField(db_column='Pid', null=True, blank=True)
     p_id = models.IntegerField(db_column='Cid', null=True, blank=True)
-    policy_reference = models.CharField(db_column='PolicyReference', max_length=500)
+    policy_id = models.IntegerField(db_column='PolicyId')
+    # policy_reference = models.CharField(db_column='PolicyReference', max_length=500)
     is_deleted = models.IntegerField(db_column='IsDeleted', default=0)
     is_active = models.IntegerField(db_column='IsActive', default=1)
 
@@ -266,7 +268,7 @@ class TenantPolicyManager(Base):
     tenant_id = models.IntegerField(db_column='tenant_id', null=False)
     tenant_policy_name = models.CharField(db_column='tenantPolicyName', max_length=120)
     category = models.CharField(db_column='Category', max_length=120)
-    policy_reference = models.CharField(db_column='policyReference', max_length=500)
+    # policy_reference = models.CharField(db_column='policyReference', max_length=500)
     created_by = models.CharField(db_column='created_by', max_length=120)
     version = models.IntegerField(db_column='version', default=1)
     editor = models.IntegerField(db_column='editor')

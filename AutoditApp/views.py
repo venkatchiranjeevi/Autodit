@@ -8,8 +8,8 @@ from rest_framework.response import Response
 from AutoditApp.mixins import AuthMixin
 from AutoditApp.models import TenantGlobalVariables, TenantDepartment, Roles, FrameworkMaster, TenantFrameworkMaster, \
     TenantHierarchyMapping, TenantPolicyManager
-from AutoditApp.dal import DeparmentsData, TenantGlobalVariableData, TenantMasterData, RolesData, GlobalVariablesData,\
-    RolePoliciesData, FrameworkMasterData, TenantFrameworkData
+from AutoditApp.dal import DeparmentsData, TenantGlobalVariableData, TenantMasterData, RolesData, GlobalVariablesData, \
+    RolePoliciesData, FrameworkMasterData, TenantFrameworkData, TennatControlHelpers
 from AutoditApp.constants import RolesConstant as RC, TENANT_LOGOS_BUCKET, S3_ROOT
 from .AWSCognito import Cognito
 from django.conf import settings
@@ -35,8 +35,9 @@ class DepartmentsAPI(AuthMixin):
         tenant_id = user.tenant_id
         data['tenant_id'] = tenant_id
         role_id = user.role_id
-        dep_code = data.get("code")
         dep_name = data.get("department_name")
+        # TODO check duplicate for code and code cant be duplicate
+        dep_code = data.get("code")
         dep_obj, created = DeparmentsData.save_department_data(data)
         access_policy_id = RolePoliciesData.get_acceess_policy_id_by_role_id(role_id)
         existing_policy_dep = user.policy
@@ -161,15 +162,7 @@ class ControlsManagementAPI(AuthMixin):
         cursor = connection.cursor()
         selected_frameworks = TenantFrameworkMaster.objects.filter(is_active=1).values('master_framework_id')
         select_framework_ids = [entry['master_framework_id'] for entry in selected_frameworks]
-        selected_controls = TenantHierarchyMapping.objects.filter(tenant_id=int(tenant_id)).values(
-            'controller_description',
-            'policy_reference',
-            'framework_id',
-            'controller_id',
-            'controller_name',
-            'master_hierarchy_id','tenant_policy_id')
         # TODO need to change to single query
-        # selected_policies = ""
         controls_query ='''SELECT hm.Fid, hm.Pid, hm.Cid, fm.FrameworkName, fm.`type` as frameworkType, 
                 fm.Description as frameworkDescription, cm.ControlName, cm.Description, hm.id from HirerecyMapper hm Inner JOIN 
                 FrameworkMaster fm on hm.Fid = fm.id Inner JOIN ControlMaster cm on hm.CId = cm.Id and hm.Fid in {Fids}'''
@@ -178,13 +171,15 @@ class ControlsManagementAPI(AuthMixin):
                 select_framework_ids += select_framework_ids
             controls_query = controls_query.format(Fids=str(tuple(select_framework_ids)))
             cursor.execute(controls_query)
-            data = cursor.fetchall()
+            hirarecy_data = cursor.fetchall()
         else:
-            data = tuple()
+            hirarecy_data = tuple()
 
-        custom_selected_control = {entry['master_hierarchy_id'] : entry for entry in selected_controls}
+        custom_selected_control = TennatControlHelpers.get_tenant_selected_control(tenant_id)
         final_details = []
-        total_frameworks = FrameworkMaster.objects.filter(is_active=1).values('id', 'framework_name', 'framework_type',
+        total_frameworks = FrameworkMaster.objects.filter(is_active=1).values('id',
+                                                                              'framework_name',
+                                                                              'framework_type',
                                                                               'description')
         framework_details = []
         for det in total_frameworks:
@@ -192,7 +187,7 @@ class ControlsManagementAPI(AuthMixin):
             entry['isSubscribed'] = True if entry['id'] in select_framework_ids else False
             framework_details.append(entry)
 
-        for item in data:
+        for item in hirarecy_data:
             entry = {'frameworkId':item[0],
                      'principleId': item[1],
                      'controlId': item[2],
@@ -207,13 +202,64 @@ class ControlsManagementAPI(AuthMixin):
             if item[8] in custom_selected_control.keys():
                 entry['isControlOpted'] = True
                 entry['controlActualDescription'] = custom_selected_control[item[8]]['controller_description']
-                entry['policyReference'] = custom_selected_control[item[8]]['policy_reference']
+                # TODO need to add policy reference
+                # entry['policyReference'] = custom_selected_control[item[8]]['policy_reference']
                 entry['customTags'] = []
             final_details.append(entry)
         return Response({'controlDetails':final_details, 'frameworkDetails': framework_details})
 
     def post(self, request):
-        pass
+        control_details = request.data
+        tenant_id = request.user.tenant_id
+        data = {"controlDetails":
+                    [{"controlId": 1, "isControlOpted": True, 'hirarecyId': 1},
+                     {"controlId": 2, "isControlOpted": True, 'hirarecyId':2},
+                     {"controlId": 3, "isControlOpted": True, 'hirarecyId': 3},
+                     {"controlId": 4, "isControlOpted": True, 'hirarecyId': 4}]}
+        control_details = data.get('controlDetails', [])
+        control_ids = []
+        updated_hirarecy_ids = []
+        for entry in control_details:
+            control_ids.append(entry.get('controlId'))
+            updated_hirarecy_ids.append(entry.get('hirarecyId'))
+        all_tenant_controls = TennatControlHelpers.get_tenant_selected_control(tenant_id, 'id', all=True)
+        selected_active_controls = []
+        selected_inactive_controls = []
+        for control in all_tenant_controls.values():
+            if control.get('is_active'):
+                selected_active_controls.append(control.get('master_hierarchy_id'))
+            else:
+                selected_inactive_controls.append(control.get('master_hierarchy_id'))
+
+        # selected_hirarecy_ids = custom_selected_control_hid.keys()
+        deleted_hirarcy_ids = list(set(selected_active_controls) - set(updated_hirarecy_ids))
+        new_hirarecy_insert_ids = list(set(updated_hirarecy_ids) - set(list(all_tenant_controls.keys())))
+        hirarecy_in_active_ids = set(set(selected_inactive_controls) - set(updated_hirarecy_ids))
+        if deleted_hirarcy_ids:
+            TenantHierarchyMapping.objects.filter(master_hierarchy_id__in = deleted_hirarcy_ids).update(is_active=0)
+        if hirarecy_in_active_ids:
+            TenantHierarchyMapping.objects.filter(master_hierarchy_id__in = hirarecy_in_active_ids).update(is_active=1)
+        if new_hirarecy_insert_ids:
+            query = '''select hm.id as hirarecyId, hm.Fid as frameworkId, hm.Cid as controlId, cm.ControlName, 
+            cm.Description, hm.PolicyId as ParentPolicyId  from HirerecyMapper hm Inner Join ControlMaster
+             cm on hm.Cid = cm.Id and hm.id in {hirerecy_ids}'''
+            if len(new_hirarecy_insert_ids) == 1:
+                new_hirarecy_insert_ids += new_hirarecy_insert_ids
+            query = query.format(hirerecy_ids=str(tuple(new_hirarecy_insert_ids)))
+            new_insertion_data = fetch_data_from_sql_query(query)
+            # parent_policy_ids =
+            for entry in new_insertion_data:
+
+                print(entry)
+            # TenantHierarchyMapping.objects.bulk_create([
+
+            # ])
+            # Entry.objects.bulk_create([
+            #     Entry(headline="Django 1.0 Released"),
+            #     Entry(headline="Django 1.1 Announced"),
+            #     Entry(headline="Breaking: Django is awesome")
+            # ])
+            pass
 
 
 class PolicyManagementAPI(AuthMixin):
@@ -229,15 +275,11 @@ class PolicyManagementAPI(AuthMixin):
                                                                                        'master_framework_id',
                                                                                        'framework_type',
                                                                                        'description')
-        select_framework_data = {entry['master_framework_id']: entry for entry in selected_frameworks}
         # TODO need to link with user details and reviewr and editor and approver details
         # TODO get role departments and send all users
         # TODO need to add controls linked and controls opted
-        data['frameworkDetails'] = select_framework_data
+        data['frameworkDetails'] = selected_frameworks
         return Response(data)
-
-    def post(self, request):
-        pass
 
 
 class ControlsCostomTagsAPI(AuthMixin):
