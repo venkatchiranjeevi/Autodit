@@ -163,7 +163,7 @@ class TenantFrameworkMaster(Base):
 class TenantHierarchyMapping(Base):
     id = models.AutoField(primary_key=True, db_column='id')
     controller_id = models.IntegerField(db_column='controller_id', null=True, blank=True)
-    controller_name = models.CharField(db_column='controller_name', max_length=120)
+    controller_name = models.CharField(db_column='controller_name', max_length=500)
     department_id = models.IntegerField(db_column='department_id', null=True, blank=True)
     controller_description = models.TextField(db_column='controller_description', null=True, blank=True)
     created_by = models.CharField(db_column='created_by', max_length=120, null=True, blank=True)

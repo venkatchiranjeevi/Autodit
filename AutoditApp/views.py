@@ -209,13 +209,8 @@ class ControlsManagementAPI(AuthMixin):
         return Response({'controlDetails':final_details, 'frameworkDetails': framework_details})
 
     def post(self, request):
-        control_details = request.data
+        data = request.data
         tenant_id = request.user.tenant_id
-        data = {"controlDetails":
-                    [{"controlId": 1, "isControlOpted": True, 'hirarecyId': 1},
-                     {"controlId": 2, "isControlOpted": True, 'hirarecyId':2},
-                     {"controlId": 3, "isControlOpted": True, 'hirarecyId': 3},
-                     {"controlId": 4, "isControlOpted": True, 'hirarecyId': 4}]}
         control_details = data.get('controlDetails', [])
         control_ids = []
         updated_hirarecy_ids = []
@@ -234,7 +229,7 @@ class ControlsManagementAPI(AuthMixin):
         # selected_hirarecy_ids = custom_selected_control_hid.keys()
         deleted_hirarcy_ids = list(set(selected_active_controls) - set(updated_hirarecy_ids))
         new_hirarecy_insert_ids = list(set(updated_hirarecy_ids) - set(list(all_tenant_controls.keys())))
-        hirarecy_in_active_ids = set(set(selected_inactive_controls) - set(updated_hirarecy_ids))
+        hirarecy_in_active_ids = list(set(set(selected_inactive_controls).intersection(set(updated_hirarecy_ids))))
         if deleted_hirarcy_ids:
             TenantHierarchyMapping.objects.filter(master_hierarchy_id__in = deleted_hirarcy_ids).update(is_active=0)
         if hirarecy_in_active_ids:
@@ -273,27 +268,18 @@ class ControlsManagementAPI(AuthMixin):
             existing_policy_format = {entry['parent_policy_id']: entry for entry in existing_policy}
             inserts_controls_data = []
             for entry in new_insertion_data:
-                TenantHierarchyMapping(controller_id='',
-                                       controller_name='',
-                                       controller_description='',
-                                       tenant_id='',
-                                       master_hierarchy_id='',
-                                       category='',
-                                       tenant_policy_id='',
-                                       is_active=1
-                                       )
-
-                print(entry)
-
-            # TenantHierarchyMapping.objects.bulk_create([
-
-            # ])
-            # Entry.objects.bulk_create([
-            #     Entry(headline="Django 1.0 Released"),
-            #     Entry(headline="Django 1.1 Announced"),
-            #     Entry(headline="Breaking: Django is awesome")
-            # ])
-            pass
+                inserts_controls_data.append(TenantHierarchyMapping(controller_id=entry.get('controlId', ''),
+                                       controller_name=entry.get('ControlName', ''),
+                                       controller_description=entry.get('Description'),
+                                       tenant_id=int(tenant_id),
+                                       master_hierarchy_id=entry.get('hirarecyId'),
+                                       category=entry.get('Category'),
+                                       tenant_policy_id=existing_policy_format[new_insertion_data[0]['masterPolicyId']]['id'],
+                                       is_active=1))
+                # TenantHierarchyMapping)
+            if inserts_controls_data:
+                TenantHierarchyMapping.objects.bulk_create(inserts_controls_data)
+        return Response({'status':200, 'data': 'Controls updated successfully'})
 
 
 class PolicyManagementAPI(AuthMixin):
