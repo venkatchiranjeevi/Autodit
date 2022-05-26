@@ -41,7 +41,7 @@ class UsersList(AuthMixin):
                 UserPoolId=settings.COGNITO_USERPOOL_ID,
                 Username=new_user_data.get("name"),
                 UserAttributes=attributes,
-                TemporaryPassword=password_generator(),
+                TemporaryPassword= str(new_user_data.get("password", "")) or password_generator(),
                 ForceAliasCreation=True,
                 DesiredDeliveryMediums=["EMAIL"])
         except Exception as e:
