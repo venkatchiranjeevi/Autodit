@@ -7,15 +7,15 @@ from django.conf import settings
 from rest_framework.response import Response
 from django.db import connection
 from AutoditApp.dal import TenantMasterData, DeparmentsData
-from AutoditApp.core import get_policies_by_role
+from AutoditApp.core import get_policies_by_role, password_generator
 from AutoditApp.mixins import AuthMixin
 
 
-class UsersList(APIView):
+class UsersList(AuthMixin):
 
     @staticmethod
     def add_new_user_to_cognito_userpool(new_user_data):
-        message, status = "User Signup completed Successfully", True
+        message, status = "User created Successfully", True
         role = new_user_data.get("role_id")
         ph_num = new_user_data.get("mobnmbr")
         email = new_user_data.get("email")
@@ -41,7 +41,7 @@ class UsersList(APIView):
                 UserPoolId=settings.COGNITO_USERPOOL_ID,
                 Username=new_user_data.get("name"),
                 UserAttributes=attributes,
-                TemporaryPassword=new_user_data.get("password"),
+                TemporaryPassword=password_generator(),
                 ForceAliasCreation=True,
                 DesiredDeliveryMediums=["EMAIL"])
         except Exception as e:

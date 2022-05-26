@@ -4,11 +4,19 @@ from AutoditApp.Utils import coalesce
 from AutoditApp.sql_queries import ROLE_POLICIES
 from AutoditApp.models import TenantDepartment as Departments, Roles, TenantGlobalVariables, Tenant
 from django.db.models import Q
+import random, string
 
 
 class BaseConstant:
     def __init__(self):
         pass
+
+
+def password_generator():
+    letters = "".join(random.sample(string.ascii_letters, 3))
+    digits = "".join(random.sample(string.digits, 3))
+    password = letters + digits + "$AD"
+    return password
 
 
 def dict_fetch_all(cursor):

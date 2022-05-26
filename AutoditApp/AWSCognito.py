@@ -110,7 +110,6 @@ class Cognito:
             "name": user_model_dict.get('name', user_model_dict.get("cognito_username")),
             "role_id": user_model_dict.get('custom:role_id', "[]"),
             "department_id": user_model_dict.get('custom:department_id', None),
-            "gender": user_model_dict.get('gender', None),
             "markedfordeletion": user_model_dict.get('markedfordeletion', None),
             "username_cognito": user_model_dict.get('cognito_username', None),
             "gender": user_model_dict.get("gender"),
