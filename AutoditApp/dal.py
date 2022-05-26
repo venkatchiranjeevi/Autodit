@@ -82,7 +82,9 @@ class TenantMasterData(BaseConstant):
     @staticmethod
     def save_tenant_master_data(data):
         tenant_obj = Tenant.objects.create(name=data.get("tenant_name"), tenant_details=data.get("details"),
-                                           properties=data.get("properties"))
+                              properties=data.get("properties"))
+        TenantGlobalVariables.objects.create(result={'org_name': '', 'org_size': '', 'website_url': ' ', 'ceo_name': '', 'ceo_email': '', 'cto_name': '', 'cto_email': '', 'logo_url': ''},
+                                             tenant_id=tenant_obj.id)
         return tenant_obj
 
 
