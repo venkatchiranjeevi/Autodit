@@ -115,7 +115,7 @@ class Cognito:
             "gender": user_model_dict.get("gender"),
             # "policy":  eval(get_policies_by_role(user_model_dict.get('custom:role_id', "[]"))[0].get("Policy", '{}')),
 
-            # "policy":  eval(get_policies_by_role(user_model_dict.get('custom:role_id', "[]"))[0].get("Policy", '{}')),
+            "policy":  eval(get_policies_by_role(user_model_dict.get('custom:role_id', "[]"))[0].get("Policy", '{}')),
             "is_authenticated": True,
             "is_active": True,
             "tenant_id": user_model_dict.get("custom:tenant_id"),
