@@ -100,7 +100,6 @@ class Cognito:
         user_model_dict['markedfordeletion'] = not user_dict.get("Enabled", True)
         attributes = {}
         for key in user_dict.get('Attributes'):
-            print(key)
             attributes[key.get('Name')] = key.get('Value')
         user_model_dict.update(attributes)
 
