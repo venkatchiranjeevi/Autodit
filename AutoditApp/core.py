@@ -43,10 +43,13 @@ def get_session_value(request):
 # TODO need to check with mani this
 def get_policies_by_role(role_id=[]):
     role_id = "','".join([str(i) for i in eval(role_id)])
-    query = ROLE_POLICIES.format(role_id)
-    policies = fetch_data_from_sql_query(query)
+    if role_id:
+        query = ROLE_POLICIES.format(role_id)
+        policies = fetch_data_from_sql_query(query)
+    else:
+        return [{}]
     if not policies:
-        policies.append({})
+        policies.append([{}])
     return policies
 
 

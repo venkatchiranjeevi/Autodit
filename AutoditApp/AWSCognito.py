@@ -100,6 +100,7 @@ class Cognito:
         user_model_dict['markedfordeletion'] = not user_dict.get("Enabled", True)
         attributes = {}
         for key in user_dict.get('Attributes'):
+            print(key)
             attributes[key.get('Name')] = key.get('Value')
         user_model_dict.update(attributes)
 
@@ -113,7 +114,7 @@ class Cognito:
             "markedfordeletion": user_model_dict.get('markedfordeletion', None),
             "username_cognito": user_model_dict.get('cognito_username', None),
             "gender": user_model_dict.get("gender"),
-            "policy":  eval(get_policies_by_role(user_model_dict.get('custom:role_id', "[]"))[0].get("Policy", '{}')),
+            # "policy":  eval(get_policies_by_role(user_model_dict.get('custom:role_id', "[]"))[0].get("Policy", '{}')),
 
             # "policy":  eval(get_policies_by_role(user_model_dict.get('custom:role_id', "[]"))[0].get("Policy", '{}')),
             "is_authenticated": True,
