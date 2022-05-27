@@ -128,6 +128,6 @@ S3_ROOT = "https://autodit-development-app.s3.ap-south-1.amazonaws.com/{}"
 
 
 class RolesConstant:
-    Default_Roles = {'Editor': 'ED', 'reviewer': 'RV', 'Approver': 'AP'}
+    Default_Roles = {'Editor': 'ED', 'Reviewer': 'RV', 'Approver': 'AP'}
 
 
