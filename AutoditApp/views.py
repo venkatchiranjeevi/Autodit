@@ -145,7 +145,7 @@ class SettingManagementAPI(AuthMixin):
             framework_details.append(entry)
 
         all_users = Cognito.get_all_cognito_users_by_userpool_id(settings.COGNITO_USERPOOL_ID)
-        tenant_users = get_users_by_tenant_id(all_users, tenant_id)
+        tenant_users = get_users_by_tenant_id(all_users, tenant_id, user.userid)
 
         return Response({'globalVarialbes': global_varialbles_data,
                          'departments': departments,

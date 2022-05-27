@@ -60,7 +60,7 @@ def get_policies_and_access_policy_id(role_id=[]):
     return policies
 
 
-def get_users_by_tenant_id(all_users, tenant_id):
+def get_users_by_tenant_id(all_users, tenant_id, userid):
     final_users = list()
     for each_user in all_users:
         user_record = dict()
@@ -68,7 +68,7 @@ def get_users_by_tenant_id(all_users, tenant_id):
         user_record['markedfordeletion'] = False if each_user.get("Enabled") == True else True
         for each_user_attrib in each_user.get("Attributes"):
             all_attributes[each_user_attrib.get('Name')] = each_user_attrib.get('Value')
-        if all_attributes.get('custom:tenant_id') == str(tenant_id):
+        if all_attributes.get('custom:tenant_id') == str(tenant_id) and not all_attributes.get("sub")==userid:
             user_record['mobnmbr'] = all_attributes.get('phone_number')[3:] if all_attributes.get('phone_number') \
                 else None
             user_record['email'] = all_attributes.get('email')
