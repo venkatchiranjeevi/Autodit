@@ -9,7 +9,7 @@ from AutoditApp.mixins import AuthMixin
 from AutoditApp.models import TenantGlobalVariables, TenantDepartment, Roles, FrameworkMaster, TenantFrameworkMaster, \
     TenantHierarchyMapping, TenantPolicyManager
 from AutoditApp.dal import DeparmentsData, TenantGlobalVariableData, TenantMasterData, RolesData, GlobalVariablesData, \
-    RolePoliciesData, FrameworkMasterData, TenantFrameworkData, TennatControlHelpers
+    RolePoliciesData, FrameworkMasterData, TenantFrameworkData, TennatControlHelpers, PolicyDetailsData
 from AutoditApp.constants import RolesConstant as RC, TENANT_LOGOS_BUCKET, S3_ROOT
 from .AWSCognito import Cognito
 from django.conf import settings
@@ -353,6 +353,7 @@ class PolicyDetails(AuthMixin):
 
     def get(self, request):
         policy_id = request.GET.get("policy_id")
+        get_policy_data = PolicyDetailsData.get_policy_details(6, "autodit-policies")
         return Response({'data': ''})
     #     Step get policy details and editiot, revier and assigner
     # Step2 get control details

@@ -1,8 +1,9 @@
 from AutoditApp.models import TenantDepartment as Departments, Roles, TenantGlobalVariables, Tenant, GlobalVariables, \
-    RolePolicies, AccessPolicy, FrameworkMaster, TenantFrameworkMaster, TenantHierarchyMapping
+    RolePolicies, AccessPolicy, FrameworkMaster, TenantFrameworkMaster, TenantHierarchyMapping, TenantPolicyManager, PolicyMaster
 from django.db.models import Q
 from .constants import DEFAULT_VIEWS, EDITIOR_VIEWS
 from .core import get_policies_by_role
+from .S3_FileHandler import S3FileHandlerConstant
 
 
 class BaseConstant:
@@ -220,3 +221,12 @@ class TennatControlHelpers(BaseConstant):
             'is_active')
         custom_selected_control = {entry[key]: entry for entry in selected_controls}
         return custom_selected_control
+
+
+class PolicyDetailsData(BaseConstant):
+    @staticmethod
+    def get_policy_details(policy_id, bucket):
+        policy_obj= TenantPolicyManager.objects.get(id=policy_id)
+        if not policy_obj.policy_reference:
+            parent_policy_obj = PolicyMaster.objects.get(id=policy_obj.parent_policy_id)
+            parent_policy_url = parent_policy_obj.policy_reference

@@ -2,7 +2,7 @@ from django.conf.urls import url
 from AutoditApp import user_management
 from AutoditApp.user_management import UserProfile
 from AutoditApp.views import DepartmentsAPI, RolesAPI, SettingManagementAPI, ControlsManagementAPI,GlobalVariablesAPI,\
-    PolicyManagementAPI,TenantGlobalVariablesAPI, TenantFrameworkMasterAPI, TenantLogoUploaderAPI
+    PolicyManagementAPI,TenantGlobalVariablesAPI, TenantFrameworkMasterAPI, TenantLogoUploaderAPI, PolicyDetailsAPI
 
 urlpatterns = [
     url("user/", user_management.UsersList.as_view()),
@@ -17,6 +17,6 @@ urlpatterns = [
     url("^tenant/global/variables", TenantGlobalVariablesAPI.as_view()),
     url("^tenant/frameworks", TenantFrameworkMasterAPI.as_view()),
     url("^tenant/logo", TenantLogoUploaderAPI.as_view()),
-    url("^policy/get-details", TenantFrameworkMasterAPI.as_view()),
+    url("^policy/get-details", PolicyDetailsAPI.as_view()),
 
 ]
