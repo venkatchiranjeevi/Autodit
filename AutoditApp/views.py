@@ -284,6 +284,7 @@ class ControlsManagementAPI(AuthMixin):
 
 class PolicyManagementAPI(AuthMixin):
     def get(self, request):
+        tenant_id = request.user.tenant_id
         policies_data = fetch_data_from_sql_query('select a.tenant_id, a.tenantPolicyName, a.version, '
                                                   'a.editor, a.reviewer, a.approver, a.Departments,a.PolicyReference,'
                                                   ' a.State,b.id as FrameworkId, b.FrameworkName, b.Description '
@@ -291,7 +292,7 @@ class PolicyManagementAPI(AuthMixin):
                                                   ' Inner Join FrameworkMaster b on a.MasterFrameworkId = b.id')
         data = {'policiesData': policies_data}
 
-        selected_frameworks = TenantFrameworkMaster.objects.filter(is_active=1).values('tenant_framework_name',
+        selected_frameworks = TenantFrameworkMaster.objects.filter(is_active=1).filter(tenant_id=int(tenant_id)).values('tenant_framework_name',
                                                                                        'master_framework_id',
                                                                                        'framework_type',
                                                                                        'description')
