@@ -81,12 +81,8 @@ class Cognito:
         timeout = claims.get('exp') - current_time()
         return result
 
-
     @staticmethod
-    def map_cognito_to_user(sub):
-        """
-        Taking Input as Cognito Sub value and return Avileap User model related user object
-        """
+    def get_cognito_user_by_user_id(sub):
         user_model_dict = {}
         user_dict = Cognito.CLIENT.list_users(
             UserPoolId=settings.COGNITO_USERPOOL_ID,
@@ -96,42 +92,70 @@ class Cognito:
             user_model_dict['cognito_username'] = user_dict['Users'][0].get('Username', None)
             user_dict = user_dict["Users"][0]
         except IndexError as e:
-            return None
+            return {}
         user_model_dict['markedfordeletion'] = not user_dict.get("Enabled", True)
         attributes = {}
         for key in user_dict.get('Attributes'):
             attributes[key.get('Name')] = key.get('Value')
         user_model_dict.update(attributes)
+        return user_model_dict
 
-        final_model_match = {
-            "userid": sub,
-            "mobnmbr": user_model_dict.get("phone_number", None),
-            "email": user_model_dict.get("email", user_model_dict.get('custom:Email_Address')),
-            "name": user_model_dict.get('name', user_model_dict.get("cognito_username")),
-            "role_id": user_model_dict.get('custom:role_id', "[]"),
-            "department_id": user_model_dict.get('custom:department_id', None),
-            "markedfordeletion": user_model_dict.get('markedfordeletion', None),
-            "username_cognito": user_model_dict.get('cognito_username', None),
-            "gender": user_model_dict.get("gender"),
-            # "policy":  eval(get_policies_by_role(user_model_dict.get('custom:role_id', "[]"))[0].get("Policy", '{}')),
 
-            "policy":  eval(get_policies_by_role(user_model_dict.get('custom:role_id', "[]"))[0].get("Policy", '{}')),
-            "is_authenticated": True,
-            "is_active": True,
-            "tenant_id": user_model_dict.get("custom:tenant_id"),
-            "first_name": user_model_dict.get('custom:first_name'),
-            "last_name": user_model_dict.get('custom:last_name'),
-            "job_title": user_model_dict.get('custom:job_title')
+    @staticmethod
+    def map_cognito_to_user(sub):
+        """
+        Taking Input as Cognito Sub value and return Avileap User model related user object
+        """
+        # user_model_dict = {}
+        # user_dict = Cognito.CLIENT.list_users(
+        #     UserPoolId=settings.COGNITO_USERPOOL_ID,
+        #     Filter='sub^=\"{}\"'.format(sub)
+        # )
+        # try:
+        #     user_model_dict['cognito_username'] = user_dict['Users'][0].get('Username', None)
+        #     user_dict = user_dict["Users"][0]
+        # except IndexError as e:
+        #     return None
+        # user_model_dict['markedfordeletion'] = not user_dict.get("Enabled", True)
+        # attributes = {}
+        # for key in user_dict.get('Attributes'):
+        #     attributes[key.get('Name')] = key.get('Value')
+        # user_model_dict.update(attributes)
 
-            # "_permissions_cache_key": 'permissions_cache',
-            # "_flights_cache_key": 'flights_cache',
-            # "_equipments_cache_key": 'equipments_cache',
-            # "_activities_cache_key": 'activities_cache',
-            # "_views_cache_key": 'views_cache',
-            # "_alerts_cache_key": "alerts_cache"
-        }
-        user = Users()
-        user.__dict__.update(final_model_match)
+        user_model_dict = Cognito.get_cognito_user_by_user_id(sub)
+        if user_model_dict:
+
+            final_model_match = {
+                "userid": sub,
+                "mobnmbr": user_model_dict.get("phone_number", None),
+                "email": user_model_dict.get("email", user_model_dict.get('custom:Email_Address')),
+                "name": user_model_dict.get('name', user_model_dict.get("cognito_username")),
+                "role_id": user_model_dict.get('custom:role_id', "[]"),
+                "department_id": user_model_dict.get('custom:department_id', None),
+                "markedfordeletion": user_model_dict.get('markedfordeletion', None),
+                "username_cognito": user_model_dict.get('cognito_username', None),
+                "gender": user_model_dict.get("gender"),
+                # "policy":  eval(get_policies_by_role(user_model_dict.get('custom:role_id', "[]"))[0].get("Policy", '{}')),
+
+                "policy":  eval(get_policies_by_role(user_model_dict.get('custom:role_id', "[]"))[0].get("Policy", '{}')),
+                "is_authenticated": True,
+                "is_active": True,
+                "tenant_id": user_model_dict.get("custom:tenant_id"),
+                "first_name": user_model_dict.get('custom:first_name'),
+                "last_name": user_model_dict.get('custom:last_name'),
+                "job_title": user_model_dict.get('custom:job_title')
+
+                # "_permissions_cache_key": 'permissions_cache',
+                # "_flights_cache_key": 'flights_cache',
+                # "_equipments_cache_key": 'equipments_cache',
+                # "_activities_cache_key": 'activities_cache',
+                # "_views_cache_key": 'views_cache',
+                # "_alerts_cache_key": "alerts_cache"
+            }
+            user = Users()
+            user.__dict__.update(final_model_match)
+        else:
+            user = {}
         return user
 
 

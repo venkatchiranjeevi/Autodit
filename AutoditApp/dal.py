@@ -1,7 +1,9 @@
 from AutoditApp.models import TenantDepartment as Departments, Roles, TenantGlobalVariables, Tenant, GlobalVariables, \
-    RolePolicies, AccessPolicy, FrameworkMaster, TenantFrameworkMaster, TenantHierarchyMapping, TenantPolicyManager, PolicyMaster
+    RolePolicies, AccessPolicy, FrameworkMaster, TenantFrameworkMaster, TenantHierarchyMapping, TenantPolicyManager, \
+    PolicyMaster, ControlMaster, ControlMaster, HirerecyMapper
 from django.db.models import Q
 from .constants import DEFAULT_VIEWS, EDITIOR_VIEWS
+from AutoditApp.AWSCognito import Cognito
 from .core import get_policies_by_role
 from .S3_FileHandler import S3FileHandlerConstant
 
@@ -170,6 +172,20 @@ class FrameworkMasterData(BaseConstant):
                                                                 is_deleted=False).values())
         return master_frameworks
 
+    @staticmethod
+    def get_framework_master():
+        all_frameworks = FrameworkMaster.objects.all().values()
+        return all_frameworks
+
+    @staticmethod
+    def save_frameworks(data):
+        framework_obj = FrameworkMaster(framework_name=data.get("framework_name"),
+                                       framework_type=data.get("framework_type"),
+                                       description= data.get("Description"), is_deleted=False, is_active=True,
+                                       created_by= data.get("created_by"))
+        framework_obj.save()
+        return framework_obj
+
 
 class TenantFrameworkData(BaseConstant):
 
@@ -225,16 +241,46 @@ class TennatControlHelpers(BaseConstant):
 
 class PolicyDetailsData(BaseConstant):
     @staticmethod
-    def get_policy_details(policy_id, bucket):
-        policy_obj= TenantPolicyManager.objects.get(id=policy_id)
-        # Get CustomTags and attach to policy details
-        # GET Comments
+    def get_policy_details(policy_id, tenant_id, bucket):
+        result = {}
+        tenant_policy_obj = TenantPolicyManager.objects.get(id=policy_id, tenant_id=tenant_id)
+        result['editor_info'] = Cognito.get_cognito_user_by_user_id(str(tenant_policy_obj.editor))
+        result['approver_info'] = Cognito.get_cognito_user_by_user_id(str(tenant_policy_obj.approver))
+        result['reviewer_info'] = Cognito.get_cognito_user_by_user_id(str(tenant_policy_obj.reviewer))
+        query = Q(id=tenant_id)
+        t_global_var_data = TenantGlobalVariableData.get_tenant_global_varialbles(query)
+        result["global_variables"] = t_global_var_data.get("result") if t_global_var_data else {}
+        # Get CustomTags and attach to policy details: pending
+        # GET Comments :pending
         # GET tenant global variables and send
         # if editor|review| approver get those user details and attach to policy details
-        if not policy_obj.policy_reference:
-            parent_policy_obj = PolicyMaster.objects.get(id=policy_obj.parent_policy_id)
+        if not tenant_policy_obj.policy_reference:
+            parent_policy_obj = PolicyMaster.objects.get(id=tenant_policy_obj.parent_policy_id)
             parent_policy_url = parent_policy_obj.policy_reference
             # STEP 1: Read content from S3
             # STEP 2: Upload to S3 with new url and url is s3_host+bucket_name+ tenant_id + file_name
             # STEP 3: Save the URL to tenant policy
         # HERE send policy details
+
+
+class ControlHandlerData(BaseConstant):
+    @staticmethod
+    def get_control_master_data():
+        all_controls = ControlMaster.objects.all().values()
+        return all_controls
+
+    @staticmethod
+    def save_controls_data(data):
+        control_master_obj = ControlMaster(control_name=data.get("control_name"), control_type=data.get("control_type"),
+                                            description=data.get("description"), is_deleted=False, is_active=True,
+                                           created_by=data.get("created_by"))
+        control_master_obj.save()
+        return control_master_obj
+
+
+class HirerecyMapperData(BaseConstant):
+
+    @staticmethod
+    def save_hirerey_mapper_data(hirerecy_data):
+        hirerecy_master_obj = HirerecyMapper(f_id=hirerecy_data.get("f_id"), c_id=hirerecy_data.get("c_id"))
+        return True
