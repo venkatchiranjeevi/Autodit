@@ -1,7 +1,7 @@
 from AutoditApp.models import TenantDepartment as Departments, Roles, TenantGlobalVariables, Tenant, GlobalVariables, \
     RolePolicies, AccessPolicy, FrameworkMaster, TenantFrameworkMaster, TenantHierarchyMapping
 from django.db.models import Q
-from .constants import DEFAULT_VIEWS
+from .constants import DEFAULT_VIEWS, EDITIOR_VIEWS
 from .core import get_policies_by_role
 
 
@@ -51,7 +51,7 @@ class RolesData(BaseConstant):
         role_obj.save()
 
         access_policy = AccessPolicy.objects.create(policyname=data.get("policy_name"),
-                                                    policy={"views": DEFAULT_VIEWS, 'actions': [],
+                                                    policy={"views": DEFAULT_VIEWS if data.get('role_for') != 'Editor' else EDITIOR_VIEWS, 'actions': [],
                                                             "departments": data.get("departments", [])},
                                                     type="GENERAL")
         role_policies = RolePolicies.objects.create(role_id=role_obj.role_id, accesspolicy_id=access_policy.logid)

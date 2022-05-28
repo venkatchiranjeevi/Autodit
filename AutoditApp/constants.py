@@ -15,6 +15,8 @@ DEFAULT_POLICIES = ['views', 'actions']
 DEFAULT_VIEWS = ["Dashboard", "Settings", "Admin", "M_ITM_DASH","M_ITM_PLCM", "M_ITM_PLCM", "M_ITM_CTRLM",
                  "M_ITM_EVDCM","M_ITM_CALDM", "M_ITM_STNGS"]
 
+EDITIOR_VIEWS = ["M_ITM_DASH","M_ITM_PLCM"]
+
 TENANT_LOGOS_BUCKET = "autodit-development-app"
 S3_ROOT = "https://autodit-development-app.s3.ap-south-1.amazonaws.com/{}"
 #
