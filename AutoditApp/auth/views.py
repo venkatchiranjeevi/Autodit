@@ -62,7 +62,7 @@ class SignUp(APIView):
                      "policy_name": user_name, "departments": [], "global_variables": {}}
         role_obj = RolesData.save_single_role(role_data)
         new_user_data['tenant_id'] = tenant_obj.id
-        new_user_data['role_id'] = role_obj.role_id
+        new_user_data['role'] = role_obj.role_id
         #
         # access_policy = AccessPolicy.objects.create(policyname=user_name,
         #                                             policy={"views": DEFAULT_VIEWS, 'actions': []}, type="GENERAL")

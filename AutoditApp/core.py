@@ -43,10 +43,13 @@ def get_session_value(request):
 # TODO need to check with mani this
 def get_policies_by_role(role_id=[]):
     role_id = "','".join([str(i) for i in eval(role_id)])
-    query = ROLE_POLICIES.format(role_id)
-    policies = fetch_data_from_sql_query(query)
+    if role_id:
+        query = ROLE_POLICIES.format(role_id)
+        policies = fetch_data_from_sql_query(query)
+    else:
+        return [{}]
     if not policies:
-        policies.append({})
+        policies.append([{}])
     return policies
 
 
@@ -57,7 +60,7 @@ def get_policies_and_access_policy_id(role_id=[]):
     return policies
 
 
-def get_users_by_tenant_id(all_users, tenant_id):
+def get_users_by_tenant_id(all_users, tenant_id, userid):
     final_users = list()
     for each_user in all_users:
         user_record = dict()

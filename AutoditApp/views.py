@@ -145,7 +145,7 @@ class SettingManagementAPI(AuthMixin):
             framework_details.append(entry)
 
         all_users = Cognito.get_all_cognito_users_by_userpool_id(settings.COGNITO_USERPOOL_ID)
-        tenant_users = get_users_by_tenant_id(all_users, tenant_id)
+        tenant_users = get_users_by_tenant_id(all_users, tenant_id, user.userid)
 
         return Response({'globalVarialbes': global_varialbles_data,
                          'departments': departments,
@@ -333,7 +333,7 @@ class TenantFrameworkMasterAPI(AuthMixin):
 class TenantLogoUploaderAPI(AuthMixin):
 
     def post(self, request):
-        file = request.FILES['file']
+        file = request.FILES['image']
         s3 = boto3.resource('s3', aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
                             aws_secret_access_key=settings.AWS_SECRET_KEY)
         s3_bucket_obj = s3.Bucket(TENANT_LOGOS_BUCKET)

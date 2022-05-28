@@ -16,7 +16,7 @@ class UsersList(AuthMixin):
     @staticmethod
     def add_new_user_to_cognito_userpool(new_user_data):
         message, status = "User created Successfully", True
-        role = new_user_data.get("role_id")
+        role = new_user_data.get("role")
         ph_num = new_user_data.get("mobnmbr")
         email = new_user_data.get("email")
         attributes = [
