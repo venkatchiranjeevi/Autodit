@@ -17,5 +17,6 @@ urlpatterns = [
     url("^tenant/global/variables", TenantGlobalVariablesAPI.as_view()),
     url("^tenant/frameworks", TenantFrameworkMasterAPI.as_view()),
     url("^tenant/logo", TenantLogoUploaderAPI.as_view()),
+    url("^policy/get-details", TenantFrameworkMasterAPI.as_view()),
 
 ]

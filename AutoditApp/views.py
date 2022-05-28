@@ -348,3 +348,22 @@ class TenantLogoUploaderAPI(AuthMixin):
         return Response({"message": "Logo Uploaded Successfully", "status": True})
 
 
+class PolicyDetails(AuthMixin):
+
+    def get(self, request):
+        policy_id = request.GET.get("policy_id")
+        return Response({'data': ''})
+    #     Step get policy details and editiot, revier and assigner
+    # Step2 get control details
+    # Step3 get revier
+    #
+
+
+class PolicyStateHandler(AuthMixin):
+    def post(self, request):
+        pass
+
+
+class PolicyUsersHandler(AuthMixin):
+    def post(self, request):
+        pass
