@@ -361,6 +361,27 @@ class PolicyDetailsAPI(AuthMixin):
     #
 
 
+class AdminFrameworkHandler(AuthMixin):
+    def get(self, request):
+        pass
+
+    def post(self, request):
+        pass
+#         {Framework details} name, description category
+#     save to FrameworkMaster
+
+
+class AdminControlHandler(AuthMixin):
+    def get(self, request):
+        pass
+
+    def post(self, request):
+        pass
+#     ControlMaster
+#       FrameworkId --> UI
+# CID --> Create
+
+
 class PolicyStateHandler(AuthMixin):
     def post(self, request):
         pass

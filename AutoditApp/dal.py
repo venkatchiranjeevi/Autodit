@@ -227,6 +227,14 @@ class PolicyDetailsData(BaseConstant):
     @staticmethod
     def get_policy_details(policy_id, bucket):
         policy_obj= TenantPolicyManager.objects.get(id=policy_id)
+        # Get CustomTags and attach to policy details
+        # GET Comments
+        # GET tenant global variables and send
+        # if editor|review| approver get those user details and attach to policy details
         if not policy_obj.policy_reference:
             parent_policy_obj = PolicyMaster.objects.get(id=policy_obj.parent_policy_id)
             parent_policy_url = parent_policy_obj.policy_reference
+            # STEP 1: Read content from S3
+            # STEP 2: Upload to S3 with new url and url is s3_host+bucket_name+ tenant_id + file_name
+            # STEP 3: Save the URL to tenant policy
+        # HERE send policy details
