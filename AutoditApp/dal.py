@@ -6,6 +6,7 @@ from .constants import DEFAULT_VIEWS, EDITIOR_VIEWS
 from AutoditApp.AWSCognito import Cognito
 from .core import get_policies_by_role
 from .S3_FileHandler import S3FileHandlerConstant
+from django.conf import settings
 
 
 class BaseConstant:
@@ -164,29 +165,6 @@ class TenantGlobalVariableData(BaseConstant):
         return tbv_obj
 
 
-class FrameworkMasterData(BaseConstant):
-
-    @staticmethod
-    def get_frameworks_data_by_ids(master_ids):
-        master_frameworks = list(FrameworkMaster.objects.filter(id__in=master_ids, is_active=True,
-                                                                is_deleted=False).values())
-        return master_frameworks
-
-    @staticmethod
-    def get_framework_master():
-        all_frameworks = FrameworkMaster.objects.all().values()
-        return all_frameworks
-
-    @staticmethod
-    def save_frameworks(data):
-        framework_obj = FrameworkMaster(framework_name=data.get("framework_name"),
-                                       framework_type=data.get("framework_type"),
-                                       description= data.get("Description"), is_deleted=False, is_active=True,
-                                       created_by= data.get("created_by"))
-        framework_obj.save()
-        return framework_obj
-
-
 class TenantFrameworkData(BaseConstant):
 
     @staticmethod
@@ -241,7 +219,7 @@ class TennatControlHelpers(BaseConstant):
 
 class PolicyDetailsData(BaseConstant):
     @staticmethod
-    def get_policy_details(policy_id, tenant_id, bucket):
+    def get_policy_details(policy_id, tenant_id):
         result = {}
         tenant_policy_obj = TenantPolicyManager.objects.get(id=policy_id, tenant_id=tenant_id)
         result['editor_info'] = Cognito.get_cognito_user_by_user_id(str(tenant_policy_obj.editor))
@@ -257,25 +235,24 @@ class PolicyDetailsData(BaseConstant):
         if not tenant_policy_obj.policy_reference:
             parent_policy_obj = PolicyMaster.objects.get(id=tenant_policy_obj.parent_policy_id)
             parent_policy_url = parent_policy_obj.policy_reference
+            source_key = parent_policy_url.split("/") if parent_policy_url else None
+
+            s3_bucket = S3FileHandlerConstant.s3_bucket_object(S3FileHandlerConstant.POLICY_BUCKET_SOURCE)
+
+            copy_source = {
+                'Bucket': S3FileHandlerConstant.POLICY_BUCKET_SOURCE,
+                'Key': '{}/{}'.format(S3FileHandlerConstant.POLICY_BUCKET_SUB_FOLDER, source_key[-1])
+            }
+            tenant_policy_name = "{}_{}_{}".format(tenant_id, parent_policy_obj.policy_name, source_key)
+            s3_bucket.copy(copy_source, '{}/mani_{}'.format(S3FileHandlerConstant.TENANT_POLICY_BUCKET, tenant_policy_name))
+            del source_key[-1]
+            final_url = "{}/{}".format(source_key.join(""), tenant_policy_name)
+            print(final_url)
+
             # STEP 1: Read content from S3
             # STEP 2: Upload to S3 with new url and url is s3_host+bucket_name+ tenant_id + file_name
             # STEP 3: Save the URL to tenant policy
         # HERE send policy details
-
-
-class ControlHandlerData(BaseConstant):
-    @staticmethod
-    def get_control_master_data():
-        all_controls = ControlMaster.objects.all().values()
-        return all_controls
-
-    @staticmethod
-    def save_controls_data(data):
-        control_master_obj = ControlMaster(control_name=data.get("control_name"), control_type=data.get("control_type"),
-                                            description=data.get("description"), is_deleted=False, is_active=True,
-                                           created_by=data.get("created_by"))
-        control_master_obj.save()
-        return control_master_obj
 
 
 class HirerecyMapperData(BaseConstant):

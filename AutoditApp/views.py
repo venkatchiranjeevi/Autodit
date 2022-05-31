@@ -9,9 +9,10 @@ from AutoditApp.mixins import AuthMixin
 from AutoditApp.models import TenantGlobalVariables, TenantDepartment, Roles, FrameworkMaster, TenantFrameworkMaster, \
     TenantHierarchyMapping, TenantPolicyManager
 from AutoditApp.dal import DeparmentsData, TenantGlobalVariableData, TenantMasterData, RolesData, GlobalVariablesData, \
-    RolePoliciesData, FrameworkMasterData, TenantFrameworkData, TennatControlHelpers, PolicyDetailsData, \
-    ControlHandlerData, HirerecyMapperData
+    RolePoliciesData, TenantFrameworkData, TennatControlHelpers, PolicyDetailsData, \
+    HirerecyMapperData
 from AutoditApp.constants import RolesConstant as RC, TENANT_LOGOS_BUCKET, S3_ROOT
+from .S3_FileHandler import S3FileHandlerConstant
 from .AWSCognito import Cognito
 from django.conf import settings
 from .models import AccessPolicy
@@ -350,12 +351,14 @@ class TenantLogoUploaderAPI(AuthMixin):
         return Response({"message": "Logo Uploaded Successfully", "status": True})
 
 
-class PolicyDetailsAPI(AuthMixin):
+from rest_framework.views import APIView
+
+class PolicyDetailsAPI(APIView):
 
     def get(self, request):
         policy_id = request.GET.get("policy_id")
-        tenant_id = request.user.tenant_id
-        get_policy_data = PolicyDetailsData.get_policy_details(6, tenant_id, "autodit-policies")
+        # tenant_id = request.user.tenant_id
+        get_policy_data = PolicyDetailsData.get_policy_details(6, 16)
         return Response({'data': ''})
     #     Step get policy details and editiot, revier and assigner
     # Step2 get control details
@@ -363,32 +366,32 @@ class PolicyDetailsAPI(AuthMixin):
     #
 
 
-class AdminFrameworkHandlerAPI(AuthMixin):
-    def get(self, request):
-        master_frameworks = FrameworkMasterData.get_framework_master()
-        return Response(master_frameworks)
-
-    def post(self, request):
-        data = request.data
-        data['created_by'] = request.user.name
-        framework_obj = FrameworkMasterData.save_frameworks(data)
-        return Response({"meassage": "Framework Added Successfully", "status": True})
-        #     {Framework details} name, description category
-        #     save to FrameworkMaster
-
-
-class AdminControlHandlerAPI(AuthMixin):
-    def get(self, request):
-        all_controls = ControlHandlerData.get_control_master_data()
-        return Response(all_controls)
-
-    def post(self, request):
-        data = request.data
-        data['created_by'] = request.user.name
-        control_master_obj = ControlHandlerData.save_controls_data(data)
-        hirerecy_data = {"c_id": control_master_obj.id, "f_id": data.get("f_id")}
-        HirerecyMapperData.save_hirerey_mapper_data(hirerecy_data)
-        return Response({"message": "Control added Successfully", "status": True})
+# class AdminFrameworkHandlerAPI(AuthMixin):
+#     def get(self, request):
+#         master_frameworks = FrameworkMasterData.get_framework_master()
+#         return Response(master_frameworks)
+#
+#     def post(self, request):
+#         data = request.data
+#         data['created_by'] = request.user.name
+#         framework_obj = FrameworkMasterData.save_frameworks(data)
+#         return Response({"meassage": "Framework Added Successfully", "status": True})
+#         #     {Framework details} name, description category
+#         #     save to FrameworkMaster
+#
+#
+# class AdminControlHandlerAPI(AuthMixin):
+#     def get(self, request):
+#         all_controls = ControlHandlerData.get_control_master_data()
+#         return Response(all_controls)
+#
+#     def post(self, request):
+#         data = request.data
+#         data['created_by'] = request.user.name
+#         control_master_obj = ControlHandlerData.save_controls_data(data)
+#         hirerecy_data = {"c_id": control_master_obj.id, "f_id": data.get("f_id")}
+#         HirerecyMapperData.save_hirerey_mapper_data(hirerecy_data)
+#         return Response({"message": "Control added Successfully", "status": True})
 
 #     ControlMaster
 #       FrameworkId --> UI
