@@ -18,8 +18,9 @@ from django.conf.urls import url, include
 
 
 urlpatterns = [
-    url('admin/', admin.site.urls),
+    # url('admin/', admin.site.urls),
     url(r'^auth/', include('AutoditApp.auth.urls')),
     url(r'app/', include('AutoditApp.urls')),
+    url(r'^admin/', include('AutoditApp.auth.urls')),
 
 ]
