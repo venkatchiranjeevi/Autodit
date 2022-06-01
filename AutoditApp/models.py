@@ -233,8 +233,8 @@ class ControlMaster(Base):
 class HirerecyMapper(Base):
     id = models.AutoField(primary_key=True, db_column='id')
     f_id = models.IntegerField(db_column='Fid', null=True, blank=True)
-    c_id = models.IntegerField(db_column='Pid', null=True, blank=True)
-    p_id = models.IntegerField(db_column='Cid', null=True, blank=True)
+    p_id = models.IntegerField(db_column='Pid', null=True, blank=True)
+    c_id = models.IntegerField(db_column='Cid', null=True, blank=True)
     policy_id = models.IntegerField(db_column='PolicyId')
     # policy_reference = models.CharField(db_column='PolicyReference', max_length=500)
     is_deleted = models.IntegerField(db_column='IsDeleted', default=0)

@@ -9,8 +9,7 @@ from AutoditApp.mixins import AuthMixin
 from AutoditApp.models import TenantGlobalVariables, TenantDepartment, Roles, FrameworkMaster, TenantFrameworkMaster, \
     TenantHierarchyMapping, TenantPolicyManager
 from AutoditApp.dal import DeparmentsData, TenantGlobalVariableData, TenantMasterData, RolesData, GlobalVariablesData, \
-    RolePoliciesData, TenantFrameworkData, TennatControlHelpers, PolicyDetailsData, \
-    HirerecyMapperData
+    RolePoliciesData, TenantFrameworkData, TennatControlHelpers, PolicyDetailsData
 from AutoditApp.constants import RolesConstant as RC, TENANT_LOGOS_BUCKET, S3_ROOT
 from AutoditApp.Admin_Handler.dal import FrameworkMasterData
 from .S3_FileHandler import S3FileHandlerConstant

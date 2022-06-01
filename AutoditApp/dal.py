@@ -253,11 +253,3 @@ class PolicyDetailsData(BaseConstant):
             # STEP 2: Upload to S3 with new url and url is s3_host+bucket_name+ tenant_id + file_name
             # STEP 3: Save the URL to tenant policy
         # HERE send policy details
-
-
-class HirerecyMapperData(BaseConstant):
-
-    @staticmethod
-    def save_hirerey_mapper_data(hirerecy_data):
-        hirerecy_master_obj = HirerecyMapper(f_id=hirerecy_data.get("f_id"), c_id=hirerecy_data.get("c_id"))
-        return True

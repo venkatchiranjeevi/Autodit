@@ -1,4 +1,4 @@
-from AutoditApp.models import ControlMaster, FrameworkMaster
+from AutoditApp.models import ControlMaster, FrameworkMaster, HirerecyMapper
 
 
 class BaseConstant:
@@ -8,8 +8,9 @@ class BaseConstant:
 
 class ControlHandlerData(BaseConstant):
     @staticmethod
-    def get_control_master_data():
-        all_controls = ControlMaster.objects.all().values()
+    def get_control_master_data_by_control_ids(control_ids):
+        all_controls = ControlMaster.objects.filter(id__in=control_ids, is_deleted=False,is_active=True).\
+            values("control_name", "control_type", "control_code", "description")
         return all_controls
 
     @staticmethod
@@ -43,3 +44,16 @@ class FrameworkMasterData(BaseConstant):
                                        created_by= data.get("created_by"))
         framework_obj.save()
         return framework_obj
+
+
+class HirerecyMapperData(BaseConstant):
+
+    @staticmethod
+    def save_hirerey_mapper_data(hirerecy_data):
+        hirerecy_master_obj = HirerecyMapper(f_id=hirerecy_data.get("f_id"), c_id=hirerecy_data.get("c_id"))
+        return True
+
+    @staticmethod
+    def get_controls_by_framework_id(f_id):
+        frameworks_data = list(HirerecyMapper.objects.filter(f_id=f_id).values("id", "f_id", "c_id", "policy_id"))
+        return frameworks_data

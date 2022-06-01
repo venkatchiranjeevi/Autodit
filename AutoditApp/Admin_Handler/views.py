@@ -1,7 +1,7 @@
-from AutoditApp.dal import HirerecyMapperData
 from rest_framework.response import Response
 from AutoditApp.mixins import AuthMixin
-from AutoditApp.Admin_Handler.dal import ControlHandlerData, FrameworkMasterData
+from AutoditApp.Admin_Handler.dal import ControlHandlerData, FrameworkMasterData, HirerecyMapperData
+from rest_framework.views import APIView
 
 
 class AdminFrameworkHandlerAPI(AuthMixin):
@@ -18,9 +18,11 @@ class AdminFrameworkHandlerAPI(AuthMixin):
 
 class AdminControlHandlerAPI(AuthMixin):
     def get(self, request):
-        framework_id = request.GET
+        f_id = request.GET.get("framework_id")
         # Get control with only that framework id
-        all_controls = ControlHandlerData.get_control_master_data()
+        frameworks_data = HirerecyMapperData.get_controls_by_framework_id(f_id)
+        control_ids = [each_frame.get("c_id") for each_frame in frameworks_data]
+        all_controls = ControlHandlerData.get_control_master_data_by_control_ids(control_ids)
         return Response(all_controls)
 
     def post(self, request):
