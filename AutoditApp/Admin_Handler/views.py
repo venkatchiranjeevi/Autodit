@@ -18,6 +18,8 @@ class AdminFrameworkHandlerAPI(AuthMixin):
 
 class AdminControlHandlerAPI(AuthMixin):
     def get(self, request):
+        framework_id = request.GET
+        # Get control with only that framework id
         all_controls = ControlHandlerData.get_control_master_data()
         return Response(all_controls)
 
@@ -28,3 +30,28 @@ class AdminControlHandlerAPI(AuthMixin):
         hirerecy_data = {"c_id": control_master_obj.id, "f_id": data.get("f_id")}
         HirerecyMapperData.save_hirerey_mapper_data(hirerecy_data)
         return Response({"message": "Control added Successfully", "status": True})
+
+
+class AdminPolicyHandlerAPI(AuthMixin):
+    def get(self, request):
+        # frameworkid --> get only those polices else get all polices
+        pass
+
+    def post(self, request):
+        pass
+
+
+class AdminSinglePolicyHandler(AuthMixin):
+    def get(self, request):
+        # policyid
+        # get policy url get content
+        # get policy controls
+        # Template variables
+        pass
+
+    def post(self, request):
+        # Policy Name
+        # Poclicy Descrpition
+        pass
+
+
