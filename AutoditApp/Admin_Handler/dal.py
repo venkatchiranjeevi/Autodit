@@ -39,7 +39,7 @@ class FrameworkMasterData(BaseConstant):
     def save_frameworks(data):
         framework_obj = FrameworkMaster(framework_name=data.get("framework_name"),
                                        framework_type=data.get("framework_type"),
-                                       description= data.get("Description"), is_deleted=False, is_active=True,
+                                       description= data.get("description"), is_deleted=False, is_active=True,
                                        created_by= data.get("created_by"))
         framework_obj.save()
         return framework_obj
