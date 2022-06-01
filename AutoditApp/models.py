@@ -217,9 +217,11 @@ class ControlMaster(Base):
     id = models.AutoField(primary_key=True, db_column='id')
     control_name = models.CharField(db_column='ControlName', max_length=120)
     control_type = models.CharField(db_column='type', max_length=120, blank=True)
+    control_code = models.CharField(db_column="ControlCode", null=True, max_length=100)
     description = models.TextField(db_column='Description', null=True, blank=True)
     is_deleted = models.IntegerField(db_column='IsDeleted', default=0)
     is_active = models.IntegerField(db_column='IsActive', default=1)
+
 
     def __int__(self):
         return self.id

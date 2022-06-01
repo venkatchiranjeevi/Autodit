@@ -15,7 +15,8 @@ class ControlHandlerData(BaseConstant):
     @staticmethod
     def save_controls_data(data):
         control_master_obj = ControlMaster(control_name=data.get("control_name"), control_type=data.get("control_type"),
-                                            description=data.get("description"), is_deleted=False, is_active=True,
+                                            description=data.get("description"), cntrol_code=data.get("control_code"),
+                                            is_deleted=False, is_active=True,
                                            created_by=data.get("created_by"))
         control_master_obj.save()
         return control_master_obj
