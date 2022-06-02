@@ -6,5 +6,6 @@ urlpatterns = [
     url("^policies", views.AdminPolicyHandlerAPI.as_view()),
     url("^control-map-details", views.AdminControlsBlockDetails.as_view()),
     url("^policy-create", views.AdminPolicyCreateHandler.as_view()),
+    url("^policy-template-parameters", views.PolicyVariablesHandler.as_view()),
 
 ]

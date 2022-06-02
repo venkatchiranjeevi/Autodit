@@ -2,7 +2,7 @@ from datetime import datetime
 
 from AutoditApp.S3_FileHandler import S3FileHandlerConstant
 from AutoditApp.core import fetch_data_from_sql_query
-from AutoditApp.models import ControlMaster, FrameworkMaster, HirerecyMapper
+from AutoditApp.models import ControlMaster, FrameworkMaster, HirerecyMapper, MasterPolicyParameter
 from AutoditApp.models import PolicyMaster
 
 
@@ -39,7 +39,7 @@ class ControlHandlerData(BaseConstant):
                                                framework_id=framework_id,
                                                is_deleted=False,
                                                is_active=True,
-                                               created_by = user_id)
+                                               created_by=user_id)
         control_master_obj.save()
         return control_master_obj
 
@@ -97,7 +97,7 @@ class HirerecyMapperData(BaseConstant):
 
     @staticmethod
     def get_controls_framework_block_details(f_id):
-        controls_query  = "select * from ControlMaster c left join FrameworkMaster fm  on c.FrameworkId = fm.Id"
+        controls_query = "select * from ControlMaster c left join FrameworkMaster fm  on c.FrameworkId = fm.Id"
         if f_id:
             controls_query += " where FrameworkId = {f_id}"
             controls_query = controls_query.format(f_id=str(f_id))
@@ -106,6 +106,31 @@ class HirerecyMapperData(BaseConstant):
 
 
 class PolicyMasterData(BaseConstant):
+
+    @staticmethod
+    def policy_variable_handler(template_variables, policy_id, user_id):
+        existing = {}
+        new = []
+        for variable in template_variables:
+            if variable.get('id'):
+                existing[int(variable.get('id'))] = variable
+            else:
+                entry = MasterPolicyParameter(policy_id=int(policy_id),
+                                              parameter_key=variable.get('paramKey'),
+                                              parameter_type=variable.get('paramType'),
+                                              created_by=user_id)
+                new.append(entry)
+
+        if new:
+            result = MasterPolicyParameter.objects.bulk_create(new)
+        exiting_policies = MasterPolicyParameter.objects.filter(id__in=list(existing.keys()))
+        for ex_poc in exiting_policies:
+            latest = existing.get(ex_poc.id)
+            ex_poc.parameter_key = latest.get('paramKey')
+            ex_poc.parameter_value = latest.get('paramType')
+            ex_poc.created_by = user_id
+            ex_poc.save()
+
 
     @staticmethod
     def get_policy_details(query):
@@ -125,8 +150,8 @@ class PolicyMasterData(BaseConstant):
             policy_object.policy_summery = policy_summery
             policy_object.policy_code = policy_code
             policy_object.version = 1
-            policy_object.user_id=user_id
-            policy_object.created_by=user_id
+            policy_object.user_id = user_id
+            policy_object.created_by = user_id
             reference_url = S3FileHandlerConstant.upload_s3_file(content, policy_object.policy_file_name)
             policy_object.policy_reference = reference_url
         else:
@@ -141,6 +166,3 @@ class PolicyMasterData(BaseConstant):
                                                         user_id=user_id,
                                                         created_by=user_id)
         return policy_object
-
-
-

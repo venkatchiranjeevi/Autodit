@@ -294,6 +294,26 @@ class TenantPolicyManager(Base):
         db_table = 'TenantPolicyManager'
 
 
+class MasterPolicyParameter(Base):
+    id = models.AutoField(primary_key=True, db_column='id')
+    policy_id = models.IntegerField(db_column='policyId')
+    type= models.CharField(db_column="type", max_length=50)
+    parameter_key = models.CharField(db_column='parameterKey', max_length=250)
+    parameter_type = models.CharField(db_column='parameterType', max_length=250)
+    parameter_value = models.CharField(db_column='parameterValue', max_length=500)
+    description = models.TextField(db_column='Description')
+    created_by = models.CharField(db_column='createdBy', max_length=150)
+    is_deleted = models.IntegerField(db_column='is_deleted', default=0)
+    is_active = models.IntegerField(db_column='is_active', default=1)
+
+    def __int__(self):
+        return self.id
+
+    class Meta:
+        db_table = 'MasterPolicyParameter'
+
+
+
 # ADMIN AUDIT
 # CUSTOM TAGS
 # CKEDITOR API'S
