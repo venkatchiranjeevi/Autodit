@@ -19,7 +19,7 @@ class AdminFrameworkHandlerAPI(AuthMixin):
         return Response({"meassage": "Framework Added Successfully", "status": True})
 
 
-class AdminControlHandlerAPI(AuthMixin):
+class AdminControlHandlerAPI(APIView):
     def get(self, request):
         f_id = request.GET.get("framework_id")
         # Get control with only that framework id
@@ -30,9 +30,9 @@ class AdminControlHandlerAPI(AuthMixin):
 
     def post(self, request):
         data = request.data
-        data['created_by'] = request.user.name
+        # data['created_by'] = request.user.name
         control_master_obj = ControlHandlerData.save_controls_data(data)
-        hirerecy_data = {"c_id": control_master_obj.id, "f_id": data.get("f_id")}
+        hirerecy_data = {"c_id": control_master_obj.id, "f_id": data.get("framework_id")}
         HirerecyMapperData.save_hirerey_mapper_data(hirerecy_data)
         return Response({"message": "Control added Successfully", "status": True})
 
