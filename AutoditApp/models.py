@@ -221,6 +221,7 @@ class ControlMaster(Base):
     description = models.TextField(db_column='Description', null=True, blank=True)
     is_deleted = models.IntegerField(db_column='IsDeleted', default=0)
     is_active = models.IntegerField(db_column='IsActive', default=1)
+    created_by = models.CharField(db_column="created_by", null=True, max_length=150)
 
 
     def __int__(self):
@@ -250,6 +251,7 @@ class HirerecyMapper(Base):
 class PolicyMaster(Base):
     id = models.AutoField(primary_key=True, db_column='id')
     policy_name = models.CharField(db_column='PolicyName', max_length=120)
+    policy_code= models.CharField(db_column="policy_code", max_length=120)
     category = models.CharField(db_column='Category', max_length=120)
     policy_reference = models.CharField(db_column='policyReference', max_length=500)
     created_by = models.CharField(db_column='created_by', max_length=120)
