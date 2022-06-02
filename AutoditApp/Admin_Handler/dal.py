@@ -15,11 +15,27 @@ class ControlHandlerData(BaseConstant):
         return all_controls
 
     @staticmethod
-    def save_controls_data(data):
-        control_master_obj = ControlMaster(control_name=data.get("control_name"), control_type=data.get("control_type"),
-                                           description=data.get("description"), control_code=data.get("control_code"),
-                                           is_deleted=False, is_active=True,
-                                           created_by=data.get("created_by"))
+    def save_controls_data(data, user_id):
+        id = data.get('id')
+        control_name = data.get('control_name')
+        control_code = data.get('control_code')
+        description = data.get('description')
+        framework_id = data.get('framework_id')
+        if id:
+            control_master_obj = ControlMaster.objects.get(id=id)
+            control_master_obj.control_name = control_name
+            control_master_obj.control_code = control_code
+            control_master_obj.description = description
+            control_master_obj.framework_id = framework_id
+            control_master_obj.created_by = user_id
+        else:
+            control_master_obj = ControlMaster(control_name=control_name,
+                                               description=description,
+                                               control_code=control_code,
+                                               framework_id=framework_id,
+                                               is_deleted=False,
+                                               is_active=True,
+                                               created_by = user_id)
         control_master_obj.save()
         return control_master_obj
 
@@ -56,7 +72,17 @@ class HirerecyMapperData(BaseConstant):
 
     @staticmethod
     def get_controls_and_policies_by_framework_id(f_id):
-        frameworks_data = list(HirerecyMapper.objects.filter(f_id=f_id).values("id", "f_id", "c_id", "policy_id"))
+        if f_id:
+            frameworks_data = ControlMaster.objects.filter(framework_id=f_id)
+        else:
+            frameworks_data = ControlMaster.objects.all()
+        frameworks_data = list(frameworks_data.values("id",
+                                                      "framework_id",
+                                                      "control_code",
+                                                      "control_name",
+                                                      "description",
+                                                      "is_active",
+                                                      "category"))
         return frameworks_data
 
     @staticmethod

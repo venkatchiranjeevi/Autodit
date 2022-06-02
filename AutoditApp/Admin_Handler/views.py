@@ -1,3 +1,4 @@
+from django.forms import model_to_dict
 from rest_framework.response import Response
 from AutoditApp.mixins import AuthMixin
 from AutoditApp.Admin_Handler.dal import ControlHandlerData, FrameworkMasterData, HirerecyMapperData, PolicyMasterData
@@ -23,18 +24,16 @@ class AdminControlHandlerAPI(APIView):
     def get(self, request):
         f_id = request.GET.get("framework_id")
         # Get control with only that framework id
-        frameworks_data = HirerecyMapperData.get_controls_and_policies_by_framework_id(f_id)
-        control_ids = [each_frame.get("c_id") for each_frame in frameworks_data]
-        all_controls = ControlHandlerData.get_control_master_data_by_control_ids(control_ids)
-        return Response(all_controls)
+        framework_controls_data = HirerecyMapperData.get_controls_and_policies_by_framework_id(f_id)
+        return Response(framework_controls_data)
 
     def post(self, request):
         data = request.data
-        # data['created_by'] = request.user.name
-        control_master_obj = ControlHandlerData.save_controls_data(data)
-        hirerecy_data = {"c_id": control_master_obj.id, "f_id": data.get("framework_id")}
-        HirerecyMapperData.save_hirerey_mapper_data(hirerecy_data)
-        return Response({"message": "Control added Successfully", "status": True})
+        control_master_obj = ControlHandlerData.save_controls_data(data, request.user.pk)
+        updated_data = model_to_dict(control_master_obj)
+        return Response({"message": "Control added Successfully",
+                         'controlData': updated_data,
+                         "status": True})
 
 
 class AdminPolicyHandlerAPI(APIView):

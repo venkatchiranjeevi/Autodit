@@ -216,9 +216,11 @@ class FrameworkMaster(Base):
 class ControlMaster(Base):
     id = models.AutoField(primary_key=True, db_column='id')
     control_name = models.CharField(db_column='ControlName', max_length=120)
-    control_type = models.CharField(db_column='type', max_length=120, blank=True)
+    control_type = models.CharField(db_column='type', max_length=120)
+    framework_id = models.IntegerField(db_column='FrameworkId', blank=False)
     control_code = models.CharField(db_column="ControlCode", null=True, max_length=100)
     description = models.TextField(db_column='Description', null=True, blank=True)
+    category = models.CharField(db_column='Category', max_length=150,  null=True)
     is_deleted = models.IntegerField(db_column='IsDeleted', default=0)
     is_active = models.IntegerField(db_column='IsActive', default=1)
     created_by = models.CharField(db_column="created_by", null=True, max_length=150)
