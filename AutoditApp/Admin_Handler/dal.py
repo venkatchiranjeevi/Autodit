@@ -1,3 +1,4 @@
+from AutoditApp.core import fetch_data_from_sql_query
 from AutoditApp.models import ControlMaster, FrameworkMaster, HirerecyMapper
 from AutoditApp.models import PolicyMaster
 
@@ -90,6 +91,15 @@ class HirerecyMapperData(BaseConstant):
         frameworks_data = list(HirerecyMapper.objects.filter(policy_id__in=policies_ids).values("id",
                                                                                                 "f_id", "policy_id"))
         return frameworks_data
+
+    @staticmethod
+    def get_controls_framework_block_details(f_id):
+        controls_query  = "select * from ControlMaster c left join FrameworkMaster fm  on c.FrameworkId = fm.Id"
+        if f_id:
+            controls_query += " where FrameworkId = {f_id}"
+            controls_query = controls_query.format(f_id=str(f_id))
+        query_results = fetch_data_from_sql_query(controls_query)
+        return query_results
 
 
 class PolicyMasterData(BaseConstant):

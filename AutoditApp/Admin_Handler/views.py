@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from django.forms import model_to_dict
 from rest_framework.response import Response
 from AutoditApp.mixins import AuthMixin
@@ -55,6 +57,33 @@ class AdminPolicyHandlerAPI(APIView):
         return Response({"status": True, "message": "Policy Added Successfully"})
 
 
+class AdminControlsBlockDetails(AuthMixin):
+    def get(self, request):
+        f_id = request.GET.get("framework_id")
+        # Get control with only that framework id
+        framework_controls_data = HirerecyMapperData.get_controls_framework_block_details(f_id)
+        result = defaultdict(list)
+        for control_data in framework_controls_data:
+            framework_id = control_data['FrameworkId']
+            framework_name = control_data['FrameworkName']
+            control_details = {
+                'ControlName': control_data.get('ControlName'),
+                'ControlId': control_data.get('Id'),
+                'ControlCode': control_data.get('ControlCode'),
+                'ControlDescription': control_data.get('ControlDescription'),
+                'IsActive': control_data.get('IsActive'),
+            }
+            try:
+                result[framework_id]['controlDetails'].append(control_details)
+            except:
+                result[framework_id] = {'frameworkName': framework_name,
+                                        'frameworkDescription': control_data.get('FrameworkDescription'),
+                                        'controlDetails': [control_details],
+                                        'frameworkId': framework_id}
+            # result[''] =
+        return Response(result.values())
+
+
 class AdminSinglePolicyHandler(AuthMixin):
     def get(self, request):
         # policyid
@@ -67,5 +96,3 @@ class AdminSinglePolicyHandler(AuthMixin):
         # Policy Name
         # Poclicy Descrpition
         pass
-
-
