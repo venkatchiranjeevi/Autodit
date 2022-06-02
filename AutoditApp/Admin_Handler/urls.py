@@ -5,4 +5,6 @@ urlpatterns = [
     url("^frameworks", views.AdminFrameworkHandlerAPI.as_view()),
     url("^policies", views.AdminPolicyHandlerAPI.as_view()),
     url("^control-map-details", views.AdminControlsBlockDetails.as_view()),
+    url("^policy-create", views.AdminPolicyCreateHandler.as_view()),
+
 ]

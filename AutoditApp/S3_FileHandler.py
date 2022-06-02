@@ -17,3 +17,18 @@ class S3FileHandlerConstant:
                             aws_secret_access_key=sec_key)
         s3_bucket_obj = s3.Bucket(bucket)
         return s3_bucket_obj
+
+    @staticmethod
+    def upload_s3_file(content, file_name, bucket_name='autodit-development-app'):
+        session = boto3.Session(
+            aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=settings.AWS_SECRET_KEY
+        )
+        s3 = session.resource('s3')
+        object = s3.Object(bucket_name, file_name)
+        result = object.put(Body=content)
+        BUCKET_HOST = "https://{bucket_name}.s3.ap-south-1.amazonaws.com/"
+        url = BUCKET_HOST + file_name
+        url = url.format(bucket_name=bucket_name)
+        return url
+

@@ -1,3 +1,6 @@
+from datetime import datetime
+
+from AutoditApp.S3_FileHandler import S3FileHandlerConstant
 from AutoditApp.core import fetch_data_from_sql_query
 from AutoditApp.models import ControlMaster, FrameworkMaster, HirerecyMapper
 from AutoditApp.models import PolicyMaster
@@ -110,11 +113,34 @@ class PolicyMasterData(BaseConstant):
         return policy_details
 
     @staticmethod
-    def save_policy_details(data):
-        policy_object = PolicyMaster.objects.create(policy_name=data.get("policy_name"), category=data.get("category"),
-                                                    policy_reference=data.get("policy_reference"),
-                                                    version=data.get("version", 1),
-                                                    user_id=data.get("user_id"), created_by=data.get("created_by"))
+    def save_policy_details(data, user_id):
+        policy_name = data.get('policyName')
+        policy_summery = data.get('policySummery')
+        policy_code = data.get('policyCode')
+        content = data.get('policyContent')
+        id = data.get('policyId')
+        if id:
+            policy_object = PolicyMaster.objects.get(id=id)
+            policy_object.policy_name = policy_name
+            policy_object.policy_summery = policy_summery
+            policy_object.policy_code = policy_code
+            policy_object.version = 1
+            policy_object.user_id=user_id
+            policy_object.created_by=user_id
+            reference_url = S3FileHandlerConstant.upload_s3_file(content, policy_object.policy_file_name)
+            policy_object.policy_reference = reference_url
+        else:
+            filename = 'master-policies/' + str(int(datetime.now().timestamp())) + policy_name + '.html'
+            reference_url = S3FileHandlerConstant.upload_s3_file(content, filename)
+            policy_object = PolicyMaster.objects.create(policy_name=policy_name,
+                                                        policy_summery=policy_summery,
+                                                        policy_code=policy_code,
+                                                        policy_reference=reference_url,
+                                                        policy_file_name=filename,
+                                                        version=1,
+                                                        user_id=user_id,
+                                                        created_by=user_id)
         return policy_object
+
 
 

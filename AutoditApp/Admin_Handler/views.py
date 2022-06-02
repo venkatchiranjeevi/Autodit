@@ -53,7 +53,7 @@ class AdminPolicyHandlerAPI(APIView):
         data = request.data
         data['created_by'] = request.user.name
         data['user_id'] = request.user.userid
-        policy_obj = PolicyMasterData.save_policy_details(data)
+        policy_obj = PolicyMasterData.save_policy_details(data, request.user.pk)
         return Response({"status": True, "message": "Policy Added Successfully"})
 
 
@@ -96,3 +96,11 @@ class AdminSinglePolicyHandler(AuthMixin):
         # Policy Name
         # Poclicy Descrpition
         pass
+
+
+class AdminPolicyCreateHandler(AuthMixin):
+    def post(self, request):
+        data = request.data
+        PolicyMasterData.save_policy_details(data, request.user.pk)
+        return Response({"status": True,
+                         "message": "Policy Added Successfully"})

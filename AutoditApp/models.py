@@ -259,6 +259,8 @@ class PolicyMaster(Base):
     created_by = models.CharField(db_column='created_by', max_length=120)
     version = models.IntegerField(db_column='version', default=1)
     user_id = models.CharField(db_column='UserId', max_length=150)
+    policy_file_name = models.CharField(db_column='policyFileName', max_length=250)
+    policy_summery = models.TextField(db_column='Summery', blank=True)
 
     def __int__(self):
         return self.id
