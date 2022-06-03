@@ -165,6 +165,7 @@ class ControlsManagementAPI(AuthMixin):
         selected_frameworks = TenantFrameworkMaster.objects.filter(is_active=1).values('master_framework_id')
         select_framework_ids = [entry['master_framework_id'] for entry in selected_frameworks]
         # TODO need to change to single query
+        # COntrol master + TenantHireacy
         controls_query ='''SELECT hm.Fid, hm.Pid, hm.Cid, fm.FrameworkName, fm.`type` as frameworkType, 
                 fm.Description as frameworkDescription, cm.ControlName, cm.Description, hm.id from HirerecyMapper hm Inner JOIN 
                 FrameworkMaster fm on hm.Fid = fm.id Inner JOIN ControlMaster cm on hm.CId = cm.Id and hm.Fid in {Fids}'''

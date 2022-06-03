@@ -64,34 +64,7 @@ class AdminControlsBlockDetails(AuthMixin):
         f_id = request.GET.get("framework_id")
         # Get control with only that framework id
         framework_controls_data = HirerecyMapperData.get_controls_framework_block_details(f_id)
-        result = {}
-        for control_data in framework_controls_data:
-            framework_id = control_data['FrameworkId']
-            framework_name = control_data['FrameworkName']
-            control_details = {
-                'ControlName': control_data.get('ControlName'),
-                'ControlId': control_data.get('Id'),
-                'ControlCode': control_data.get('ControlCode'),
-                'ControlDescription': control_data.get('ControlDescription'),
-                'IsActive': control_data.get('IsActive'),
-            }
-            try:
-                result[framework_id]['controlDetails'].append(control_details)
-            except:
-                result[framework_id] = {'frameworkName': framework_name,
-                                        'frameworkDescription': control_data.get('FrameworkDescription'),
-                                        'controlDetails': [control_details],
-                                        'frameworkId': framework_id}
-            # result[''] =
-        master_frameworks = FrameworkMasterData.get_framework_master()
-        for fw in master_frameworks:
-            fw_id = fw.get('id')
-            if not result.get(int(fw_id)):
-                result[fw_id] = {'frameworkName': fw.get('framework_name'),
-                                 'frameworkDescription': fw.get('description'),
-                                 'controlDetails': [],
-                                 'frameworkId': fw_id}
-        return Response(result.values())
+        return Response(framework_controls_data.values())
 
 
 class AdminSinglePolicyHandler(AuthMixin):
@@ -115,6 +88,21 @@ class AdminPolicyCreateHandler(AuthMixin):
         return Response({"status": True,
                          "message": "Policy Added Successfully"})
 
+
+class PolicyFrameworkControlHandler(AuthMixin):
+
+    def get(self, request):
+        policy_id = request.GET.get('policyId')
+        framework_id = request.GET.get('frameworkId')
+        selected_controls = HirerecyMapperData.get_selected_controls_block_details(policy_id, framework_id)
+        return Response(selected_controls)
+
+    def post(self, request):
+        data = request.data
+        user = request.user.pk
+        updated_policies = PolicyMasterData.policy_control_handler(data, user)
+
+        return Response(updated_policies)
 
 # TODO delete option yet to write
 class PolicyVariablesHandler(AuthMixin):
