@@ -69,16 +69,9 @@ class AdminControlsBlockDetails(AuthMixin):
 
 class AdminSinglePolicyHandler(AuthMixin):
     def get(self, request):
-        # policyid
-        # get policy url get content
-        # get policy controls
-        # Template variables
-        pass
-
-    def post(self, request):
-        # Policy Name
-        # Poclicy Descrpition
-        pass
+        policy_id = request.GET.get('policyId')
+        result = PolicyMasterData.policy_details_final_object(policy_id)
+        return Response(result)
 
 
 class AdminPolicyCreateHandler(AuthMixin):
@@ -94,7 +87,7 @@ class PolicyFrameworkControlHandler(AuthMixin):
     def get(self, request):
         policy_id = request.GET.get('policyId')
         framework_id = request.GET.get('frameworkId')
-        selected_controls = HirerecyMapperData.get_selected_controls_block_details(policy_id, framework_id)
+        selected_controls = HirerecyMapperData.get_selected_controls_block_details(policy_id, [framework_id])
         return Response(selected_controls)
 
     def post(self, request):

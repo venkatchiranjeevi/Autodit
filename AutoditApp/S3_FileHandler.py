@@ -32,3 +32,11 @@ class S3FileHandlerConstant:
         url = url.format(bucket_name=bucket_name)
         return url
 
+    @staticmethod
+    def read_s3_content(filename, bucket_name='autodit-development-app'):
+        session = boto3.Session(aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=settings.AWS_SECRET_KEY)
+        s3 = session.client('s3')
+        s3_object = s3.get_object(Bucket=bucket_name, Key=filename)
+        body = s3_object['Body']
+        return body.read()

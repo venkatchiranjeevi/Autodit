@@ -73,11 +73,6 @@ class FrameworkMasterData(BaseConstant):
 class HirerecyMapperData(BaseConstant):
 
     @staticmethod
-    def save_hirerey_mapper_data(hirerecy_data):
-        hirerecy_master_obj = HirerecyMapper(f_id=hirerecy_data.get("f_id"), c_id=hirerecy_data.get("c_id"))
-        return True
-
-    @staticmethod
     def get_controls_and_policies_by_framework_id(f_id):
         if f_id:
             frameworks_data = ControlMaster.objects.filter(framework_id=f_id)
@@ -99,10 +94,10 @@ class HirerecyMapperData(BaseConstant):
         return frameworks_data
 
     @staticmethod
-    def get_selected_controls_block_details(policy_id, framework_id):
+    def get_selected_controls_block_details(policy_id, framework_ids):
         q1 = Q(policy_id=int(policy_id))
         q2 = Q(is_active=1)
-        q3 = Q(f_id=int(framework_id))
+        q3 = Q(f_id__in=framework_ids)
         existing_controls = HirerecyMapper.objects.filter(q1 & q2 & q3).values('id',
                                                                                'f_id',
                                                                                'c_id',
@@ -111,8 +106,10 @@ class HirerecyMapperData(BaseConstant):
         formatted_data = defaultdict(list)
         for control in existing_controls:
             formatted_data[control.get('f_id')].append(control.get('c_id'))
-        controls_query = "select c.id as Cid, c.ControlName, c.Description as cDes, c.ControlCode as controlCode, fm.id as FrameworkId, fm.FrameworkName, fm.Description as FrameworkDes from ControlMaster c left join FrameworkMaster fm  on c.FrameworkId = fm.Id  where c.FrameworkId = {f_id}"
-        controls_query = controls_query.format(f_id=framework_id)
+        controls_query = "select c.id as Cid, c.ControlName, c.Description as cDes, c.ControlCode as controlCode, fm.id as FrameworkId, fm.FrameworkName, fm.Description as FrameworkDes from ControlMaster c left join FrameworkMaster fm  on c.FrameworkId = fm.Id  where c.FrameworkId in {f_id}"
+        if len(framework_ids) == 1:
+            framework_ids += framework_ids
+        controls_query = controls_query.format(f_id=str(tuple(framework_ids)))
         # if f_id:
         #     controls_query += " where FrameworkId = {f_id}"
         #     controls_query = controls_query.format(f_id=str(f_id))
@@ -140,15 +137,6 @@ class HirerecyMapperData(BaseConstant):
                                         'frameworkDescription': control_data.get('FrameworkDes'),
                                         'controlDetails': [control_details],
                                         'frameworkId': framework_id}
-            # result[''] =
-        # master_frameworks = FrameworkMasterData.get_framework_master()
-        # for fw in master_frameworks:
-        #     fw_id = fw.get('id')
-        #     if not result.get(int(fw_id)):
-        #         result[fw_id] = {'frameworkName': fw.get('framework_name'),
-        #                          'frameworkDescription': fw.get('description'),
-        #                          'controlDetails': [],
-        #                          'frameworkId': fw_id}
         return result
 
     @staticmethod
@@ -191,6 +179,29 @@ class HirerecyMapperData(BaseConstant):
 class PolicyMasterData(BaseConstant):
 
     @staticmethod
+    def policy_details_final_object(policy_id):
+        result = {}
+        policy_details = PolicyMaster.objects.get(id=policy_id)
+        result['policyName'] = policy_details.policy_name
+        result['policyCode'] = policy_details.policy_code
+        result['category'] = policy_details.category
+        result['version'] = policy_details.version
+        result['policySummery'] = policy_details.policy_summery
+
+
+        policy_content = S3FileHandlerConstant.read_s3_content(policy_details.policy_file_name).decode("utf-8")
+        result['policyContent'] = policy_content
+        result['policyVariables'] = MasterPolicyParameter.objects.filter(policy_id=int(policy_id)).values('id',
+                                                                                                  'policy_id',
+                                                                                                  'parameter_key',
+                                                                                                  'parameter_type',
+                                                                                                  'is_active')
+        policy_frameworks = HirerecyMapper.objects.filter(policy_id=policy_id).values('f_id')
+        f_ids = set([p_f['f_id'] for p_f in policy_frameworks])
+        result['policyControls'] = HirerecyMapperData.get_selected_controls_block_details(policy_id, list(f_ids))
+        return result
+
+    @staticmethod
     def policy_variable_handler(template_variables, policy_id, user_id):
         existing = {}
         new = []
@@ -205,7 +216,7 @@ class PolicyMasterData(BaseConstant):
                 new.append(entry)
 
         if new:
-            result = MasterPolicyParameter.objects.bulk_create(new)
+            MasterPolicyParameter.objects.bulk_create(new)
         exiting_policies = MasterPolicyParameter.objects.filter(id__in=list(existing.keys()))
         for ex_poc in exiting_policies:
             latest = existing.get(ex_poc.id)
@@ -295,11 +306,5 @@ class PolicyMasterData(BaseConstant):
             if installed_controls:
                 HirerecyMapper.objects.bulk_create(installed_controls)
 
-        existing_controls = HirerecyMapper.objects.filter(q1 & q2 & q3).values('id',
-                                                                               'f_id',
-                                                                               'c_id',
-                                                                               'policy_id',
-                                                                               'is_active')
-
-        selected_controls = HirerecyMapperData.get_selected_controls_block_details(policy_id, framework_id)
+        selected_controls = HirerecyMapperData.get_selected_controls_block_details(policy_id, [framework_id])
         return selected_controls
