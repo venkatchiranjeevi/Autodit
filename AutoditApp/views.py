@@ -187,16 +187,16 @@ class ControlsManagementAPI(APIView):
                 control_details['policies_count'] = framework_policy_counts.get(selected_con.get('tenantControlid'), 0)
                 opted = True
             control_details['is_control_selected'] = opted
-            # control_details['policies_count'] = 0
             control_details_list.append(control_details)
         result['controls'] = control_details_list
         return Response(result)
 
     def post(self, request):
         data = request.data
+        user = request.user.pk
         tenant_id = request.user.tenant_id
         data['tenant_id'] = tenant_id
-        data['created_by'] = "mani"
+        data['created_by'] = user
         tenant_control_obj = TenantControlMasterData.save_tenant_controls(data)
         return Response({"status": "Updated Controls Successfully", "data": data,
                          "new_control_id":tenant_control_obj.id if tenant_control_obj else None})
