@@ -160,6 +160,23 @@ class TenantFrameworkMaster(Base):
         db_table = 'TenantFrameworkMaster'
 
 
+class TenantControlMaster(models.Model):
+    id = models.AutoField(primary_key=True, db_column='Id')
+    tenant_id = models.IntegerField(db_column='tenantId', blank=True)
+    tenant_framework_id = models.IntegerField(db_column='TenantFrameworkId')
+    master_control_id = models.IntegerField(db_column="Master_Control_Id", blank=True)
+    control_type = models.CharField(db_column='type', max_length=50, blank=True)
+    control_name = models.CharField(db_column="ControlName", max_length=500, blank=True)
+    is_deleted = models.IntegerField(db_column='IsDeleted', default=0)
+    is_active = models.IntegerField(db_column='IsActive', default=1)
+    created_by = models.CharField(db_column="created_by", blank=True, max_length=150)
+
+    def __int__(self):
+        return self.id
+
+    class Meta:
+        db_table = 'TenantControlMaster'
+
 class TenantHierarchyMapping(Base):
     id = models.AutoField(primary_key=True, db_column='id')
     controller_id = models.IntegerField(db_column='controller_id', null=True, blank=True)
@@ -265,6 +282,7 @@ class PolicyMaster(Base):
 
     class Meta:
         db_table = 'PolicyMaster'
+
 
 
 class TenantPolicyManager(Base):

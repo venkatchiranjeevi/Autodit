@@ -1,13 +1,14 @@
 from AutoditApp.models import TenantDepartment as Departments, Roles, TenantGlobalVariables, Tenant, GlobalVariables, \
     RolePolicies, AccessPolicy, FrameworkMaster, TenantFrameworkMaster, TenantHierarchyMapping, TenantPolicyManager, \
-    PolicyMaster, ControlMaster, ControlMaster, HirerecyMapper
+    PolicyMaster, ControlMaster, ControlMaster, HirerecyMapper, TenantControlMaster
 from django.db.models import Q
 from .constants import DEFAULT_VIEWS, EDITIOR_VIEWS
 from AutoditApp.AWSCognito import Cognito
-from .core import get_policies_by_role
+from .core import get_policies_by_role, fetch_data_from_sql_query
 from .S3_FileHandler import S3FileHandlerConstant
 from django.conf import settings
 
+from .sql_queries import  TENANT_CONTROL_ID, CONTROLS_MASTER
 
 class BaseConstant:
     def __init__(self):
@@ -195,6 +196,33 @@ class TenantFrameworkData(BaseConstant):
             tenant_frame_instancess.append(tenant_frame_obj)
         result = TenantFrameworkMaster.objects.bulk_create(tenant_frame_instancess)
         return result
+
+    @staticmethod
+    def get_tenant_frameworks(tenant_id, framework_id):
+        query = Q(is_active=1, tenant_id=tenant_id)
+        if framework_id:
+            query &= Q(master_framework_id=framework_id)
+        tenant_frameworks = TenantFrameworkMaster.objects.filter(query).values("id", "tenant_framework_name",
+                                                                    'master_framework_id', "framework_type")
+        return tenant_frameworks
+
+    @staticmethod
+    def get_framework_controls(frameworks_ids):
+        # query = FRAMEWORKS_CONTROLS.format(",".join([str(frame) for frame in frameworks_ids]))
+        framework_controls = fetch_data_from_sql_query(CONTROLS_MASTER)
+        return framework_controls
+
+
+class TenantControlMasterData(BaseConstant):
+
+    @staticmethod
+    def get_tenant_controls_data(tenant_f_ids):
+        ids = ",".join([str(t_fid) for t_fid in tenant_f_ids])
+        if not ids:
+            return []
+        query = TENANT_CONTROL_ID.format(ids)
+        tenant_controls = fetch_data_from_sql_query(query)
+        return tenant_controls
 
 
 class TennatControlHelpers(BaseConstant):
