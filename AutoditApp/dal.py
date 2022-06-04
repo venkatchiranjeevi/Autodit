@@ -169,6 +169,16 @@ class TenantGlobalVariableData(BaseConstant):
 class TenantFrameworkData(BaseConstant):
 
     @staticmethod
+    def get_tenant_frameworks(tenant_id, framework_id):
+        query = Q(is_active=1, tenant_id=tenant_id)
+        if framework_id:
+            query &= Q(master_framework_id=framework_id)
+        tenant_frameworks = TenantFrameworkMaster.objects.filter(query).values("id", "tenant_framework_name",
+                                                                               'master_framework_id', "framework_type")
+        return tenant_frameworks
+
+
+    @staticmethod
     def in_active_tenant_framework_data(tenant_id, tenant_master_ids, new_teanant_framworks):
         tenant_frameworks_objs = TenantFrameworkMaster.objects.filter(tenant_id=tenant_id).update(is_active=False)
         for each_frame in tenant_master_ids:

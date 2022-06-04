@@ -166,6 +166,8 @@ class ControlsManagementAPI(APIView):
         user = request.user
         tenant_id = user.tenant_id
         master_framework_id = request.GET.get("framework_id")
+        if not master_framework_id:
+            return self.get_v2(request)
         result = {}
         selected_controls, tenant_framework_id = TenantFrameworkData.get_tenant_selected_controls(tenant_id, master_framework_id)
         all_controls = ControlMaster.objects.filter(framework_id=int(master_framework_id)).values('id',
@@ -190,6 +192,72 @@ class ControlsManagementAPI(APIView):
             control_details_list.append(control_details)
         result['controls'] = control_details_list
         return Response(result)
+
+    def get_v2(self, request):
+        # user = request.user
+        # tenant_id = user.tenant_id
+        tenant_id = 16
+        req_framework_id = request.GET.get("framework_id")
+        # selected frameworks data
+        selected_frameworks = TenantFrameworkData.get_tenant_frameworks(tenant_id, req_framework_id)
+        select_master_framework_ids = []
+        tenant_framework_ids = []
+        for each_framework in selected_frameworks:
+            select_master_framework_ids.append(each_framework.get("master_framework_id"))
+            tenant_framework_ids.append(each_framework.get("id"))
+
+        # selected controls and master framework data
+        control_master = TenantFrameworkData.get_control_masters()
+
+        # Frameworks and controls data (Tenant Framework data)
+        selected_controls = TenantControlMasterData.get_tenant_controls_data(tenant_framework_ids)
+        selected_controls_data = dict()
+        for each_control in selected_controls:
+            key = "{}_{}".format(each_control.get("master_framework_id"), each_control.get("master_control_id"))
+            selected_controls_data[key] = each_control
+
+        # Policy count from Tenant Hirerachy mapper
+
+        hierarchy_mappings = TenantControlMasterData.get_policies_count_by_tenant_framework_id(tenant_id)
+        hierarchy_mappings_data = defaultdict(list)
+        for each_hierarchy in hierarchy_mappings:
+            key = "{}_{}".format(each_hierarchy.get("tenant_framework_id"), each_hierarchy.get("tenant_control_id"))
+            hierarchy_mappings_data[key].append(each_hierarchy.get("tenant_policy_id"))
+
+        final_frameworks_controls = []
+        for each_frame in selected_frameworks:
+            data = dict()
+            data['framework_name'] = each_frame.get("tenant_framework_name")
+            tenant_framework_id = each_frame.get("id")
+            data['tenant_framework_id'] = tenant_framework_id
+            framework_id = each_frame.get("master_framework_id")
+            data['master_framework_id'] = framework_id
+            controls = []
+            for each_control in control_master:
+                master_control_id = each_control.get("c_id")
+                key = "{}_{}".format(framework_id, master_control_id)
+                c_data = dict()
+                c_data['master_control_id'] = master_control_id
+                c_data['control_name'] = each_control.get("ControlName")
+                c_data['control_code'] = each_control.get("ControlCode")
+                if key in selected_controls_data.keys():
+                    c_data['tenant_control_id'] = selected_controls_data.get(key, {}).get("Tenant_control_Id")
+                    c_data['is_control_selected'] = True
+                    # c_data['policies_count'] = 4
+                else:
+                    c_data['is_control_selected'] = False
+                    c_data['tenant_control_id'] = None
+                    # c_data['policies_count'] = 0
+
+                hierarchy_key = "{}_{}".format(tenant_framework_id, c_data['tenant_control_id'])
+                c_data['policies_count'] = len(hierarchy_mappings_data.get(hierarchy_key, []))
+                c_data['policy_ids'] = hierarchy_mappings_data.get(hierarchy_key, [])
+
+                controls.append(c_data)
+
+            data['controls'] = controls
+            final_frameworks_controls.append(data)
+        return Response(final_frameworks_controls)
 
     def post(self, request):
         data = request.data
@@ -368,6 +436,74 @@ class PolicyDetailsAPI(AuthMixin):
     # Step2 get control details
     # Step3 get revier
     #
+
+class ControlsManagementAPIALl(APIView):
+
+    def get(self, request):
+        # user = request.user
+        # tenant_id = user.tenant_id
+        tenant_id = 16
+        req_framework_id = request.GET.get("framework_id")
+        # selected frameworks data
+        selected_frameworks = TenantFrameworkData.get_tenant_frameworks(tenant_id, req_framework_id)
+        select_master_framework_ids = []
+        tenant_framework_ids = []
+        for each_framework in selected_frameworks:
+            select_master_framework_ids.append(each_framework.get("master_framework_id"))
+            tenant_framework_ids.append(each_framework.get("id"))
+
+        # selected controls and master framework data
+        control_master = TenantFrameworkData.get_control_masters()
+
+        # Frameworks and controls data (Tenant Framework data)
+        selected_controls = TenantControlMasterData.get_tenant_controls_data(tenant_framework_ids)
+        selected_controls_data = dict()
+        for each_control in selected_controls:
+            key = "{}_{}".format(each_control.get("master_framework_id"), each_control.get("master_control_id"))
+            selected_controls_data[key] = each_control
+
+        # Policy count from Tenant Hirerachy mapper
+
+        hierarchy_mappings = TenantControlMasterData.get_policies_count_by_tenant_framework_id(tenant_id)
+        hierarchy_mappings_data = defaultdict(list)
+        for each_hierarchy in hierarchy_mappings:
+            key = "{}_{}".format(each_hierarchy.get("tenant_framework_id"), each_hierarchy.get("tenant_control_id"))
+            hierarchy_mappings_data[key].append(each_hierarchy.get("tenant_policy_id"))
+
+        final_frameworks_controls = []
+        for each_frame in selected_frameworks:
+            data = dict()
+            data['framework_name'] = each_frame.get("tenant_framework_name")
+            tenant_framework_id = each_frame.get("id")
+            data['tenant_framework_id'] = tenant_framework_id
+            framework_id = each_frame.get("master_framework_id")
+            data['master_framework_id'] = framework_id
+            controls = []
+            for each_control in control_master:
+                master_control_id = each_control.get("c_id")
+                key = "{}_{}".format(framework_id, master_control_id)
+                c_data = dict()
+                c_data['master_control_id'] = master_control_id
+                c_data['control_name'] = each_control.get("ControlName")
+                c_data['control_code'] = each_control.get("ControlCode")
+                if key in selected_controls_data.keys():
+                    c_data['tenant_control_id'] = selected_controls_data.get(key, {}).get("Tenant_control_Id")
+                    c_data['is_control_selected'] = True
+                    # c_data['policies_count'] = 4
+                else:
+                    c_data['is_control_selected'] = False
+                    c_data['tenant_control_id'] = None
+                    # c_data['policies_count'] = 0
+
+                hierarchy_key = "{}_{}".format(tenant_framework_id, c_data['tenant_control_id'])
+                c_data['policies_count'] = len(hierarchy_mappings_data.get(hierarchy_key, []))
+                c_data['policy_ids'] = hierarchy_mappings_data.get(hierarchy_key, [])
+
+                controls.append(c_data)
+
+            data['controls'] = controls
+            final_frameworks_controls.append(data)
+        return Response(final_frameworks_controls)
 
 
 class PolicyStateHandler(AuthMixin):
