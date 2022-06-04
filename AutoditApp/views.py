@@ -19,6 +19,7 @@ from .models import AccessPolicy
 from .Utils import list_of_dict_to_dict
 from collections import defaultdict
 import boto3
+from rest_framework.views import APIView
 
 from .S3_FileHandler import S3FileHandlerConstant
 
@@ -161,13 +162,12 @@ class SettingManagementAPI(AuthMixin):
                          'groups': tenant_roles,
                          'userDetails': tenant_users})
 
-from rest_framework.views import APIView
 
-class ControlsManagementAPI(APIView):
+class ControlsManagementAPI(AuthMixin):
 
     def get(self, request):
         user = request.user
-        tenant_id = 16
+        tenant_id = user.tenant_id
         req_framework_id = request.GET.get("framework_id")
         # selected frameworks data
         selected_frameworks = TenantFrameworkData.get_tenant_frameworks(tenant_id, req_framework_id)
@@ -222,6 +222,8 @@ class ControlsManagementAPI(APIView):
 
                 hierarchy_key = "{}_{}".format(tenant_framework_id, c_data['tenant_control_id'])
                 c_data['policies_count'] = len(hierarchy_mappings_data.get(hierarchy_key, []))
+                c_data['policy_ids'] = hierarchy_mappings_data.get(hierarchy_key, [])
+
                 controls.append(c_data)
 
             data['controls'] = controls
