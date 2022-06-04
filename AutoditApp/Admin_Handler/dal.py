@@ -61,11 +61,12 @@ class FrameworkMasterData(BaseConstant):
         return all_frameworks
 
     @staticmethod
-    def save_frameworks(data):
+    def save_frameworks(data, user_id):
         framework_obj = FrameworkMaster(framework_name=data.get("framework_name"),
                                         framework_type=data.get("framework_type"),
-                                        description=data.get("description"), is_deleted=False, is_active=True,
-                                        created_by=data.get("created_by"))
+                                        description=data.get("description"),
+                                        is_deleted=False,
+                                        is_active=True)
         framework_obj.save()
         return framework_obj
 
