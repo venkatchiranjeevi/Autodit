@@ -1,13 +1,14 @@
 from AutoditApp.models import TenantDepartment as Departments, Roles, TenantGlobalVariables, Tenant, GlobalVariables, \
     RolePolicies, AccessPolicy, FrameworkMaster, TenantFrameworkMaster, TenantHierarchyMapping, TenantPolicyManager, \
-    PolicyMaster, ControlMaster, ControlMaster, HirerecyMapper
+    PolicyMaster, ControlMaster, ControlMaster, HirerecyMapper, TenantControlMaster
 from django.db.models import Q
 from .constants import DEFAULT_VIEWS, EDITIOR_VIEWS
 from AutoditApp.AWSCognito import Cognito
-from .core import get_policies_by_role
+from .core import get_policies_by_role, fetch_data_from_sql_query
 from .S3_FileHandler import S3FileHandlerConstant
 from django.conf import settings
 
+from .sql_queries import  TENANT_CONTROL_ID, CONTROLS_MASTER
 
 class BaseConstant:
     def __init__(self):
@@ -195,6 +196,82 @@ class TenantFrameworkData(BaseConstant):
             tenant_frame_instancess.append(tenant_frame_obj)
         result = TenantFrameworkMaster.objects.bulk_create(tenant_frame_instancess)
         return result
+
+    @staticmethod
+    def get_tenant_frameworks(tenant_id, framework_id):
+        query = Q(is_active=1, tenant_id=tenant_id)
+        if framework_id:
+            query &= Q(master_framework_id=framework_id)
+        tenant_frameworks = TenantFrameworkMaster.objects.filter(query).values("id", "tenant_framework_name",
+                                                                    'master_framework_id', "framework_type")
+        return tenant_frameworks
+
+    @staticmethod
+    def get_control_masters():
+        framework_controls = fetch_data_from_sql_query(CONTROLS_MASTER)
+        return framework_controls
+
+
+class TenantControlMasterData(BaseConstant):
+
+    @staticmethod
+    def get_tenant_controls_data(tenant_f_ids):
+        ids = ",".join([str(t_fid) for t_fid in tenant_f_ids])
+        if not ids:
+            return []
+        query = TENANT_CONTROL_ID.format(ids)
+        tenant_controls = fetch_data_from_sql_query(query)
+        return tenant_controls
+
+    @staticmethod
+    def get_policies_count_by_tenant_framework_id(tenant_id):
+        hierarchy_mappings = TenantHierarchyMapping.objects.filter(tenant_id=tenant_id, tenant_framework_id__isnull=False).\
+            values("tenant_policy_id", "tenant_framework_id", "tenant_control_id")
+        return hierarchy_mappings
+
+    @staticmethod
+    def save_tenant_controls(data):
+        controls = data.get("controls")
+        tenant_id = data.get("tenant_id")
+        tenant_framework_id = data.get("tenant_framework_id")
+        created_by = data.get("created_by")
+        is_selected = data.get("is_selected")
+        tcm_obj = None
+        if not data.get("is_all_controls"):
+            if is_selected:
+                tcm_obj = TenantControlMaster.objects.create(tenant_id=tenant_id,
+                                                   tenant_framework_id=tenant_framework_id,
+                                                   control_name=controls[0].get("control_name"),
+                                                   master_control_id=controls[0].get("master_control_id"),
+                                                   created_by=data.get("created_by"))
+
+                TenantHierarchyMapping.objects.create(tenant_id=tenant_id, tenant_framework_id=tenant_framework_id,
+                                                      tenant_control_id=tcm_obj.id, created_by=created_by,
+                                                      controller_id= controls[0].get("master_control_id"))
+            else:
+                TenantControlMaster.objects.filter(id=controls[0].get("tenant_control_id")).delete()
+                TenantHierarchyMapping.objects.filter(tenant_id=tenant_id, tenant_framework_id=tenant_framework_id,
+                                                      tenant_control_id=data.get("tenant_control_id")).delete()
+
+        else:
+            all_control_master_data = TenantFrameworkData.get_control_masters()
+            if is_selected:
+                for each_control in all_control_master_data:
+                    tcm_object, created = TenantControlMaster.objects.get_create(tenant_id=tenant_id,
+                                                       tenant_framework_id=tenant_framework_id,
+                                                       master_control_id=each_control.get("c_id"))
+                    if created:
+                        tcm_object.control_name = each_control.get("ControlName")
+                        tcm_object.created_by = data.get("created_by")
+                        tcm_object.save()
+
+                    thm_object, created = TenantHierarchyMapping.objects.get_or_create(tenant_id=tenant_id, tenant_framework_id=tenant_framework_id,
+                                                          tenant_control_id=tcm_object.id)
+            else:
+                TenantControlMaster.objects.filter(tenant_framework_id=tenant_framework_id).delete()
+                TenantHierarchyMapping.objects.filter(tenant_id=tenant_id, tenant_framework_id=tenant_framework_id).delete()
+
+        return tcm_obj
 
 
 class TennatControlHelpers(BaseConstant):

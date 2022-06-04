@@ -9,7 +9,7 @@ from AutoditApp.mixins import AuthMixin
 from AutoditApp.models import TenantGlobalVariables, TenantDepartment, Roles, FrameworkMaster, TenantFrameworkMaster, \
     TenantHierarchyMapping, TenantPolicyManager
 from AutoditApp.dal import DeparmentsData, TenantGlobalVariableData, TenantMasterData, RolesData, GlobalVariablesData, \
-    RolePoliciesData, TenantFrameworkData, TennatControlHelpers, PolicyDetailsData
+    RolePoliciesData, TenantFrameworkData, TennatControlHelpers, PolicyDetailsData, TenantControlMasterData
 from AutoditApp.constants import RolesConstant as RC, TENANT_LOGOS_BUCKET, S3_ROOT
 from AutoditApp.Admin_Handler.dal import FrameworkMasterData
 from .S3_FileHandler import S3FileHandlerConstant
@@ -17,6 +17,7 @@ from .AWSCognito import Cognito
 from django.conf import settings
 from .models import AccessPolicy
 from .Utils import list_of_dict_to_dict
+from collections import defaultdict
 import boto3
 
 from .S3_FileHandler import S3FileHandlerConstant
@@ -51,8 +52,10 @@ class DepartmentsAPI(AuthMixin):
 
         for each_role in RC.Default_Roles.keys():
             role = {"role_name": "{}_{}".format(dep_code, each_role), "role_code": "{}_{}".format(dep_code,
-                                                        RC.Default_Roles.get(each_role)), "tenant_id": tenant_id,
-                                                        "role_for": each_role, "departments": [dep_obj.id],
+                                                                                                  RC.Default_Roles.get(
+                                                                                                      each_role)),
+                    "tenant_id": tenant_id,
+                    "role_for": each_role, "departments": [dep_obj.id],
                     "policy_name": dep_name}
             # default_roles.append(role)
             RolesData.save_single_role(role)
@@ -136,10 +139,13 @@ class SettingManagementAPI(AuthMixin):
         t_global_var_data = TenantGlobalVariables.objects.get(tenant_id=int(tenant_id)).result
         global_varialbles_data = eval(t_global_var_data if t_global_var_data else '{}')
         departments = list(TenantDepartment.objects.filter(tenant_id=int(tenant_id)).values('name', 'code', 'id'))
-        tenant_roles = list(Roles.objects.filter(tenant_id=int(tenant_id)).values('role_id','role_name', 'code', 'department_id'))
-        selected_frameworks = TenantFrameworkMaster.objects.filter(is_active=1).filter(tenant_id=int(tenant_id)).values('master_framework_id')
+        tenant_roles = list(
+            Roles.objects.filter(tenant_id=int(tenant_id)).values('role_id', 'role_name', 'code', 'department_id'))
+        selected_frameworks = TenantFrameworkMaster.objects.filter(is_active=1).filter(tenant_id=int(tenant_id)).values(
+            'master_framework_id')
         select_framework_ids = [entry['master_framework_id'] for entry in selected_frameworks]
-        total_frameworks = FrameworkMaster.objects.filter(is_active=1).values('id', 'framework_name', 'framework_type', 'description')
+        total_frameworks = FrameworkMaster.objects.filter(is_active=1).values('id', 'framework_name', 'framework_type',
+                                                                              'description')
         framework_details = []
         for det in total_frameworks:
             entry = det
@@ -155,63 +161,133 @@ class SettingManagementAPI(AuthMixin):
                          'groups': tenant_roles,
                          'userDetails': tenant_users})
 
+from rest_framework.views import APIView
 
-class ControlsManagementAPI(AuthMixin):
+class ControlsManagementAPI(APIView):
 
     def get(self, request):
         user = request.user
-        tenant_id = user.tenant_id
-        cursor = connection.cursor()
-        selected_frameworks = TenantFrameworkMaster.objects.filter(is_active=1).values('master_framework_id')
-        select_framework_ids = [entry['master_framework_id'] for entry in selected_frameworks]
-        # TODO need to change to single query
-        # COntrol master + TenantHireacy
-        controls_query ='''SELECT hm.Fid, hm.Pid, hm.Cid, fm.FrameworkName, fm.`type` as frameworkType, 
-                fm.Description as frameworkDescription, cm.ControlName, cm.Description, hm.id from HirerecyMapper hm Inner JOIN 
-                FrameworkMaster fm on hm.Fid = fm.id Inner JOIN ControlMaster cm on hm.CId = cm.Id and hm.Fid in {Fids}'''
-        if select_framework_ids:
-            if len(select_framework_ids) == 1:
-                select_framework_ids += select_framework_ids
-            controls_query = controls_query.format(Fids=str(tuple(select_framework_ids)))
-            cursor.execute(controls_query)
-            hirarecy_data = cursor.fetchall()
-        else:
-            hirarecy_data = tuple()
+        tenant_id = 16
+        req_framework_id = request.GET.get("framework_id")
+        # selected frameworks data
+        selected_frameworks = TenantFrameworkData.get_tenant_frameworks(tenant_id, req_framework_id)
+        select_master_framework_ids = []
+        tenant_framework_ids = []
+        for each_framework in selected_frameworks:
+            select_master_framework_ids.append(each_framework.get("master_framework_id"))
+            tenant_framework_ids.append(each_framework.get("id"))
 
-        custom_selected_control = TennatControlHelpers.get_tenant_selected_control(tenant_id)
-        final_details = []
-        total_frameworks = FrameworkMaster.objects.filter(is_active=1).values('id',
-                                                                              'framework_name',
-                                                                              'framework_type',
-                                                                              'description')
-        framework_details = []
-        for det in total_frameworks:
-            entry = det
-            entry['isSubscribed'] = True if entry['id'] in select_framework_ids else False
-            framework_details.append(entry)
+        # selected controls and master framework data
+        control_master = TenantFrameworkData.get_control_masters()
 
-        for item in hirarecy_data:
-            entry = {'frameworkId':item[0],
-                     'principleId': item[1],
-                     'controlId': item[2],
-                     'frameworkName': item[3],
-                     'frameworkType': item[4],
-                     'frameworkDescription': item[5],
-                     'controlName':item[6],
-                     'controlMasterDescription': item[7],
-                     'hirarecyId': item[8],
-                     'customTags': [],
-                     'isControlOpted': False}
-            if item[8] in custom_selected_control.keys():
-                entry['isControlOpted'] = True
-                entry['controlActualDescription'] = custom_selected_control[item[8]]['controller_description']
-                # TODO need to add policy reference
-                # entry['policyReference'] = custom_selected_control[item[8]]['policy_reference']
-                entry['customTags'] = []
-            final_details.append(entry)
-        return Response({'controlDetails':final_details, 'frameworkDetails': framework_details})
+        # Frameworks and controls data (Tenant Framework data)
+        selected_controls = TenantControlMasterData.get_tenant_controls_data(tenant_framework_ids)
+        selected_controls_data = dict()
+        for each_control in selected_controls:
+            key = "{}_{}".format(each_control.get("master_framework_id"), each_control.get("master_control_id"))
+            selected_controls_data[key] = each_control
+
+        # Policy count from Tenant Hirerachy mapper
+
+        hierarchy_mappings = TenantControlMasterData.get_policies_count_by_tenant_framework_id(tenant_id)
+        hierarchy_mappings_data = defaultdict(list)
+        for each_hierarchy in hierarchy_mappings:
+            key = "{}_{}".format(each_hierarchy.get("tenant_framework_id"), each_hierarchy.get("tenant_control_id"))
+            hierarchy_mappings_data[key].append(each_hierarchy.get("tenant_policy_id"))
+
+        final_frameworks_controls = []
+        for each_frame in selected_frameworks:
+            data = dict()
+            data['framework_name'] = each_frame.get("tenant_framework_name")
+            tenant_framework_id = each_frame.get("id")
+            data['tenant_framework_id'] = tenant_framework_id
+            framework_id = each_frame.get("master_framework_id")
+            data['master_framework_id'] = framework_id
+            controls = []
+            for each_control in control_master:
+                master_control_id = each_control.get("c_id")
+                key = "{}_{}".format(framework_id, master_control_id)
+                c_data = dict()
+                c_data['master_control_id'] = master_control_id
+                c_data['control_name'] = each_control.get("ControlName")
+                c_data['control_code'] = each_control.get("ControlCode")
+                if key in selected_controls_data.keys():
+                    c_data['tenant_control_id'] = selected_controls_data.get(key, {}).get("Tenant_control_Id")
+                    c_data['is_control_selected'] = True
+                    # c_data['policies_count'] = 4
+                else:
+                    c_data['is_control_selected'] = False
+                    c_data['tenant_control_id'] = None
+                    # c_data['policies_count'] = 0
+
+                hierarchy_key = "{}_{}".format(tenant_framework_id, c_data['tenant_control_id'])
+                c_data['policies_count'] = len(hierarchy_mappings_data.get(hierarchy_key, []))
+                controls.append(c_data)
+
+            data['controls'] = controls
+            final_frameworks_controls.append(data)
+        return Response(final_frameworks_controls)
+
+        # step 1 get tenant frame works
+
+        # # TODO need to change to single query
+        #
+        # controls_query ='''SELECT hm.Fid, hm.Pid, hm.Cid, fm.FrameworkName, fm.`type` as frameworkType,
+        #         fm.Description as frameworkDescription, cm.ControlName, cm.Description, hm.id from HirerecyMapper hm Inner JOIN
+        #         FrameworkMaster fm on hm.Fid = fm.id Inner JOIN ControlMaster cm on hm.CId = cm.Id and hm.Fid in {Fids}'''
+        # if select_framework_ids:
+        #     if len(select_framework_ids) == 1:
+        #         select_framework_ids += select_framework_ids
+        #     controls_query = controls_query.format(Fids=str(tuple(select_framework_ids)))
+        #     cursor.execute(controls_query)
+        #     hirarecy_data = cursor.fetchall()
+        # else:
+        #     hirarecy_data = tuple()
+        #
+        # custom_selected_control = TennatControlHelpers.get_tenant_selected_control(tenant_id)
+        # final_details = []
+        # total_frameworks = FrameworkMaster.objects.filter(is_active=1).values('id',
+        #                                                                       'framework_name',
+        #                                                                       'framework_type',
+        #                                                                       'description')
+        # framework_details = []
+        # for det in total_frameworks:
+        #     entry = det
+        #     entry['isSubscribed'] = True if entry['id'] in select_framework_ids else False
+        #     framework_details.append(entry)
+        #
+        # for item in hirarecy_data:
+        #     entry = {'frameworkId':item[0],
+        #              'principleId': item[1],
+        #              'controlId': item[2],
+        #              'frameworkName': item[3],
+        #              'frameworkType': item[4],
+        #              'frameworkDescription': item[5],
+        #              'controlName':item[6],
+        #              'controlMasterDescription': item[7],
+        #              'hirarecyId': item[8],
+        #              'customTags': [],
+        #              'isControlOpted': False}
+        #     if item[8] in custom_selected_control.keys():
+        #         entry['isControlOpted'] = True
+        #         entry['controlActualDescription'] = custom_selected_control[item[8]]['controller_description']
+        #         # TODO need to add policy reference
+        #         # entry['policyReference'] = custom_selected_control[item[8]]['policy_reference']
+        #         entry['customTags'] = []
+        #     final_details.append(entry)
+        # return Response({'controlDetails':final_details, 'frameworkDetails': framework_details})
 
     def post(self, request):
+        data = request.data
+        tenant_id = request.user.tenant_id
+        data['tenant_id'] = tenant_id
+        data['created_by'] = "mani"
+        tenant_control_obj = TenantControlMasterData.save_tenant_controls(data)
+        return Response({"status": "Updated Controls Successfully", "data": data,
+                         "new_control_id":tenant_control_obj.id if tenant_control_obj else None})
+
+
+    def post_v3(self, request):
         data = request.data
         tenant_id = request.user.tenant_id
         control_details = data.get('controlDetails', [])
@@ -234,9 +310,9 @@ class ControlsManagementAPI(AuthMixin):
         new_hirarecy_insert_ids = list(set(updated_hirarecy_ids) - set(list(all_tenant_controls.keys())))
         hirarecy_in_active_ids = list(set(set(selected_inactive_controls).intersection(set(updated_hirarecy_ids))))
         if deleted_hirarcy_ids:
-            TenantHierarchyMapping.objects.filter(master_hierarchy_id__in = deleted_hirarcy_ids).update(is_active=0)
+            TenantHierarchyMapping.objects.filter(master_hierarchy_id__in=deleted_hirarcy_ids).update(is_active=0)
         if hirarecy_in_active_ids:
-            TenantHierarchyMapping.objects.filter(master_hierarchy_id__in = hirarecy_in_active_ids).update(is_active=1)
+            TenantHierarchyMapping.objects.filter(master_hierarchy_id__in=hirarecy_in_active_ids).update(is_active=1)
         if new_hirarecy_insert_ids:
             query = '''select hm.id as hirarecyId, hm.Fid as frameworkId, hm.Cid as controlId, cm.ControlName, 
             cm.Description, hm.PolicyId as masterPolicyId  from HirerecyMapper hm Inner Join ControlMaster
@@ -249,7 +325,7 @@ class ControlsManagementAPI(AuthMixin):
             policy_details_query = '''select pm.id, pm.PolicyName, pm.Category, tpm.ParentPolicyID from 
             PolicyMaster pm left Join TenantPolicyManager tpm on tpm.ParentPolicyID = pm.id and 
             tpm.tenant_id =16 where pm.id in {pids}'''
-            if len(parent_policy_ids) ==1:
+            if len(parent_policy_ids) == 1:
                 parent_policy_ids += parent_policy_ids
             policy_details_query = policy_details_query.format(pids=str(tuple(parent_policy_ids)))
             policy_details = fetch_data_from_sql_query(policy_details_query)
@@ -258,12 +334,12 @@ class ControlsManagementAPI(AuthMixin):
 
                 if not det.get('ParentPolicyID'):
                     insert_polices.append(
-                    TenantPolicyManager(tenant_id=int(tenant_id),
-                                        tenant_policy_name=det['PolicyName'],
-                                        category=det['Category'],
-                                        version=1,
-                                        policy_reference='',
-                                        parent_policy_id=det['id']))
+                        TenantPolicyManager(tenant_id=int(tenant_id),
+                                            tenant_policy_name=det['PolicyName'],
+                                            category=det['Category'],
+                                            version=1,
+                                            policy_reference='',
+                                            parent_policy_id=det['id']))
             if insert_polices:
                 TenantPolicyManager.objects.bulk_create(insert_polices)
 
@@ -272,17 +348,18 @@ class ControlsManagementAPI(AuthMixin):
             inserts_controls_data = []
             for entry in new_insertion_data:
                 inserts_controls_data.append(TenantHierarchyMapping(controller_id=entry.get('controlId', ''),
-                                       controller_name=entry.get('ControlName', ''),
-                                       controller_description=entry.get('Description'),
-                                       tenant_id=int(tenant_id),
-                                       master_hierarchy_id=entry.get('hirarecyId'),
-                                       category=entry.get('Category'),
-                                       tenant_policy_id=existing_policy_format[new_insertion_data[0]['masterPolicyId']]['id'],
-                                       is_active=1))
+                                                                    controller_name=entry.get('ControlName', ''),
+                                                                    controller_description=entry.get('Description'),
+                                                                    tenant_id=int(tenant_id),
+                                                                    master_hierarchy_id=entry.get('hirarecyId'),
+                                                                    category=entry.get('Category'),
+                                                                    tenant_policy_id=existing_policy_format[
+                                                                        new_insertion_data[0]['masterPolicyId']]['id'],
+                                                                    is_active=1))
                 # TenantHierarchyMapping)
             if inserts_controls_data:
                 TenantHierarchyMapping.objects.bulk_create(inserts_controls_data)
-        return Response({'status':200, 'data': 'Controls updated successfully'})
+        return Response({'status': 200, 'data': 'Controls updated successfully'})
 
 
 class PolicyManagementAPI(AuthMixin):
@@ -295,10 +372,11 @@ class PolicyManagementAPI(AuthMixin):
                                                   ' Inner Join FrameworkMaster b on a.MasterFrameworkId = b.id')
         data = {'policiesData': policies_data}
 
-        selected_frameworks = TenantFrameworkMaster.objects.filter(is_active=1).filter(tenant_id=int(tenant_id)).values('tenant_framework_name',
-                                                                                       'master_framework_id',
-                                                                                       'framework_type',
-                                                                                       'description')
+        selected_frameworks = TenantFrameworkMaster.objects.filter(is_active=1).filter(tenant_id=int(tenant_id)).values(
+            'tenant_framework_name',
+            'master_framework_id',
+            'framework_type',
+            'description')
         # TODO need to link with user details and reviewr and editor and approver details
         # TODO get role departments and send all users
         # TODO need to add controls linked and controls opted
@@ -341,7 +419,7 @@ class TenantLogoUploaderAPI(AuthMixin):
         s3 = boto3.resource('s3', aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
                             aws_secret_access_key=settings.AWS_SECRET_KEY)
         s3_bucket_obj = s3.Bucket(TENANT_LOGOS_BUCKET)
-        key_name = request.user.name +  ".png"
+        key_name = request.user.name + ".png"
         s3_bucket_obj.put_object(Key=key_name, Body=file)
         logo_url = S3_ROOT.format(key_name)
         tenant_obj = TenantGlobalVariables.objects.get(tenant_id=request.user.tenant_id)
@@ -354,6 +432,7 @@ class TenantLogoUploaderAPI(AuthMixin):
 
 from rest_framework.views import APIView
 
+
 class PolicyDetailsAPI(APIView):
 
     def get(self, request):
@@ -365,6 +444,7 @@ class PolicyDetailsAPI(APIView):
     # Step2 get control details
     # Step3 get revier
     #
+
 
 class PolicyStateHandler(AuthMixin):
     def post(self, request):
