@@ -121,3 +121,8 @@ class PolicyVariablesHandler(AuthMixin):
                                                                                                         'parameter_type',
                                                                                                         'is_active')
         return Response(existing_policy_details)
+
+    def delete(self, request):
+        parameterId = request.GET.get('parameterId')
+        MasterPolicyParameter.objects.filter(id=int(parameterId)).delete()
+        return Response({'Delete success full'})
