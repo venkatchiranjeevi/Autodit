@@ -200,9 +200,11 @@ class ControlsManagementAPI(AuthMixin):
                 if key in selected_controls_data.keys():
                     c_data['tenant_control_id'] = selected_controls_data.get(key, {}).get("Tenant_control_Id")
                     c_data['is_control_selected'] = True
+                    c_data['policies_count'] = 4
                 else:
                     c_data['is_control_selected'] = False
                     c_data['tenant_control_id'] = None
+                    c_data['policies_count'] = 0
 
                 controls.append(c_data)
             data['controls'] = controls
