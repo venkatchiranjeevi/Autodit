@@ -220,7 +220,7 @@ class TenantFrameworkData(BaseConstant):
         for tenant_control in tenant_controls:
             tenant_framework_id.append(tenant_control.get('TenantFrameworkId'))
             selected_controls_formatted_data[tenant_control['ControlId']] = tenant_control
-        return selected_controls_formatted_data, tenant_framework_id[0]
+        return selected_controls_formatted_data, tenant_framework_id[0] if tenant_framework_id else -99999
 
     @staticmethod
     def get_policy_counts(tenant_framework_id, tenant_id):
