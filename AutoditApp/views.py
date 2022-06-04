@@ -259,7 +259,7 @@ class ControlsManagementAPI(APIView):
             final_frameworks_controls.append(data)
         return Response(final_frameworks_controls)
 
-    def post(self, request):
+    def post_v1(self, request):
         data = request.data
         user = request.user.pk
         tenant_id = request.user.tenant_id
@@ -270,15 +270,16 @@ class ControlsManagementAPI(APIView):
                          "new_control_id":tenant_control_obj.id if tenant_control_obj else None})
 
 
-    def post_v3(self, request):
+    def post(self, request):
         data = request.data
         tenant_id = request.user.tenant_id
         control_details = data.get('controlDetails', [])
+        framework_id = data.get('frameworkId')
         control_ids = []
-        updated_hirarecy_ids = []
+        # updated_hirarecy_ids = []
         for entry in control_details:
             control_ids.append(entry.get('controlId'))
-            updated_hirarecy_ids.append(entry.get('hirarecyId'))
+            # updated_hirarecy_ids.append(entry.get('hirarecyId'))
         all_tenant_controls = TennatControlHelpers.get_tenant_selected_control(tenant_id, 'id', all=True)
         selected_active_controls = []
         selected_inactive_controls = []

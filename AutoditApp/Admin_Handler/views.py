@@ -78,9 +78,10 @@ class AdminSinglePolicyHandler(AuthMixin):
 class AdminPolicyCreateHandler(AuthMixin):
     def post(self, request):
         data = request.data
-        PolicyMasterData.save_policy_details(data, request.user.pk)
+        policy_object = PolicyMasterData.save_policy_details(data, request.user.pk)
         return Response({"status": True,
-                         "message": "Policy Added Successfully"})
+                         "message": "Policy Added Successfully",
+                         "policyId": policy_object.id})
 
 
 class PolicyFrameworkControlHandler(AuthMixin):
