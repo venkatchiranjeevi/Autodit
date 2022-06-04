@@ -177,6 +177,7 @@ class TenantControlMaster(models.Model):
     class Meta:
         db_table = 'TenantControlMaster'
 
+
 class TenantHierarchyMapping(Base):
     id = models.AutoField(primary_key=True, db_column='id')
     controller_id = models.IntegerField(db_column='controller_id', null=True, blank=True)
@@ -190,6 +191,8 @@ class TenantHierarchyMapping(Base):
     tenant_policy_id = models.IntegerField(db_column='TenantPolicyId')
     is_deleted = models.IntegerField(db_column='is_delete', default=0)
     is_active = models.IntegerField(db_column='is_active', default=1)
+    tenant_framework_id = models.IntegerField(db_column='tenant_framework_id')
+    tenant_control_id = models.IntegerField(db_column='tenant_contorl_id')
 
     def __int__(self):
         return self.id
