@@ -279,7 +279,7 @@ class ControlsManagementAPI(APIView):
 
     def post(self, request):
         data = request.data
-        tenant_id = 16
+        tenant_id = request.user.tenant_id
         data['tenant_id'] = tenant_id
         data['created_by'] = "mani"
         tenant_control_obj = TenantControlMasterData.save_tenant_controls(data)
