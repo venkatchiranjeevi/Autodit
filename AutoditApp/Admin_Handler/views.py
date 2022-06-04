@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from django.forms import model_to_dict
 from rest_framework.response import Response
 from AutoditApp.mixins import AuthMixin
@@ -6,6 +8,8 @@ from AutoditApp.Admin_Handler.sql_queries import policy_master_details, policy_m
 from AutoditApp.core import fetch_data_from_sql_query
 from rest_framework.views import APIView
 from django.db.models import Q
+
+from AutoditApp.models import MasterPolicyParameter
 
 
 class AdminFrameworkHandlerAPI(AuthMixin):
@@ -51,21 +55,74 @@ class AdminPolicyHandlerAPI(APIView):
         data = request.data
         data['created_by'] = request.user.name
         data['user_id'] = request.user.userid
-        policy_obj = PolicyMasterData.save_policy_details(data)
+        policy_obj = PolicyMasterData.save_policy_details(data, request.user.pk)
         return Response({"status": True, "message": "Policy Added Successfully"})
+
+
+class AdminControlsBlockDetails(AuthMixin):
+    def get(self, request):
+        f_id = request.GET.get("framework_id")
+        # Get control with only that framework id
+        framework_controls_data = HirerecyMapperData.get_controls_framework_block_details(f_id)
+        return Response(framework_controls_data.values())
 
 
 class AdminSinglePolicyHandler(AuthMixin):
     def get(self, request):
-        # policyid
-        # get policy url get content
-        # get policy controls
-        # Template variables
-        pass
+        policy_id = request.GET.get('policyId')
+        result = PolicyMasterData.policy_details_final_object(policy_id)
+        return Response(result)
+
+
+class AdminPolicyCreateHandler(AuthMixin):
+    def post(self, request):
+        data = request.data
+        PolicyMasterData.save_policy_details(data, request.user.pk)
+        return Response({"status": True,
+                         "message": "Policy Added Successfully"})
+
+
+class PolicyFrameworkControlHandler(AuthMixin):
+
+    def get(self, request):
+        policy_id = request.GET.get('policyId')
+        framework_id = request.GET.get('frameworkId')
+        selected_controls = HirerecyMapperData.get_selected_controls_block_details(policy_id, [framework_id])
+        return Response(selected_controls)
 
     def post(self, request):
-        # Policy Name
-        # Poclicy Descrpition
-        pass
+        data = request.data
+        user = request.user.pk
+        updated_policies = PolicyMasterData.policy_control_handler(data, user)
 
+        return Response(updated_policies)
 
+# TODO delete option yet to write
+class PolicyVariablesHandler(AuthMixin):
+    def get(self, request):
+        policy_id = request.GET.get("policyId")
+        existing_policy_details = MasterPolicyParameter.objects.filter(policy_id=int(policy_id)).values('id',
+                                                                                                        'policy_id',
+                                                                                                        'parameter_key',
+                                                                                                        'parameter_type',
+                                                                                                        'is_active')
+        return Response(existing_policy_details)
+
+    def post(self, request):
+        data = request.data
+        template_variables = data.get('policyVariables', [])
+        policy_id = int(data.get('policyId'))
+        user_id = request.user.userid
+        # template_variables, policy_id, user_id
+        PolicyMasterData.policy_variable_handler(template_variables, policy_id, user_id)
+        existing_policy_details = MasterPolicyParameter.objects.filter(policy_id=int(policy_id)).values('id',
+                                                                                                        'policy_id',
+                                                                                                        'parameter_key',
+                                                                                                        'parameter_type',
+                                                                                                        'is_active')
+        return Response(existing_policy_details)
+
+    def delete(self, request):
+        parameterId = request.GET.get('parameterId')
+        MasterPolicyParameter.objects.filter(id=int(parameterId)).delete()
+        return Response({'Delete success full'})
