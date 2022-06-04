@@ -7,7 +7,7 @@ from django.db.models import Q
 from rest_framework.response import Response
 from AutoditApp.mixins import AuthMixin
 from AutoditApp.models import TenantGlobalVariables, TenantDepartment, Roles, FrameworkMaster, TenantFrameworkMaster, \
-    TenantHierarchyMapping, TenantPolicyManager
+    TenantHierarchyMapping, TenantPolicyManager, ControlMaster
 from AutoditApp.dal import DeparmentsData, TenantGlobalVariableData, TenantMasterData, RolesData, GlobalVariablesData, \
     RolePoliciesData, TenantFrameworkData, TennatControlHelpers, PolicyDetailsData, TenantControlMasterData
 from AutoditApp.constants import RolesConstant as RC, TENANT_LOGOS_BUCKET, S3_ROOT
@@ -20,8 +20,6 @@ from .Utils import list_of_dict_to_dict
 from collections import defaultdict
 import boto3
 from rest_framework.views import APIView
-
-from .S3_FileHandler import S3FileHandlerConstant
 
 # Create your views here.
 from .core import get_users_by_tenant_id, fetch_data_from_sql_query
@@ -163,121 +161,36 @@ class SettingManagementAPI(AuthMixin):
                          'userDetails': tenant_users})
 
 
-class ControlsManagementAPI(AuthMixin):
-
+class ControlsManagementAPI(APIView):
     def get(self, request):
         user = request.user
         tenant_id = user.tenant_id
-        req_framework_id = request.GET.get("framework_id")
-        # selected frameworks data
-        selected_frameworks = TenantFrameworkData.get_tenant_frameworks(tenant_id, req_framework_id)
-        select_master_framework_ids = []
-        tenant_framework_ids = []
-        for each_framework in selected_frameworks:
-            select_master_framework_ids.append(each_framework.get("master_framework_id"))
-            tenant_framework_ids.append(each_framework.get("id"))
-
-        # selected controls and master framework data
-        control_master = TenantFrameworkData.get_control_masters()
-
-        # Frameworks and controls data (Tenant Framework data)
-        selected_controls = TenantControlMasterData.get_tenant_controls_data(tenant_framework_ids)
-        selected_controls_data = dict()
-        for each_control in selected_controls:
-            key = "{}_{}".format(each_control.get("master_framework_id"), each_control.get("master_control_id"))
-            selected_controls_data[key] = each_control
-
-        # Policy count from Tenant Hirerachy mapper
-
-        hierarchy_mappings = TenantControlMasterData.get_policies_count_by_tenant_framework_id(tenant_id)
-        hierarchy_mappings_data = defaultdict(list)
-        for each_hierarchy in hierarchy_mappings:
-            key = "{}_{}".format(each_hierarchy.get("tenant_framework_id"), each_hierarchy.get("tenant_control_id"))
-            hierarchy_mappings_data[key].append(each_hierarchy.get("tenant_policy_id"))
-
-        final_frameworks_controls = []
-        for each_frame in selected_frameworks:
-            data = dict()
-            data['framework_name'] = each_frame.get("tenant_framework_name")
-            tenant_framework_id = each_frame.get("id")
-            data['tenant_framework_id'] = tenant_framework_id
-            framework_id = each_frame.get("master_framework_id")
-            data['master_framework_id'] = framework_id
-            controls = []
-            for each_control in control_master:
-                master_control_id = each_control.get("c_id")
-                key = "{}_{}".format(framework_id, master_control_id)
-                c_data = dict()
-                c_data['master_control_id'] = master_control_id
-                c_data['control_name'] = each_control.get("ControlName")
-                c_data['control_code'] = each_control.get("ControlCode")
-                if key in selected_controls_data.keys():
-                    c_data['tenant_control_id'] = selected_controls_data.get(key, {}).get("Tenant_control_Id")
-                    c_data['is_control_selected'] = True
-                    # c_data['policies_count'] = 4
-                else:
-                    c_data['is_control_selected'] = False
-                    c_data['tenant_control_id'] = None
-                    # c_data['policies_count'] = 0
-
-                hierarchy_key = "{}_{}".format(tenant_framework_id, c_data['tenant_control_id'])
-                c_data['policies_count'] = len(hierarchy_mappings_data.get(hierarchy_key, []))
-                c_data['policy_ids'] = hierarchy_mappings_data.get(hierarchy_key, [])
-
-                controls.append(c_data)
-
-            data['controls'] = controls
-            final_frameworks_controls.append(data)
-        return Response(final_frameworks_controls)
-
-        # step 1 get tenant frame works
-
-        # # TODO need to change to single query
-        #
-        # controls_query ='''SELECT hm.Fid, hm.Pid, hm.Cid, fm.FrameworkName, fm.`type` as frameworkType,
-        #         fm.Description as frameworkDescription, cm.ControlName, cm.Description, hm.id from HirerecyMapper hm Inner JOIN
-        #         FrameworkMaster fm on hm.Fid = fm.id Inner JOIN ControlMaster cm on hm.CId = cm.Id and hm.Fid in {Fids}'''
-        # if select_framework_ids:
-        #     if len(select_framework_ids) == 1:
-        #         select_framework_ids += select_framework_ids
-        #     controls_query = controls_query.format(Fids=str(tuple(select_framework_ids)))
-        #     cursor.execute(controls_query)
-        #     hirarecy_data = cursor.fetchall()
-        # else:
-        #     hirarecy_data = tuple()
-        #
-        # custom_selected_control = TennatControlHelpers.get_tenant_selected_control(tenant_id)
-        # final_details = []
-        # total_frameworks = FrameworkMaster.objects.filter(is_active=1).values('id',
-        #                                                                       'framework_name',
-        #                                                                       'framework_type',
-        #                                                                       'description')
-        # framework_details = []
-        # for det in total_frameworks:
-        #     entry = det
-        #     entry['isSubscribed'] = True if entry['id'] in select_framework_ids else False
-        #     framework_details.append(entry)
-        #
-        # for item in hirarecy_data:
-        #     entry = {'frameworkId':item[0],
-        #              'principleId': item[1],
-        #              'controlId': item[2],
-        #              'frameworkName': item[3],
-        #              'frameworkType': item[4],
-        #              'frameworkDescription': item[5],
-        #              'controlName':item[6],
-        #              'controlMasterDescription': item[7],
-        #              'hirarecyId': item[8],
-        #              'customTags': [],
-        #              'isControlOpted': False}
-        #     if item[8] in custom_selected_control.keys():
-        #         entry['isControlOpted'] = True
-        #         entry['controlActualDescription'] = custom_selected_control[item[8]]['controller_description']
-        #         # TODO need to add policy reference
-        #         # entry['policyReference'] = custom_selected_control[item[8]]['policy_reference']
-        #         entry['customTags'] = []
-        #     final_details.append(entry)
-        # return Response({'controlDetails':final_details, 'frameworkDetails': framework_details})
+        master_framework_id = request.GET.get("framework_id")
+        result = {}
+        selected_controls, tenant_framework_id = TenantFrameworkData.get_tenant_selected_controls(tenant_id, master_framework_id)
+        all_controls = ControlMaster.objects.filter(framework_id=int(master_framework_id)).values('id',
+                                                                                                  'control_name',
+                                                                                                  'control_code',
+                                                                                                  'category')
+        framework_policy_counts = TenantFrameworkData.get_policy_counts(tenant_framework_id=tenant_framework_id,
+                                                                        tenant_id=tenant_id)
+        selected_control_ids = selected_controls.keys()
+        control_details_list = []
+        for control in all_controls:
+            opted = False
+            control_details = {'master_control_id': control.get('id'), 'control_name': control.get('control_name'),
+                               'control_code': control.get('control_code'), 'policies_count': 0}
+            if control.get('id') in selected_control_ids:
+                selected_con  = selected_controls[control.get('id')]
+                control_details['control_name'] = selected_con.get('ControlName')
+                control_details['control_code'] = selected_con.get('ControlCode')
+                control_details['policies_count'] = framework_policy_counts.get(selected_con.get('tenantControlid'), 0)
+                opted = True
+            control_details['is_control_selected'] = opted
+            # control_details['policies_count'] = 0
+            control_details_list.append(control_details)
+        result['controls'] = control_details_list
+        return Response(result)
 
     def post(self, request):
         data = request.data
@@ -403,6 +316,18 @@ class ControlsCostomTagsAPI(AuthMixin):
 
 class TenantFrameworkMasterAPI(AuthMixin):
 
+    def get(self, request):
+        user = request.user
+        tenant_id = user.tenant_id
+        framework_details = TenantFrameworkMaster.objects.filter(tenant_id=int(tenant_id)).values('id',
+                                                                                                  'tenant_framework_name',
+                                                                                                  'master_framework_id',
+                                                                                                  'description')
+        result = [{'frameworkName': det.get('tenant_framework_name'),
+                       'masterFrameworkId': det.get('master_framework_id'),
+                       'description': det.get('description')} for det in framework_details]
+        return Response(result)
+
     def post(self, request):
         user = request.user
         tenant_id = user.tenant_id
@@ -432,10 +357,7 @@ class TenantLogoUploaderAPI(AuthMixin):
         return Response({"message": "Logo Uploaded Successfully", "status": True})
 
 
-from rest_framework.views import APIView
-
-
-class PolicyDetailsAPI(APIView):
+class PolicyDetailsAPI(AuthMixin):
 
     def get(self, request):
         policy_id = request.GET.get("policy_id")

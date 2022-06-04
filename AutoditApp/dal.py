@@ -198,13 +198,32 @@ class TenantFrameworkData(BaseConstant):
         return result
 
     @staticmethod
-    def get_tenant_frameworks(tenant_id, framework_id):
-        query = Q(is_active=1, tenant_id=tenant_id)
-        if framework_id:
-            query &= Q(master_framework_id=framework_id)
-        tenant_frameworks = TenantFrameworkMaster.objects.filter(query).values("id", "tenant_framework_name",
-                                                                    'master_framework_id', "framework_type")
-        return tenant_frameworks
+    def get_tenant_selected_controls(tenant_id, framework_id):
+        query = "select  Id as tenantControlid, TenantFrameworkId, Master_Control_Id as ControlId," \
+                " ControlName, Description, Category, ControlCode from TenantControlMaster tcm where TenantFrameworkId  in" \
+                " (select id from TenantFrameworkMaster tfm where MasterFid = {master_f_id}) and tenantId = {t_id}"
+        tenant_controls_query = query.format(master_f_id=framework_id,
+                                       t_id=int(tenant_id))
+        tenant_controls = fetch_data_from_sql_query(tenant_controls_query)
+        selected_controls_formatted_data = {}
+        tenant_framework_id = []
+        for tenant_control in tenant_controls:
+            tenant_framework_id.append(tenant_control.get('TenantFrameworkId'))
+            selected_controls_formatted_data[tenant_control['ControlId']] = tenant_control
+        return selected_controls_formatted_data, tenant_framework_id[0]
+
+    @staticmethod
+    def get_policy_counts(tenant_framework_id, tenant_id):
+        query = "SELECT tenantControlId, tenantFrameworkId, COUNT(TenantPolicyId) as con FROM TenantHierarchyMapping where" \
+                " tenantFrameworkId= {f_id} and tenantId = {t_id} GROUP BY tenantControlId, tenantFrameworkId"
+        query = query.format(f_id=int(tenant_framework_id),
+                             t_id=int(tenant_id))
+        tenant_hir_details = fetch_data_from_sql_query(query)
+        policy_counts = {}
+        for h_det in tenant_hir_details:
+            policy_counts[h_det['tenantControlId']] = h_det.get('con',0)
+        return policy_counts
+
 
     @staticmethod
     def get_control_masters():

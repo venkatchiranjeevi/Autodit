@@ -180,19 +180,15 @@ class TenantControlMaster(models.Model):
 
 class TenantHierarchyMapping(Base):
     id = models.AutoField(primary_key=True, db_column='id')
-    controller_id = models.IntegerField(db_column='controller_id', null=True, blank=True)
-    controller_name = models.CharField(db_column='controller_name', max_length=500)
-    department_id = models.IntegerField(db_column='department_id', null=True, blank=True)
-    controller_description = models.TextField(db_column='controller_description', null=True, blank=True)
-    created_by = models.CharField(db_column='created_by', max_length=120, null=True, blank=True)
     tenant_id = models.IntegerField(db_column='tenantId')
+    # TODO can we delete need to check
     master_hierarchy_id = models.IntegerField(db_column='masterHierarchyId')
     category = models.CharField(db_column='Category', max_length=150)
     tenant_policy_id = models.IntegerField(db_column='TenantPolicyId')
     is_deleted = models.IntegerField(db_column='is_delete', default=0)
     is_active = models.IntegerField(db_column='is_active', default=1)
-    tenant_framework_id = models.IntegerField(db_column='tenant_framework_id')
-    tenant_control_id = models.IntegerField(db_column='tenant_contorl_id')
+    tenant_framework_id = models.IntegerField(db_column='tenantFrameworkId')
+    tenant_control_id = models.IntegerField(db_column='tenantControlId')
 
     def __int__(self):
         return self.id

@@ -142,18 +142,23 @@ class HirerecyMapperData(BaseConstant):
 
     @staticmethod
     def get_controls_framework_block_details(f_id):
-        controls_query = "select * from ControlMaster c left join FrameworkMaster fm  on c.FrameworkId = fm.Id"
+        controls_query = "select c.Id as controlId, c.ControlName, c.Description as ControlDescription, c.Category," \
+                         " c.ControlCode, c.IsActive as IsActive, fm.Id as frameworkId, fm.FrameworkName," \
+                         " fm.Description as FrameworkDescription from ControlMaster c left join FrameworkMaster fm " \
+                         " on c.FrameworkId = fm.Id"
+        # controls_query = "select * from ControlMaster c left join FrameworkMaster fm  on c.FrameworkId = fm.Id"
+
         if f_id:
             controls_query += " where FrameworkId = {f_id}"
             controls_query = controls_query.format(f_id=str(f_id))
         framework_controls_data = fetch_data_from_sql_query(controls_query)
         result = {}
         for control_data in framework_controls_data:
-            framework_id = control_data['FrameworkId']
+            framework_id = control_data['frameworkId']
             framework_name = control_data['FrameworkName']
             control_details = {
                 'ControlName': control_data.get('ControlName'),
-                'ControlId': control_data.get('Id'),
+                'ControlId': control_data.get('controlId'),
                 'ControlCode': control_data.get('ControlCode'),
                 'ControlDescription': control_data.get('ControlDescription'),
                 'IsActive': control_data.get('IsActive'),
@@ -199,7 +204,8 @@ class PolicyMasterData(BaseConstant):
                                                                                                   'is_active')
         policy_frameworks = HirerecyMapper.objects.filter(policy_id=policy_id).values('f_id')
         f_ids = set([p_f['f_id'] for p_f in policy_frameworks])
-        result['policyControls'] = HirerecyMapperData.get_selected_controls_block_details(policy_id, list(f_ids))
+        policy_controls = HirerecyMapperData.get_selected_controls_block_details(policy_id, list(f_ids))
+        result['policyControls'] = list(policy_controls.values())
         return result
 
     @staticmethod
