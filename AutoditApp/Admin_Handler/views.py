@@ -19,8 +19,9 @@ class AdminFrameworkHandlerAPI(AuthMixin):
 
     def post(self, request):
         data = request.data
+        user = request.user.pk
         data['created_by'] = request.user.name
-        framework_obj = FrameworkMasterData.save_frameworks(data)
+        framework_obj = FrameworkMasterData.save_frameworks(data, user)
         return Response({"meassage": "Framework Added Successfully", "status": True})
 
 
