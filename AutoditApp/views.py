@@ -1,18 +1,13 @@
-import json
-
-from django.shortcuts import render
 from django.db import connection
-from django.conf import settings
 from django.db.models import Q
 from rest_framework.response import Response
 from AutoditApp.mixins import AuthMixin
 from AutoditApp.models import TenantGlobalVariables, TenantDepartment, Roles, FrameworkMaster, TenantFrameworkMaster, \
-    TenantHierarchyMapping, TenantPolicyManager, ControlMaster
+    ControlMaster
 from AutoditApp.dal import DeparmentsData, TenantGlobalVariableData, TenantMasterData, RolesData, GlobalVariablesData, \
     RolePoliciesData, TenantFrameworkData, TennatControlHelpers, PolicyDetailsData, TenantControlMasterData
 from AutoditApp.constants import RolesConstant as RC, TENANT_LOGOS_BUCKET, S3_ROOT
 from AutoditApp.Admin_Handler.dal import FrameworkMasterData
-from .S3_FileHandler import S3FileHandlerConstant
 from .AWSCognito import Cognito
 from django.conf import settings
 from .models import AccessPolicy
@@ -160,7 +155,7 @@ class SettingManagementAPI(AuthMixin):
                          'groups': tenant_roles,
                          'userDetails': tenant_users})
 
-
+# TODO not using inactive anywhere
 class ControlsManagementAPI(APIView):
     def get(self, request):
         user = request.user
@@ -269,80 +264,12 @@ class ControlsManagementAPI(APIView):
         return Response({"status": "Updated Controls Successfully", "data": data,
                          "new_control_id":tenant_control_obj.id if tenant_control_obj else None})
 
-
     def post(self, request):
         data = request.data
         tenant_id = request.user.tenant_id
+        user_id = request.user.pk
         control_details = data.get('controlDetails', [])
-        framework_id = data.get('frameworkId')
-        control_ids = []
-        # updated_hirarecy_ids = []
-        for entry in control_details:
-            control_ids.append(entry.get('controlId'))
-            # updated_hirarecy_ids.append(entry.get('hirarecyId'))
-        all_tenant_controls = TennatControlHelpers.get_tenant_selected_control(tenant_id, 'id', all=True)
-        selected_active_controls = []
-        selected_inactive_controls = []
-        for control in all_tenant_controls.values():
-            if control.get('is_active'):
-                selected_active_controls.append(control.get('master_hierarchy_id'))
-            else:
-                selected_inactive_controls.append(control.get('master_hierarchy_id'))
-
-        # selected_hirarecy_ids = custom_selected_control_hid.keys()
-        deleted_hirarcy_ids = list(set(selected_active_controls) - set(updated_hirarecy_ids))
-        new_hirarecy_insert_ids = list(set(updated_hirarecy_ids) - set(list(all_tenant_controls.keys())))
-        hirarecy_in_active_ids = list(set(set(selected_inactive_controls).intersection(set(updated_hirarecy_ids))))
-        if deleted_hirarcy_ids:
-            TenantHierarchyMapping.objects.filter(master_hierarchy_id__in=deleted_hirarcy_ids).update(is_active=0)
-        if hirarecy_in_active_ids:
-            TenantHierarchyMapping.objects.filter(master_hierarchy_id__in=hirarecy_in_active_ids).update(is_active=1)
-        if new_hirarecy_insert_ids:
-            query = '''select hm.id as hirarecyId, hm.Fid as frameworkId, hm.Cid as controlId, cm.ControlName, 
-            cm.Description, hm.PolicyId as masterPolicyId  from HirerecyMapper hm Inner Join ControlMaster
-             cm on hm.Cid = cm.Id and hm.id in {hirerecy_ids}'''
-            if len(new_hirarecy_insert_ids) == 1:
-                new_hirarecy_insert_ids += new_hirarecy_insert_ids
-            query = query.format(hirerecy_ids=str(tuple(new_hirarecy_insert_ids)))
-            new_insertion_data = fetch_data_from_sql_query(query)
-            parent_policy_ids = [entry['masterPolicyId'] for entry in new_insertion_data]
-            policy_details_query = '''select pm.id, pm.PolicyName, pm.Category, tpm.ParentPolicyID from 
-            PolicyMaster pm left Join TenantPolicyManager tpm on tpm.ParentPolicyID = pm.id and 
-            tpm.tenant_id =16 where pm.id in {pids}'''
-            if len(parent_policy_ids) == 1:
-                parent_policy_ids += parent_policy_ids
-            policy_details_query = policy_details_query.format(pids=str(tuple(parent_policy_ids)))
-            policy_details = fetch_data_from_sql_query(policy_details_query)
-            insert_polices = []
-            for det in policy_details:
-
-                if not det.get('ParentPolicyID'):
-                    insert_polices.append(
-                        TenantPolicyManager(tenant_id=int(tenant_id),
-                                            tenant_policy_name=det['PolicyName'],
-                                            category=det['Category'],
-                                            version=1,
-                                            policy_reference='',
-                                            parent_policy_id=det['id']))
-            if insert_polices:
-                TenantPolicyManager.objects.bulk_create(insert_polices)
-
-            existing_policy = TenantPolicyManager.objects.filter(parent_policy_id__in=parent_policy_ids).values()
-            existing_policy_format = {entry['parent_policy_id']: entry for entry in existing_policy}
-            inserts_controls_data = []
-            for entry in new_insertion_data:
-                inserts_controls_data.append(TenantHierarchyMapping(controller_id=entry.get('controlId', ''),
-                                                                    controller_name=entry.get('ControlName', ''),
-                                                                    controller_description=entry.get('Description'),
-                                                                    tenant_id=int(tenant_id),
-                                                                    master_hierarchy_id=entry.get('hirarecyId'),
-                                                                    category=entry.get('Category'),
-                                                                    tenant_policy_id=existing_policy_format[
-                                                                        new_insertion_data[0]['masterPolicyId']]['id'],
-                                                                    is_active=1))
-                # TenantHierarchyMapping)
-            if inserts_controls_data:
-                TenantHierarchyMapping.objects.bulk_create(inserts_controls_data)
+        TennatControlHelpers.control_update_handler(tenant_id, data, user_id)
         return Response({'status': 200, 'data': 'Controls updated successfully'})
 
 

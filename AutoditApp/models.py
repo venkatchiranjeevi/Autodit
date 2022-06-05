@@ -167,9 +167,12 @@ class TenantControlMaster(models.Model):
     master_control_id = models.IntegerField(db_column="Master_Control_Id", blank=True)
     control_type = models.CharField(db_column='type', max_length=50, blank=True)
     control_name = models.CharField(db_column="ControlName", max_length=500, blank=True)
+    control_description = models.TextField(db_column='Description', null=True)
     is_deleted = models.IntegerField(db_column='IsDeleted', default=0)
     is_active = models.IntegerField(db_column='IsActive', default=1)
     created_by = models.CharField(db_column="created_by", blank=True, max_length=150)
+    master_framework_id = models.IntegerField(db_column="masterFrameworkId")
+
 
     def __int__(self):
         return self.id
@@ -277,7 +280,7 @@ class PolicyMaster(Base):
     user_id = models.CharField(db_column='UserId', max_length=150)
     policy_file_name = models.CharField(db_column='policyFileName', max_length=250)
     policy_summery = models.TextField(db_column='Summery', blank=True)
-
+    tennant_id = models.IntegerField(db_column='tennant_id', blank=False)
     def __int__(self):
         return self.id
 

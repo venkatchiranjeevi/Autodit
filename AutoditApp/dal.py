@@ -1,14 +1,14 @@
 from AutoditApp.models import TenantDepartment as Departments, Roles, TenantGlobalVariables, Tenant, GlobalVariables, \
-    RolePolicies, AccessPolicy, FrameworkMaster, TenantFrameworkMaster, TenantHierarchyMapping, TenantPolicyManager, \
-    PolicyMaster, ControlMaster, ControlMaster, HirerecyMapper, TenantControlMaster
+    RolePolicies, AccessPolicy,  TenantFrameworkMaster, TenantHierarchyMapping, TenantPolicyManager, \
+    PolicyMaster, ControlMaster,  TenantControlMaster
 from django.db.models import Q
 from .constants import DEFAULT_VIEWS, EDITIOR_VIEWS
 from AutoditApp.AWSCognito import Cognito
-from .core import get_policies_by_role, fetch_data_from_sql_query
+from .core import  fetch_data_from_sql_query
 from .S3_FileHandler import S3FileHandlerConstant
-from django.conf import settings
 
-from .sql_queries import  TENANT_CONTROL_ID, CONTROLS_MASTER
+from .sql_queries import TENANT_CONTROL_ID, CONTROLS_MASTER
+
 
 class BaseConstant:
     def __init__(self):
@@ -56,7 +56,8 @@ class RolesData(BaseConstant):
         role_obj.save()
 
         access_policy = AccessPolicy.objects.create(policyname=data.get("policy_name"),
-                                                    policy={"views": DEFAULT_VIEWS if data.get('role_for') != 'Editor' else EDITIOR_VIEWS, 'actions': [],
+                                                    policy={"views": DEFAULT_VIEWS if data.get(
+                                                        'role_for') != 'Editor' else EDITIOR_VIEWS, 'actions': [],
                                                             "departments": data.get("departments", [])},
                                                     type="GENERAL")
         role_policies = RolePolicies.objects.create(role_id=role_obj.role_id, accesspolicy_id=access_policy.logid)
@@ -87,10 +88,11 @@ class TenantMasterData(BaseConstant):
     @staticmethod
     def save_tenant_master_data(data):
         tenant_obj = Tenant.objects.create(name=data.get("tenant_name"), tenant_details=data.get("details"),
-                              properties=data.get("properties"))
+                                           properties=data.get("properties"))
         TenantGlobalVariables.objects.create(result={'org_name': '', 'org_size': '', 'website_url': '', 'ceo_name': '',
-                                    'ceo_email': '', 'cto_name': '', 'cto_email': '', 'logo_url': '', 'primary_email':'',
-                                                     'primary_name':""},
+                                                     'ceo_email': '', 'cto_name': '', 'cto_email': '', 'logo_url': '',
+                                                     'primary_email': '',
+                                                     'primary_name': ""},
                                              tenant_id=tenant_obj.id)
         return tenant_obj
 
@@ -177,7 +179,6 @@ class TenantFrameworkData(BaseConstant):
                                                                                'master_framework_id', "framework_type")
         return tenant_frameworks
 
-
     @staticmethod
     def in_active_tenant_framework_data(tenant_id, tenant_master_ids, new_teanant_framworks):
         tenant_frameworks_objs = TenantFrameworkMaster.objects.filter(tenant_id=tenant_id).update(is_active=False)
@@ -211,9 +212,10 @@ class TenantFrameworkData(BaseConstant):
     def get_tenant_selected_controls(tenant_id, framework_id):
         query = "select  Id as tenantControlid, TenantFrameworkId, Master_Control_Id as ControlId," \
                 " ControlName, Description, Category, ControlCode from TenantControlMaster tcm where TenantFrameworkId  in" \
-                " (select id from TenantFrameworkMaster tfm where MasterFid = {master_f_id}) and tenantId = {t_id}"
+                " (select id from TenantFrameworkMaster tfm where MasterFid = {master_f_id}) and tenantId = {t_id}" \
+                " and IsActive = 1"
         tenant_controls_query = query.format(master_f_id=framework_id,
-                                       t_id=int(tenant_id))
+                                             t_id=int(tenant_id))
         tenant_controls = fetch_data_from_sql_query(tenant_controls_query)
         selected_controls_formatted_data = {}
         tenant_framework_id = []
@@ -231,9 +233,8 @@ class TenantFrameworkData(BaseConstant):
         tenant_hir_details = fetch_data_from_sql_query(query)
         policy_counts = {}
         for h_det in tenant_hir_details:
-            policy_counts[h_det['tenantControlId']] = h_det.get('con',0)
+            policy_counts[h_det['tenantControlId']] = h_det.get('con', 0)
         return policy_counts
-
 
     @staticmethod
     def get_control_masters():
@@ -254,7 +255,8 @@ class TenantControlMasterData(BaseConstant):
 
     @staticmethod
     def get_policies_count_by_tenant_framework_id(tenant_id):
-        hierarchy_mappings = TenantHierarchyMapping.objects.filter(tenant_id=tenant_id, tenant_framework_id__isnull=False).\
+        hierarchy_mappings = TenantHierarchyMapping.objects.filter(tenant_id=tenant_id,
+                                                                   tenant_framework_id__isnull=False). \
             values("tenant_policy_id", "tenant_framework_id", "tenant_control_id")
         return hierarchy_mappings
 
@@ -269,14 +271,14 @@ class TenantControlMasterData(BaseConstant):
         if not data.get("is_all_controls"):
             if is_selected:
                 tcm_obj = TenantControlMaster.objects.create(tenant_id=tenant_id,
-                                                   tenant_framework_id=tenant_framework_id,
-                                                   control_name=controls[0].get("control_name"),
-                                                   master_control_id=controls[0].get("master_control_id"),
-                                                   created_by=data.get("created_by"))
+                                                             tenant_framework_id=tenant_framework_id,
+                                                             control_name=controls[0].get("control_name"),
+                                                             master_control_id=controls[0].get("master_control_id"),
+                                                             created_by=data.get("created_by"))
 
                 TenantHierarchyMapping.objects.create(tenant_id=tenant_id, tenant_framework_id=tenant_framework_id,
                                                       tenant_control_id=tcm_obj.id, created_by=created_by,
-                                                      controller_id= controls[0].get("master_control_id"))
+                                                      controller_id=controls[0].get("master_control_id"))
             else:
                 TenantControlMaster.objects.filter(id=controls[0].get("tenant_control_id")).delete()
                 TenantHierarchyMapping.objects.filter(tenant_id=tenant_id, tenant_framework_id=tenant_framework_id,
@@ -287,23 +289,99 @@ class TenantControlMasterData(BaseConstant):
             if is_selected:
                 for each_control in all_control_master_data:
                     tcm_object, created = TenantControlMaster.objects.get_create(tenant_id=tenant_id,
-                                                       tenant_framework_id=tenant_framework_id,
-                                                       master_control_id=each_control.get("c_id"))
+                                                                                 tenant_framework_id=tenant_framework_id,
+                                                                                 master_control_id=each_control.get(
+                                                                                     "c_id"))
                     if created:
                         tcm_object.control_name = each_control.get("ControlName")
                         tcm_object.created_by = data.get("created_by")
                         tcm_object.save()
 
-                    thm_object, created = TenantHierarchyMapping.objects.get_or_create(tenant_id=tenant_id, tenant_framework_id=tenant_framework_id,
-                                                          tenant_control_id=tcm_object.id)
+                    thm_object, created = TenantHierarchyMapping.objects.get_or_create(tenant_id=tenant_id,
+                                                                                       tenant_framework_id=tenant_framework_id,
+                                                                                       tenant_control_id=tcm_object.id)
             else:
                 TenantControlMaster.objects.filter(tenant_framework_id=tenant_framework_id).delete()
-                TenantHierarchyMapping.objects.filter(tenant_id=tenant_id, tenant_framework_id=tenant_framework_id).delete()
+                TenantHierarchyMapping.objects.filter(tenant_id=tenant_id,
+                                                      tenant_framework_id=tenant_framework_id).delete()
 
         return tcm_obj
 
 
 class TennatControlHelpers(BaseConstant):
+
+    @staticmethod
+    def control_update_handler(tenant_id, data, user_id):
+        control_details = data.get('controlDetails', [])
+        master_framework_id = data.get('frameworkId')
+        selected_control_ids = [entry.get('controlId') for entry in control_details]
+        tenant_controls = TenantControlMaster.objects.filter(tenant_id=int(tenant_id)).filter(master_framework_id=int(master_framework_id)).values()
+        framework_details = TenantFrameworkMaster.objects.filter(tenant_id=int(tenant_id)).filter(master_framework_id=master_framework_id)
+        framework_details = framework_details[0]
+        active_controls = {}
+        inactive_controls = {}
+        all_controls = {}
+        for control in tenant_controls:
+            all_controls[control.get('master_control_id')] = control
+            if control.get('is_active'):
+                active_controls[control.get('master_control_id')] = control
+            else:
+                inactive_controls[control.get('master_control_id')] = control
+
+        new_master_controls = list(set(selected_control_ids) - set(list(all_controls.keys())))
+        controls_to_inactive = list(set(list(active_controls.keys())) - set(selected_control_ids))
+        controls_to_active_ids = list(set(inactive_controls.keys()).intersection(set(selected_control_ids)))
+        if controls_to_inactive:
+            q1 = Q(tenant_id=int(tenant_id))
+            q2 = Q(master_framework_id=int(master_framework_id))
+            q3 = Q(master_control_id__in=controls_to_inactive)
+            TenantControlMaster.objects.filter(q1 & q2 & q3).update(is_active=0)
+        #     TODO play with policies
+        if controls_to_active_ids:
+            q1 = Q(tenant_id=int(tenant_id))
+            q2 = Q(master_framework_id=int(master_framework_id))
+            q3 = Q(master_control_id__in=controls_to_active_ids)
+            TenantControlMaster.objects.filter(q1 & q2 & q3).update(is_active=1)
+        #     TODO play with policies
+        if new_master_controls:
+            control_details = ControlMaster.objects.filter(id__in=new_master_controls).values()
+            fcd = {cont.get('id'): cont for cont in control_details}
+            need_insertion = []
+            for control in new_master_controls:
+                master_control = fcd.get(control)
+                need_insertion.append(TenantControlMaster(tenant_id=tenant_id,
+                                                          tenant_framework_id=framework_details.id,
+                                                          master_control_id=control,
+                                                          control_name=master_control.get('control_name'),
+                                                          control_description=master_control.get('description'),
+                                                          created_by=user_id,
+                                                          master_framework_id=master_framework_id))
+            TenantControlMaster.objects.bulk_create(need_insertion)
+        # TODO change this to local control ids instead of query. For ease of purpose querying
+        if new_master_controls or controls_to_inactive or controls_to_active_ids:
+            q1 = Q(tenant_id=int(tenant_id))
+            q2 = Q(master_framework_id=master_framework_id)
+            q3 = Q(is_active=1)
+            # TODO at present going with one policy for one framework
+            selected_framework_controls = TenantControlMaster.objects.filter(q1&q2&q3).values('master_control_id')
+            selected_master_controls = [con['master_control_id'] for con in selected_framework_controls]
+            # TennatControlHelpers.policy_handler_on_control_selection(tenant_id,
+            #                                                          master_framework_id,
+            #                                                          framework_details,
+            #                                                          selected_master_controls)
+
+
+    @staticmethod
+    def policy_handler_on_control_selection(tenant_id, master_framework_id, tenant_framework_details, selected_controls):
+        polices_query = "select id as policyId, PolicyName, policy_code, Summery from PolicyMaster pm  " \
+                        "where id in (select DISTINCT(PolicyId) from HirerecyMapper hm where Fid  = {f_id} and Cid  " \
+                        "in {cids}}) "
+        if len(selected_controls) == 1:
+            selected_controls += 1
+        polices_query = polices_query.format(f_id=str(master_framework_id),
+                                             cids=str(tuple(selected_controls)))
+        policy_details = fetch_data_from_sql_query(polices_query)
+        formatted_policy_details = {po.get('policyId'): po for po in policy_details}
 
     @staticmethod
     def get_tenant_selected_control(tenant_id, key='master_hierarchy_id', all=False):
@@ -350,7 +428,8 @@ class PolicyDetailsData(BaseConstant):
                 'Key': '{}/{}'.format(S3FileHandlerConstant.POLICY_BUCKET_SUB_FOLDER, source_key[-1])
             }
             tenant_policy_name = "{}_{}_{}".format(tenant_id, parent_policy_obj.policy_name, source_key)
-            s3_bucket.copy(copy_source, '{}/mani_{}'.format(S3FileHandlerConstant.TENANT_POLICY_BUCKET, tenant_policy_name))
+            s3_bucket.copy(copy_source,
+                           '{}/mani_{}'.format(S3FileHandlerConstant.TENANT_POLICY_BUCKET, tenant_policy_name))
             del source_key[-1]
             final_url = "{}/{}".format(source_key.join(""), tenant_policy_name)
             print(final_url)
