@@ -276,9 +276,9 @@ class ControlsManagementAPI(APIView):
 
 class ControlManagementDetailAPI(APIView):
     def get(self, request):
-        tenant_id = 16
-        master_framework_id = request.GET.get("master_framework_id") or 1
-        master_control_id = request.GET.get("master_control_id") or 9
+        tenant_id = request.user.tenant_id
+        master_framework_id = request.GET.get("master_framework_id")
+        master_control_id = request.GET.get("master_control_id")
         tenant_framework_details = ControlManagementDetailData.get_controls_data_by_control_id_framework_id(
                                                        master_control_id, master_framework_id, tenant_id)
         if tenant_framework_details:
