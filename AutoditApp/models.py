@@ -167,9 +167,12 @@ class TenantControlMaster(models.Model):
     master_control_id = models.IntegerField(db_column="Master_Control_Id", blank=True)
     control_type = models.CharField(db_column='type', max_length=50, blank=True)
     control_name = models.CharField(db_column="ControlName", max_length=500, blank=True)
+    description = models.TextField(db_column="Description", blank=True)
     is_deleted = models.IntegerField(db_column='IsDeleted', default=0)
     is_active = models.IntegerField(db_column='IsActive', default=1)
     created_by = models.CharField(db_column="created_by", blank=True, max_length=150)
+    master_framework_id = models.IntegerField(db_column="masterFrameworkId", blank=True)
+
 
     def __int__(self):
         return self.id

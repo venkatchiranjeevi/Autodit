@@ -9,7 +9,8 @@ from AutoditApp.mixins import AuthMixin
 from AutoditApp.models import TenantGlobalVariables, TenantDepartment, Roles, FrameworkMaster, TenantFrameworkMaster, \
     TenantHierarchyMapping, TenantPolicyManager, ControlMaster
 from AutoditApp.dal import DeparmentsData, TenantGlobalVariableData, TenantMasterData, RolesData, GlobalVariablesData, \
-    RolePoliciesData, TenantFrameworkData, TennatControlHelpers, PolicyDetailsData, TenantControlMasterData
+    RolePoliciesData, TenantFrameworkData, TennatControlHelpers, PolicyDetailsData, TenantControlMasterData, \
+    ControlManagementDetailData
 from AutoditApp.constants import RolesConstant as RC, TENANT_LOGOS_BUCKET, S3_ROOT
 from AutoditApp.Admin_Handler.dal import FrameworkMasterData
 from .S3_FileHandler import S3FileHandlerConstant
@@ -161,7 +162,7 @@ class SettingManagementAPI(AuthMixin):
                          'userDetails': tenant_users})
 
 
-class ControlsManagementAPI(APIView):
+class ControlsManagementAPI(AuthMixin):
     def get(self, request):
         user = request.user
         tenant_id = user.tenant_id
@@ -218,7 +219,7 @@ class ControlsManagementAPI(APIView):
 
         # Policy count from Tenant Hirerachy mapper
 
-        hierarchy_mappings = TenantControlMasterData.get_policies_count_by_tenant_framework_id(tenant_id)
+        hierarchy_mappings = TenantControlMasterData.get_policies_count_by_tenant_id(tenant_id)
         hierarchy_mappings_data = defaultdict(list)
         for each_hierarchy in hierarchy_mappings:
             key = "{}_{}".format(each_hierarchy.get("tenant_framework_id"), each_hierarchy.get("tenant_control_id"))
@@ -345,6 +346,23 @@ class ControlsManagementAPI(APIView):
         return Response({'status': 200, 'data': 'Controls updated successfully'})
 
 
+class ControlManagementDetailAPI(AuthMixin):
+    def get(self, request):
+        tenant_id = request.user.tenant_id
+        master_framework_id = request.GET.get("master_framework_id")
+        master_control_id = request.GET.get("master_control_id")
+        tenant_framework_details = ControlManagementDetailData.get_controls_data_by_control_id_framework_id(
+                                                       master_control_id, master_framework_id, tenant_id)
+        if tenant_framework_details:
+            tenant_f_id = tenant_framework_details[0].get("tenant_f_id")
+            tenant_c_id = tenant_framework_details[0].get("tenant_c_id")
+            hierarchy_data = ControlManagementDetailData.get_policies_by_tenant_framework_id_and_tenant_control_id(
+                tenant_f_id, tenant_c_id, tenant_id)
+            tenant_framework_details[0]['policies'] = hierarchy_data
+
+        return Response(tenant_framework_details)
+
+
 class PolicyManagementAPI(AuthMixin):
     def get(self, request):
         tenant_id = request.user.tenant_id
@@ -464,7 +482,7 @@ class ControlsManagementAPIALl(APIView):
 
         # Policy count from Tenant Hirerachy mapper
 
-        hierarchy_mappings = TenantControlMasterData.get_policies_count_by_tenant_framework_id(tenant_id)
+        hierarchy_mappings = TenantControlMasterData.get_policies_count_by_tenant_id(tenant_id)
         hierarchy_mappings_data = defaultdict(list)
         for each_hierarchy in hierarchy_mappings:
             key = "{}_{}".format(each_hierarchy.get("tenant_framework_id"), each_hierarchy.get("tenant_control_id"))

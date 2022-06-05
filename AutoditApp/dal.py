@@ -8,7 +8,8 @@ from .core import get_policies_by_role, fetch_data_from_sql_query
 from .S3_FileHandler import S3FileHandlerConstant
 from django.conf import settings
 
-from .sql_queries import  TENANT_CONTROL_ID, CONTROLS_MASTER
+from .sql_queries import  TENANT_CONTROL_ID, CONTROLS_MASTER, TENANT_FRAMEWORK_DETAILS, TENANT_FRAMEWORK_POLICIES,\
+    CONTROL_FRAMEWORK_DETAILS
 
 class BaseConstant:
     def __init__(self):
@@ -169,6 +170,12 @@ class TenantGlobalVariableData(BaseConstant):
 class TenantFrameworkData(BaseConstant):
 
     @staticmethod
+    def get_tenant_framework_details(tenant_id, control_id, framework_id):
+        query = TENANT_FRAMEWORK_DETAILS.format(control_id, framework_id, tenant_id)
+        tenant_controls = fetch_data_from_sql_query(query)
+        return tenant_controls
+
+    @staticmethod
     def get_tenant_frameworks(tenant_id, framework_id):
         query = Q(is_active=1, tenant_id=tenant_id)
         if framework_id:
@@ -253,10 +260,15 @@ class TenantControlMasterData(BaseConstant):
         return tenant_controls
 
     @staticmethod
-    def get_policies_count_by_tenant_framework_id(tenant_id):
+    def get_policies_count_by_tenant_id(tenant_id):
         hierarchy_mappings = TenantHierarchyMapping.objects.filter(tenant_id=tenant_id, tenant_framework_id__isnull=False).\
             values("tenant_policy_id", "tenant_framework_id", "tenant_control_id")
         return hierarchy_mappings
+
+    @staticmethod
+    def get_policies_by_control_and_framework_id(tenant_framework_id, tenant_control_id, tenant_id):
+        TenantHierarchyMapping.objects.filter(tenant_id=tenant_id, tenant_framework_id=tenant_framework_id,
+                                              tenant_control_id=tenant_control_id).values("")
 
     @staticmethod
     def save_tenant_controls(data):
@@ -321,6 +333,22 @@ class TennatControlHelpers(BaseConstant):
             'is_active')
         custom_selected_control = {entry[key]: entry for entry in selected_controls}
         return custom_selected_control
+
+
+class ControlManagementDetailData(BaseConstant):
+
+    @staticmethod
+    def get_controls_data_by_control_id_framework_id(control_id, framework_id, tenant_id):
+        query = CONTROL_FRAMEWORK_DETAILS.format(tenant_id, control_id, framework_id)
+        controls_data = fetch_data_from_sql_query(query)
+        return controls_data
+
+    @staticmethod
+    def get_policies_by_tenant_framework_id_and_tenant_control_id(tenant_f_id, tenant_c_id, tenant_id):
+        query = TENANT_FRAMEWORK_POLICIES.format(tenant_f_id, tenant_c_id, tenant_id)
+        tenant_policies = fetch_data_from_sql_query(query)
+        return tenant_policies
+
 
 
 class PolicyDetailsData(BaseConstant):

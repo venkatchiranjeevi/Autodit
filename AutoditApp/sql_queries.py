@@ -9,3 +9,17 @@ TENANT_CONTROL_ID = """select tcm.Id as Tenant_control_Id, tcm.Master_Control_Id
 tcm.TenantFrameworkId as tenant_framework_id , tfm.MasterFId  as master_framework_id
                         from TenantControlMaster tcm left join TenantFrameworkMaster tfm on tcm.TenantFrameworkId =tfm.Id 
                         where  TenantFrameworkId in ({}) """
+
+
+TENANT_FRAMEWORK_DETAILS = """ select cm.Id as control_id,cm.ControlName ,cm.Description , tfm.Id  as tenant_framework_id from ControlMaster cm 
+                           left join TenantFrameworkMaster tfm on cm.FrameworkId =tfm.MasterFId 
+                             where cm.Id ={} and cm.FrameworkId ={} and tfm.tenantId ={} """
+
+
+TENANT_FRAMEWORK_POLICIES = """ select pm.PolicyName ,pm.policy_code ,pm.Summery  from TenantHierarchyMapping thm left join 
+                                  TenantPolicyManager tpm  on tpm.id =thm.TenantPolicyId left join PolicyMaster pm on tpm.ParentPolicyID =pm.id
+                                 where tenantFrameworkId ={} and tenantControlId ={} and thm.tenantId ={} """
+
+CONTROL_FRAMEWORK_DETAILS = """select tcm.Id  as tenant_c_id,tcm.ControlName , tcm.Description , tcm.TenantFrameworkId as tenant_f_id,tcm .tenantId as tenant_id,fm.id as frameWork_id,
+                                fm.FrameworkName from TenantControlMaster tcm left join FrameworkMaster fm on fm.id=tcm.masterFrameworkId 
+                                where tcm.tenantId ={} and tcm.Master_Control_Id ={} and tcm.masterFrameworkId ={}"""
