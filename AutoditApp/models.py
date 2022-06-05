@@ -280,7 +280,7 @@ class PolicyMaster(Base):
     user_id = models.CharField(db_column='UserId', max_length=150)
     policy_file_name = models.CharField(db_column='policyFileName', max_length=250)
     policy_summery = models.TextField(db_column='Summery', blank=True)
-
+    tennant_id = models.IntegerField(db_column='tennant_id', blank=False)
     def __int__(self):
         return self.id
 
