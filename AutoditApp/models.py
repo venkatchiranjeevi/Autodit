@@ -181,6 +181,29 @@ class TenantControlMaster(models.Model):
         db_table = 'TenantControlMaster'
 
 
+class TenantControlAudit(Base):
+    id = models.AutoField(primary_key=True, db_column='Id')
+    tenant_id = models.IntegerField(db_column='tenantId', blank=True)
+    tenant_framework_id = models.IntegerField(db_column='TenantFrameworkId')
+    control_code = models.CharField(db_column="ControlCode", null=True, max_length=100)
+    old_control_name = models.CharField(db_column='OldControlName', max_length=50, blank=True)
+    new_control_name = models.CharField(db_column="newControlName", max_length=500, blank=True)
+    old_control_description = models.TextField(db_column='OldDescription', null=True)
+    new_control_description = models.TextField(db_column='newDescription', null=True)
+    version = models.CharField(db_column="version", null=True, max_length=100)
+    is_deleted = models.IntegerField(db_column='IsDeleted', default=0)
+    is_active = models.IntegerField(db_column='IsActive', default=1)
+    created_by = models.CharField(db_column="created_by", blank=True, max_length=150)
+    tenant_control_id = models.IntegerField(db_column="TenantControlId", null=True)
+
+    def __int__(self):
+        return self.id
+
+    class Meta:
+        db_table = 'TenantControlAudit'
+
+
+
 class TenantHierarchyMapping(Base):
     id = models.AutoField(primary_key=True, db_column='id')
     tenant_id = models.IntegerField(db_column='tenantId')

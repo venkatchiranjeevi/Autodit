@@ -1,6 +1,6 @@
 from AutoditApp.models import TenantDepartment as Departments, Roles, TenantGlobalVariables, Tenant, GlobalVariables, \
     RolePolicies, AccessPolicy,  TenantFrameworkMaster, TenantHierarchyMapping, TenantPolicyManager, \
-    PolicyMaster, ControlMaster,  TenantControlMaster
+    PolicyMaster, ControlMaster,  TenantControlMaster, TenantControlAudit
 from django.db.models import Q
 from .constants import DEFAULT_VIEWS, EDITIOR_VIEWS
 from AutoditApp.AWSCognito import Cognito
@@ -426,6 +426,42 @@ class ControlManagementDetailData(BaseConstant):
         query = TENANT_FRAMEWORK_POLICIES.format(tenant_f_id, tenant_c_id, tenant_id)
         tenant_policies = fetch_data_from_sql_query(query)
         return tenant_policies
+
+    @staticmethod
+    def get_control_history(tenant_id, control_id):
+        history = TenantControlAudit.objects.filter(tenant_id=tenant_id, tenant_control_id=control_id).values("version",
+                                        "created_by", "old_control_name", "new_control_name",
+                                        "old_control_description", "new_control_description", "created_on").\
+                        order_by('-created_on')
+        return history
+
+    @staticmethod
+    def save_control_description(data):
+        tenant_control_object = TenantControlMaster.objects.get(id=data.get("id"))
+        old_description = tenant_control_object.control_description
+        old_name = tenant_control_object.control_name
+        new_description = data.get("description")
+        new_control_name = data.get("control_name")
+        tenant_control_object.control_description = new_description
+        tenant_control_object.control_name = new_control_name
+        tenant_control_object.save()
+
+        last_audit = TenantControlAudit.objects.filter(tenant_control_id=data.get("id")).last()
+        if last_audit:
+            version = last_audit.version
+            version = int(version)+1
+        else:
+            version = 1
+        tenant_audit = TenantControlAudit(tenant_control_id=data.get("id"), old_control_description=old_description,
+                           new_control_description=new_description, tenant_framework_id=tenant_control_object.tenant_framework_id,
+                           version=version,
+                           old_control_name=old_name, new_control_name=new_control_name, tenant_id=data.get("tenant_id"),
+                                          created_by=data.get("created_by"))
+        tenant_audit.save()
+
+        return tenant_control_object
+
+
 
 
 

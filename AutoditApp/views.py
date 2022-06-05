@@ -275,6 +275,7 @@ class ControlsManagementAPI(APIView):
 
 
 class ControlManagementDetailAPI(APIView):
+
     def get(self, request):
         tenant_id = request.user.tenant_id
         master_framework_id = request.GET.get("master_framework_id")
@@ -289,6 +290,22 @@ class ControlManagementDetailAPI(APIView):
             tenant_framework_details[0]['policies'] = hierarchy_data
 
         return Response(tenant_framework_details)
+
+    def post(self, request):
+        data = request.data
+        data['tenant_id'] = request.user.tenant_id
+        data['created_by'] = request.user.name
+        result = ControlManagementDetailData.save_control_description(data)
+        return Response({"status": True, "message": "Updated Successfully"})
+
+
+class ControlManagementDetailHistoryAPI(APIView):
+
+    def get(self, request):
+        tenant_control_id = request.GET.get("id")
+        tenant_id = request.user.tenant_id
+        history = ControlManagementDetailData.get_control_history(tenant_id, tenant_control_id)
+        return Response(history)
 
 
 class PolicyManagementAPI(AuthMixin):
@@ -324,8 +341,6 @@ class ControlsCostomTagsAPI(AuthMixin):
         FrameworkMaster fm on hm.Fid = fm.id Left  JOIN ControlMaster cm on hm.CId = cm.Id ''')
         return Response({'data': 'got success'})
 
-    def post(self, request):
-        pass
 
 
 class TenantFrameworkMasterAPI(AuthMixin):
