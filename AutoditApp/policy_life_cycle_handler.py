@@ -89,6 +89,7 @@ class PolicyLifeCycleHandler:
         policy_details = TenantPolicyManager.objects.get(id=int(policy_id))
         policy_content = S3FileHandlerConstant.read_s3_content(policy_details.policy_file_name)
         departments = PolicyDepartmentsHandlerData.get_departments_by_policy_id(tenant_id, policy_id)
+        users = None
         # TODO find next review date
         return {
             "policyId": policy_id,

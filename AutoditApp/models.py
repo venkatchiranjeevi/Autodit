@@ -412,6 +412,20 @@ class TenantPolicyDepartments(Base):
         db_table = 'TenantPolicyDepartments'
 
 
+class TenantControlsCustomTags(Base):
+    id = models.AutoField(primary_key=True, db_column='id')
+    tenant_id = models.IntegerField(db_column='tenantId')
+    tenant_policy_id = models.IntegerField(db_column='tenantPolicyID')
+    tag_name = models.CharField(db_column="TagName", null=True)
+    tag_description = models.CharField(db_column="TagDescription", null=True)
+
+    def __int__(self):
+        return self.id
+
+    class Meta:
+        db_table = 'TenantControlsCustomTags'
+
+
 # ADMIN AUDIT
 # CUSTOM TAGS
 # CKEDITOR API'S

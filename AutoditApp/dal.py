@@ -1,6 +1,6 @@
 from AutoditApp.models import TenantDepartment as Departments, Roles, TenantGlobalVariables, Tenant, GlobalVariables, \
     RolePolicies, AccessPolicy, TenantFrameworkMaster, TenantHierarchyMapping, TenantPolicyManager, \
-    PolicyMaster, ControlMaster, TenantControlMaster, TenantControlAudit, TenantPolicyDepartments
+    PolicyMaster, ControlMaster, TenantControlMaster, TenantControlAudit, TenantPolicyDepartments, TenantControlsCustomTags
 from django.db.models import Q
 from .constants import DEFAULT_VIEWS, EDITIOR_VIEWS
 from AutoditApp.AWSCognito import Cognito
@@ -542,7 +542,7 @@ class PolicyDepartmentsHandlerData(BaseConstant):
     @staticmethod
     def get_departments_by_policy_id(tenant_id, policy_id):
         departments = list(TenantPolicyDepartments.objects.filter(tenant_id=tenant_id, tenant_policy_id=policy_id).values("id",
-                                                                    "department_name"))
+                                                                    "department_name", ))
         return departments
 
 
@@ -565,3 +565,31 @@ class PolicyDepartmentsHandlerData(BaseConstant):
         tpd_obj = TenantPolicyDepartments.objects.get(id=policy_department_id)
         tpd_obj.delete()
         return True
+
+
+class TenantPolicyCustomTagsData(BaseConstant):
+    @staticmethod
+    def get_policy_custom_tags(tenant_id, policy_id):
+        custom_tags = TenantControlsCustomTags.objects.filter(tenant_id=tenant_id, tenant_policy_id=policy_id).values("id",
+                                                                                        "tag_name", "tag_description")
+        return custom_tags
+
+    @staticmethod
+    def save_custom_tags(data):
+        custom_tags = data.get("tagsDetails")
+        custom_tags_instancess = []
+        for each_tag in custom_tags:
+            tcc_obj = TenantControlsCustomTags(tenant_id=data.get("tennat_id"), tenant_policy_id=data.get("policyId"),
+                                     tag_name=each_tag.get("tagName"))
+            custom_tags_instancess.append(tcc_obj)
+
+        TenantControlsCustomTags.objects.bulk_create(custom_tags_instancess)
+        return True
+
+    @staticmethod
+    def delete_policy_custom_tag(tag_id):
+        tcc_obj = TenantControlsCustomTags.objects.get(id=tag_id)
+        tcc_obj.delete()
+        return True
+
+

@@ -4,7 +4,7 @@ from AutoditApp.user_management import UserProfile
 from AutoditApp.views import DepartmentsAPI, RolesAPI, SettingManagementAPI, ControlsManagementAPI, GlobalVariablesAPI, \
     PolicyManagementAPI, TenantGlobalVariablesAPI, TenantFrameworkMasterAPI, TenantLogoUploaderAPI, PolicyDetailsAPI, \
     ControlsManagementAPIALl, ControlManagementDetailAPI, ControlManagementDetailHistoryAPI,PolicyDetailsHandler, \
-    PolicyContentHandler, PolicyDepartmentsHandler
+    PolicyContentHandler, PolicyDepartmentsHandler, TenantPolicyCustomTags
 urlpatterns = [
     url("user/", user_management.UsersList.as_view()),
     url("^users/profile/", UserProfile.as_view()),
@@ -26,6 +26,7 @@ urlpatterns = [
     url("^policy/get-details", PolicyDetailsAPI.as_view()),
     url("^policy/policy-details", PolicyDetailsHandler.as_view()),
     url("^policy/update-content", PolicyContentHandler.as_view()),
-    url("^policy/department", PolicyDepartmentsHandler.as_view())
+    url("^policy/department", PolicyDepartmentsHandler.as_view()),
+    url("^policy/custom-tags", TenantPolicyCustomTags.as_view())
 
 ]

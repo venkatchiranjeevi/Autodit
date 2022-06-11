@@ -6,7 +6,7 @@ from AutoditApp.models import TenantGlobalVariables, TenantDepartment, Roles, Fr
     ControlMaster
 from AutoditApp.dal import DeparmentsData, TenantGlobalVariableData, TenantMasterData, RolesData, GlobalVariablesData, \
     RolePoliciesData, TenantFrameworkData, TennatControlHelpers, PolicyDetailsData, TenantControlMasterData, \
-    ControlManagementDetailData, PolicyDepartmentsHandlerData
+    ControlManagementDetailData, PolicyDepartmentsHandlerData, TenantPolicyCustomTagsData
 from AutoditApp.constants import RolesConstant as RC, TENANT_LOGOS_BUCKET, S3_ROOT
 from AutoditApp.Admin_Handler.dal import FrameworkMasterData
 from .AWSCognito import Cognito
@@ -534,6 +534,19 @@ class PolicyDepartmentsHandler(AuthMixin):
         result = PolicyDepartmentsHandlerData.delete_policy_department(policy_department_id)
         return Response({"status": result, "message": "Department Deleted Successfully"})
 
+
+class TenantPolicyCustomTags(AuthMixin):
+    def post(self, request):
+        data = request.data
+        data["tenant_id"] = request.user.tenant_id
+        data['created_by'] = request.user.userid
+        result = TenantPolicyCustomTagsData.save_custom_tags(data)
+        return Response({"status": result, "message": "Custom Tags Added Successfully"})
+
+    def delete(self, request):
+        custom_tag_id = request.GET.get("id")
+        result = TenantPolicyCustomTagsData.delete_policy_custom_tag(custom_tag_id)
+        return Response({"status": result, "message": "Custom Tags Deleted Successfully"})
 
 
 
