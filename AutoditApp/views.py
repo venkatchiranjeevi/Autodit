@@ -18,6 +18,7 @@ from rest_framework.views import APIView
 
 # Create your views here.
 from .core import get_users_by_tenant_id, fetch_data_from_sql_query
+from .policy_life_cycle_handler import PolicyLifeCycleHandler
 
 
 class DepartmentsAPI(AuthMixin):
@@ -273,9 +274,19 @@ class ControlsManagementAPI(APIView):
         return Response({'status': 200, 'data': 'Controls updated successfully'})
 
 
-class PolicyManagementAPI(AuthMixin):
+class TenantPolicyDetails(AuthMixin):
     def get(self, request):
         tenant_id = request.user.tenant_id
+
+        return Response({})
+
+
+class PolicyManagementAPI(AuthMixin):
+    def get(self, request):
+        # TODO get only those tenant related polices and framworks. if frameworkId is avaialbe then only those framework policies if not else all
+        # GET departments of policy and add it in response
+        tenant_id = request.user.tenant_id
+
         policies_data = fetch_data_from_sql_query('select a.tenant_id, a.tenantPolicyName, a.version, '
                                                   'a.editor, a.reviewer, a.approver, a.Departments,a.PolicyReference,'
                                                   ' a.State,b.id as FrameworkId, b.FrameworkName, b.Description '
@@ -356,21 +367,18 @@ class TenantLogoUploaderAPI(AuthMixin):
 class PolicyDetailsAPI(AuthMixin):
 
     def get(self, request):
-        policy_id = request.GET.get("policy_id")
-        # tenant_id = request.user.tenant_id
-        get_policy_data = PolicyDetailsData.get_policy_details(6, 16)
-        return Response({'data': ''})
-    #     Step get policy details and editiot, revier and assigner
-    # Step2 get control details
-    # Step3 get revier
-    #
+        data = request.GET
+        policy_id = data.get('policyId')
+        user = request.user
+        tenant_id = user.tenant_id
+        details = PolicyLifeCycleHandler.get_complete_policy_details(int(policy_id), int(tenant_id))
+        return Response(details)
 
 class ControlsManagementAPIALl(APIView):
 
     def get(self, request):
-        # user = request.user
-        # tenant_id = user.tenant_id
-        tenant_id = 16
+        user = request.user
+        tenant_id = user.tenant_id
         req_framework_id = request.GET.get("framework_id")
         # selected frameworks data
         selected_frameworks = TenantFrameworkData.get_tenant_frameworks(tenant_id, req_framework_id)
@@ -434,11 +442,63 @@ class ControlsManagementAPIALl(APIView):
         return Response(final_frameworks_controls)
 
 
+# Fields - id, description, policy variables along with values, configured review cycle,
+class PolicyDetailsHandler(AuthMixin):
+    def get(self, request):
+        data = request.data
+        policy_id = data.get('policyId')
+        user = request.user
+        tenant_id = user.tenant_id
+        details = PolicyLifeCycleHandler.get_complete_policy_details(policy_id, tenant_id)
+        return Response(details)
+
+
+    def post(self, request):
+        data = request.data
+        policy_id = data.get('policyId')
+        user = request.user
+        tenant_id = user.tenant_id
+        updated_policy_data = PolicyLifeCycleHandler.policy_summery_details_handler(data, policy_id)
+        updated_policy_data['policy_params'] = PolicyLifeCycleHandler.policy_variables_handler(data, policy_id, tenant_id)
+        return Response({"meassage": "Policy Details Updated Successfully", "status": True, "data": updated_policy_data})
+
+
+class PolicyContentHandler(AuthMixin):
+    # def get(self, request):
+    #     pass
+
+    def post(self, request):
+        data = request.data
+        policy_id = data.get('policyId')
+        user = request.user
+        tenant_id = user.tenant_id
+        PolicyLifeCycleHandler.policy_content_details_handler(data, policy_id, tenant_id)
+        return Response({"message": "Policy Content updated successfully", "status": True})
+
+
+
+class TenantDepartmentUsers(AuthMixin):
+    def get(self, request):
+        pass
+
+    def post(self, request):
+        pass
+
+
 class PolicyStateHandler(AuthMixin):
+    def get(self, request):
+        pass
+
     def post(self, request):
         pass
 
 
-class PolicyUsersHandler(AuthMixin):
+class PolicyDepartmentsHandler(AuthMixin):
+    def get(self, request):
+        pass
+
     def post(self, request):
         pass
+
+
+

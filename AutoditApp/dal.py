@@ -372,7 +372,24 @@ class TennatControlHelpers(BaseConstant):
 
 
     @staticmethod
-    def policy_handler_on_control_selection(tenant_id, master_framework_id, tenant_framework_details, selected_controls):
+    def policy_handler_on_control_selection(tenant_id,
+                                            master_framework_id,
+                                            tenant_framework_details,
+                                            inactivated_controls,
+                                            activated_controls,
+                                            added_controls):
+        if inactivated_controls:
+            if len(inactivated_controls) == 1:
+                inactivated_controls += 1
+
+        if activated_controls:
+            if len(activated_controls) == 1:
+                activated_controls += 1
+
+        if added_controls:
+            if len(added_controls) == 1:
+                added_controls += 1
+
         polices_query = "select id as policyId, PolicyName, policy_code, Summery from PolicyMaster pm  " \
                         "where id in (select DISTINCT(PolicyId) from HirerecyMapper hm where Fid  = {f_id} and Cid  " \
                         "in {cids}}) "
@@ -382,6 +399,18 @@ class TennatControlHelpers(BaseConstant):
                                              cids=str(tuple(selected_controls)))
         policy_details = fetch_data_from_sql_query(polices_query)
         formatted_policy_details = {po.get('policyId'): po for po in policy_details}
+
+    @staticmethod
+    def policy_handler_for_new_controls(added_controls, tennant_id, master_framework_id):
+        master_polices_query = "select id as policyId, PolicyName, policy_code, Summery from PolicyMaster pm  " \
+                        "where id in (select DISTINCT(PolicyId) from HirerecyMapper hm where Fid  = {f_id} and Cid  " \
+                        "in {cids}}) "
+        master_polices_query = master_polices_query.format(cids = str(tuple(added_controls)),
+                                             f_id=str(master_framework_id))
+        master_policies = fetch_data_from_sql_query(master_polices_query)
+
+        existing_policies = ""
+
 
     @staticmethod
     def get_tenant_selected_control(tenant_id, key='master_hierarchy_id', all=False):

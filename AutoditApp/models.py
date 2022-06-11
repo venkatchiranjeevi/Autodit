@@ -295,6 +295,7 @@ class TenantPolicyManager(Base):
     tenant_policy_name = models.CharField(db_column='tenantPolicyName', max_length=120)
     category = models.CharField(db_column='Category', max_length=120)
     policy_reference = models.CharField(db_column='policyReference', max_length=500)
+    summery = models.TextField(db_column='summery', null=True)
     created_by = models.CharField(db_column='created_by', max_length=120)
     version = models.IntegerField(db_column='version', default=1)
     editor = models.IntegerField(db_column='editor', null=True)
@@ -306,6 +307,10 @@ class TenantPolicyManager(Base):
     state = models.CharField(db_column='State', max_length=50, default='Editing')
     user_id = models.CharField(db_column='UserId', max_length=150, default='')
     parent_policy_id = models.IntegerField(db_column='ParentPolicyID', null=True)
+    review_period = models.CharField(db_column='reviewPeriod', null=True, max_length=20)
+    published_date = CustomDateTimeField(db_column='publishedDate', null=True)
+    code = models.CharField(db_column='code', max_length=50)
+    policy_file_name=models.CharField(db_column='policyFileName', max_length=250, null=True)
 
     def __int__(self):
         return self.id
@@ -332,6 +337,39 @@ class MasterPolicyParameter(Base):
     class Meta:
         db_table = 'MasterPolicyParameter'
 
+
+class TenantPolicyVersionHistory(Base):
+    id = models.AutoField(primary_key=True, db_column='id')
+    tenant_id = models.IntegerField(db_column='tenantId')
+    policy_id = models.IntegerField(db_column='policyId')
+    tenant_policy_name = models.CharField(db_column='tenantPolicyName', max_length=250)
+    old_version = models.CharField(db_column='oldVersion', max_length=10)
+    new_version = models.CharField(db_column='newVersion', max_length=10)
+    policy_file_name = models.CharField(db_column='policyFileName', max_length=250)
+
+    class Meta:
+        db_table = 'TenantPolicyVersionHistory'
+
+
+class TenantPolicyParameter(Base):
+    id = models.AutoField(primary_key=True, db_column='id')
+    tenant_id=models.IntegerField(db_column='tenantId')
+    policy_id = models.IntegerField(db_column='policyId')
+    type= models.CharField(db_column="type", max_length=50)
+    parameter_key = models.CharField(db_column='parameterKey', max_length=250)
+    parameter_type = models.CharField(db_column='parameterType', max_length=250)
+    parameter_value = models.CharField(db_column='parameterValue', max_length=500)
+    description = models.TextField(db_column='Description')
+    created_by = models.CharField(db_column='createdBy', max_length=150)
+    is_deleted = models.IntegerField(db_column='is_deleted', default=0)
+    is_active = models.IntegerField(db_column='is_active', default=1)
+
+
+    def __int__(self):
+        return self.id
+
+    class Meta:
+        db_table = 'TenantPolicyParameter'
 
 
 # ADMIN AUDIT
