@@ -395,6 +395,35 @@ class TenantPolicyParameter(Base):
         db_table = 'TenantPolicyParameter'
 
 
+class TenantPolicyDepartments(Base):
+    id = models.AutoField(primary_key=True, db_column='id')
+    tenant_id = models.IntegerField(db_column='tenant_id')
+    tenant_policy_id = models.IntegerField(db_column='TenantPolicyID')
+    tenant_dep_id = models.IntegerField(db_column="TenantDepartment_id")
+    created_by = models.CharField(db_column='createdBy', max_length=150)
+    is_active = models.IntegerField(db_column="IsActive", default=True)
+    department_name = models.CharField(db_column="DepartmentName", max_length=15, null=True)
+
+    def __int__(self):
+        return self.id
+
+    class Meta:
+        db_table = 'TenantPolicyDepartments'
+
+
+class TenantControlsCustomTags(Base):
+    id = models.AutoField(primary_key=True, db_column='id')
+    tenant_id = models.IntegerField(db_column='tenantId')
+    tenant_policy_id = models.IntegerField(db_column='tenantPolicyID')
+    tag_name = models.CharField(db_column="TagName", null=True)
+    tag_description = models.CharField(db_column="TagDescription", null=True)
+
+    def __int__(self):
+        return self.id
+
+    class Meta:
+        db_table = 'TenantControlsCustomTags'
+
 class MetaData(Base):
     id = models.AutoField(primary_key=True, db_column='id')
     key = models.CharField(db_column='key', max_length=50)
