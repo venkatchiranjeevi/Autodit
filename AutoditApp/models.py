@@ -395,7 +395,13 @@ class TenantPolicyParameter(Base):
         db_table = 'TenantPolicyParameter'
 
 
-# ADMIN AUDIT
-# CUSTOM TAGS
-# CKEDITOR API'S
-# POLICY STATES
+class MetaData(Base):
+    id = models.AutoField(primary_key=True, db_column='id')
+    key = models.CharField(db_column='key', max_length=50)
+    category = models.CharField(db_column='category', max_length=50)
+    display_name = models.CharField(db_column='DisplayName', max_length=250)
+    next = models.TextField(db_column='next')
+    prev = models.TextField(db_column='prev')
+
+    class Meta:
+        db_table = 'MetaData'

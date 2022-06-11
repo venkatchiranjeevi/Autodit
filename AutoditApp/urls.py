@@ -3,14 +3,15 @@ from AutoditApp import user_management
 from AutoditApp.user_management import UserProfile
 from AutoditApp.views import DepartmentsAPI, RolesAPI, SettingManagementAPI, ControlsManagementAPI, GlobalVariablesAPI, \
     PolicyManagementAPI, TenantGlobalVariablesAPI, TenantFrameworkMasterAPI, TenantLogoUploaderAPI, PolicyDetailsAPI, \
-    ControlsManagementAPIALl, ControlManagementDetailAPI, ControlManagementDetailHistoryAPI,TenantPolicyDetails, PolicyDetailsHandler, PolicyContentHandler
+    ControlsManagementAPIALl, ControlManagementDetailAPI, ControlManagementDetailHistoryAPI, \
+    PolicyDetailsHandler, PolicyContentHandler, MetaDetailsHandler
 
 urlpatterns = [
     url("user/", user_management.UsersList.as_view()),
     url("^users/profile/", UserProfile.as_view()),
     url("^departments/", DepartmentsAPI.as_view()),
     url("^roles/", RolesAPI.as_view()),
-
+    url("^meta-details", MetaDetailsHandler.as_view()),
     url("^settings/", SettingManagementAPI.as_view()),
     url("^control-management/", ControlsManagementAPI.as_view()),
     url("^control-details/", ControlManagementDetailAPI.as_view()),

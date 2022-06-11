@@ -19,7 +19,7 @@ from rest_framework.views import APIView
 
 # Create your views here.
 from .core import get_users_by_tenant_id, fetch_data_from_sql_query
-from .policy_life_cycle_handler import PolicyLifeCycleHandler
+from .policy_life_cycle_handler import PolicyLifeCycleHandler, MetaDataDetails
 
 
 class DepartmentsAPI(AuthMixin):
@@ -315,7 +315,7 @@ class PolicyManagementAPI(AuthMixin):
         # GET departments of policy and add it in response
         tenant_id = request.user.tenant_id
 
-        policies_data = fetch_data_from_sql_query('select a.tenant_id, a.tenantPolicyName, a.version, '
+        policies_data = fetch_data_from_sql_query('select a.id as policyId, a.tenant_id, a.tenantPolicyName, a.version, '
                                                   'a.editor, a.reviewer, a.approver, a.Departments,a.PolicyReference,'
                                                   ' a.State,b.id as FrameworkId, b.FrameworkName, b.Description '
                                                   'from TenantPolicyManager a'
@@ -527,4 +527,10 @@ class PolicyDepartmentsHandler(AuthMixin):
         pass
 
 
+class MetaDetailsHandler(AuthMixin):
+    def get(self, request):
+        user = request.user
+        tenant_id = user.tenant_id
+        details = MetaDataDetails.tenant_meta_data(tenant_id)
+        return Response(details)
 

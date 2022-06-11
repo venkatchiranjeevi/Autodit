@@ -1,8 +1,10 @@
 import json
+from collections import defaultdict
 
 from AutoditApp.S3_FileHandler import S3FileHandlerConstant
+from AutoditApp.core import fetch_data_from_sql_query
 from AutoditApp.models import TenantPolicyManager, TenantPolicyParameter, TenantPolicyVersionHistory, \
-    TenantGlobalVariables
+    TenantGlobalVariables, MetaData, TenantDepartment
 
 
 class PolicyLifeCycleHandler:
@@ -112,7 +114,51 @@ class PolicyLifeCycleHandler:
         }
 
 
+class MetaDataDetails:
+    @staticmethod
+    def tenant_meta_data(tenant_id):
+        meta_data = {}
+        meta_details = MetaData.objects.filter(category__in = ['POLICYSTATUS', 'REV'])
+        status_details = []
+        review_details = []
+        for met in meta_details:
+            if met.category == 'POLICYSTATUS':
+                status_details.append({'key': met.key,
+                                       'displayName': met.display_name})
+            elif met.category == 'REV':
+                review_details.append({'key': met.key,
+                                       'displayName': met.display_name})
 
+        meta_data['statusDetails'] = status_details
+        meta_data['reviewCycle'] = review_details
+        meta_data['frameworkPolicies'] = MetaDataDetails.tenant_policy_frameworks(tenant_id).values()
+        meta_data['departments'] =TenantDepartment.objects.filter(tenant_id=tenant_id).values('name', 'code')
+        return meta_data
 
+    @staticmethod
+    def tenant_policy_frameworks(tenant_id):
+        query = "select tpm.id as policyId, fm.FrameworkName as f_name, fm.id," \
+                " fm.Description, tpm.tenantPolicyName, tpm.version from" \
+                " TenantPolicyManager tpm Inner Join FrameworkMaster fm on tpm.MasterFrameworkId = fm.Id " \
+                "where tenant_id = {t_id}"
+        query = query.format(t_id=tenant_id)
+        details = fetch_data_from_sql_query(query)
+        result = defaultdict(list)
+        for det in details:
+            exiting_obj = result.get(det['f_name'], {})
+            exiting_obj['frameworkName'] = det['f_name']
+            exiting_obj['frameworkId'] = det['id']
+            exiting_obj['frameworkDescription'] = det['Description']
+            try:
+                exiting_obj['policydetails'].append({'policyName':det['tenantPolicyName'],
+                                                 'poicyId': det['policyId']})
+            except:
+                exiting_obj['policydetails'] = {'policyName': det['tenantPolicyName'],
+                                                     'poicyId': det['policyId']}
+            result[det['f_name']] = exiting_obj
+        return result
 
+    @staticmethod
+    def tenant_departments(tenant_id):
+        departments = TenantDepartment.objects.filter(tenant_id=tenant_id).values('name', 'code')
 
