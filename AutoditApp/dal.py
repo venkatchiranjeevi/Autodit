@@ -540,13 +540,21 @@ class PolicyDetailsData(BaseConstant):
 class PolicyDepartmentsHandlerData(BaseConstant):
 
     @staticmethod
+    def get_departments_by_policy_id(tenant_id, policy_id):
+        departments = list(TenantPolicyDepartments.objects.filter(tenant_id=tenant_id, tenant_policy_id=policy_id).values("id",
+                                                                    "department_name"))
+        return departments
+
+
+    @staticmethod
     def save_policy_department_details(data):
-        departments_list = data.get("department_ids")
+        departments_list = data.get("departmentDetails")
         policy_instancess = []
         for each_department in departments_list:
             tpd_obj = TenantPolicyDepartments(tenant_id=data.get("tenant_id"),
-                                              tenant_policy_id=data.get("tenant_policy_id"),
-                                              tenant_dep_id=each_department, created_by=data.get("created_by"))
+                                              tenant_policy_id=data.get("policyId"),
+                                              department_name=each_department.get("departmentName"),
+                                              tenant_dep_id=each_department.get("id"), created_by=data.get("created_by"))
             policy_instancess.append(tpd_obj)
 
         TenantPolicyDepartments.objects.bulk_create(policy_instancess)

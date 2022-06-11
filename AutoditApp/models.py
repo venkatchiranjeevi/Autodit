@@ -402,6 +402,7 @@ class TenantPolicyDepartments(Base):
     tenant_dep_id = models.IntegerField(db_column="TenantDepartment_id")
     created_by = models.CharField(db_column='createdBy', max_length=150)
     is_active = models.IntegerField(db_column="IsActive", default=True)
+    department_name = models.CharField(db_column="DepartmentName", max_length=15, null=True)
     created_by = models.CharField(db_column='created_by', max_length=150)
 
     def __int__(self):

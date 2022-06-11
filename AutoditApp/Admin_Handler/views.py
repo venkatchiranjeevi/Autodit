@@ -19,7 +19,7 @@ class AdminFrameworkHandlerAPI(AuthMixin):
 
     def post(self, request):
         data = request.data
-        user = request.user.pk
+        user = request.user.userid
         data['created_by'] = request.user.name
         framework_obj = FrameworkMasterData.save_frameworks(data, user)
         return Response({"meassage": "Framework Added Successfully", "status": True})
@@ -34,7 +34,7 @@ class AdminControlHandlerAPI(APIView):
 
     def post(self, request):
         data = request.data
-        control_master_obj = ControlHandlerData.save_controls_data(data, request.user.pk)
+        control_master_obj = ControlHandlerData.save_controls_data(data, request.user.userid)
         updated_data = model_to_dict(control_master_obj)
         return Response({"message": "Control added Successfully",
                          'controlData': updated_data,
@@ -56,7 +56,7 @@ class AdminPolicyHandlerAPI(APIView):
         data = request.data
         data['created_by'] = request.user.name
         data['user_id'] = request.user.userid
-        policy_obj = PolicyMasterData.save_policy_details(data, request.user.pk)
+        policy_obj = PolicyMasterData.save_policy_details(data, request.user.userid)
         return Response({"status": True, "message": "Policy Added Successfully"})
 
 
@@ -78,7 +78,7 @@ class AdminSinglePolicyHandler(AuthMixin):
 class AdminPolicyCreateHandler(AuthMixin):
     def post(self, request):
         data = request.data
-        policy_object = PolicyMasterData.save_policy_details(data, request.user.pk)
+        policy_object = PolicyMasterData.save_policy_details(data, request.user.userid)
         return Response({"status": True,
                          "message": "Policy Added Successfully",
                          "policyId": policy_object.id})
@@ -94,7 +94,7 @@ class PolicyFrameworkControlHandler(AuthMixin):
 
     def post(self, request):
         data = request.data
-        user = request.user.pk
+        user = request.user.userid
         updated_policies = PolicyMasterData.policy_control_handler(data, user)
 
         return Response(updated_policies)

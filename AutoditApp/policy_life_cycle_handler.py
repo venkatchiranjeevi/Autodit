@@ -3,6 +3,7 @@ import json
 from AutoditApp.S3_FileHandler import S3FileHandlerConstant
 from AutoditApp.models import TenantPolicyManager, TenantPolicyParameter, TenantPolicyVersionHistory, \
     TenantGlobalVariables
+from AutoditApp.dal import PolicyDepartmentsHandlerData
 
 
 class PolicyLifeCycleHandler:
@@ -86,7 +87,8 @@ class PolicyLifeCycleHandler:
         except:
             gb = {}
         policy_details = TenantPolicyManager.objects.get(id=int(policy_id))
-        policy_content  = S3FileHandlerConstant.read_s3_content(policy_details.policy_file_name)
+        policy_content = S3FileHandlerConstant.read_s3_content(policy_details.policy_file_name)
+        departments = PolicyDepartmentsHandlerData.get_departments_by_policy_id(tenant_id, policy_id)
         # TODO find next review date
         return {
             "policyId": policy_id,
@@ -104,7 +106,7 @@ class PolicyLifeCycleHandler:
             "nextReviewData": "2023-02-01",
             'policyComments': [],
             "policyTags": [],
-            "departments": [],
+            "departments": departments,
             "policyControls": [],
             "eligibleUsers": [],
             "globalVariables": gb,

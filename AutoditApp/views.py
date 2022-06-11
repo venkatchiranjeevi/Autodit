@@ -258,7 +258,7 @@ class ControlsManagementAPI(APIView):
 
     def post_v1(self, request):
         data = request.data
-        user = request.user.pk
+        user = request.user.userid
         tenant_id = request.user.tenant_id
         data['tenant_id'] = tenant_id
         data['created_by'] = user
@@ -269,7 +269,7 @@ class ControlsManagementAPI(APIView):
     def post(self, request):
         data = request.data
         tenant_id = request.user.tenant_id
-        user_id = request.user.pk
+        user_id = request.user.userid
         control_details = data.get('controlDetails', [])
         TennatControlHelpers.control_update_handler(tenant_id, data, user_id)
         return Response({'status': 200, 'data': 'Controls updated successfully'})
@@ -502,7 +502,6 @@ class PolicyContentHandler(AuthMixin):
         return Response({"message": "Policy Content updated successfully", "status": True})
 
 
-
 class TenantDepartmentUsers(AuthMixin):
     def get(self, request):
         pass
@@ -526,12 +525,12 @@ class PolicyDepartmentsHandler(AuthMixin):
     def post(self, request):
         data = request.data
         data["tenant_id"] = request.user.tenant_id
-        data['created_by'] = request.user.name
+        data['created_by'] = request.user.userid
         result = PolicyDepartmentsHandlerData.save_policy_department_details(data)
         return Response({"status": result, "message": "Department Added Successfully"})
 
     def delete(self, request):
-        policy_department_id = request.GET.get("tenant_policy_id")
+        policy_department_id = request.GET.get("id")
         result = PolicyDepartmentsHandlerData.delete_policy_department(policy_department_id)
         return Response({"status": result, "message": "Department Deleted Successfully"})
 
