@@ -395,6 +395,22 @@ class TenantPolicyParameter(Base):
         db_table = 'TenantPolicyParameter'
 
 
+class TenantPolicyDepartments(Base):
+    id = models.AutoField(primary_key=True, db_column='id')
+    tenant_id = models.IntegerField(db_column='tenant_id')
+    tenant_policy_id = models.IntegerField(db_column='TenantPolicyID')
+    tenant_dep_id = models.IntegerField(db_column="TenantDepartment_id")
+    created_by = models.CharField(db_column='createdBy', max_length=150)
+    is_active = models.IntegerField(db_column="IsActive", default=True)
+    created_by = models.CharField(db_column='created_by', max_length=150)
+
+    def __int__(self):
+        return self.id
+
+    class Meta:
+        db_table = 'TenantPolicyDepartments'
+
+
 # ADMIN AUDIT
 # CUSTOM TAGS
 # CKEDITOR API'S

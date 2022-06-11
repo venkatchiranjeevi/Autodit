@@ -1,13 +1,13 @@
 from AutoditApp.models import TenantDepartment as Departments, Roles, TenantGlobalVariables, Tenant, GlobalVariables, \
-    RolePolicies, AccessPolicy,  TenantFrameworkMaster, TenantHierarchyMapping, TenantPolicyManager, \
-    PolicyMaster, ControlMaster,  TenantControlMaster, TenantControlAudit
+    RolePolicies, AccessPolicy, TenantFrameworkMaster, TenantHierarchyMapping, TenantPolicyManager, \
+    PolicyMaster, ControlMaster, TenantControlMaster, TenantControlAudit, TenantPolicyDepartments
 from django.db.models import Q
 from .constants import DEFAULT_VIEWS, EDITIOR_VIEWS
 from AutoditApp.AWSCognito import Cognito
-from .core import  fetch_data_from_sql_query
+from .core import fetch_data_from_sql_query
 from .S3_FileHandler import S3FileHandlerConstant
 
-from .sql_queries import  TENANT_CONTROL_ID, CONTROLS_MASTER, TENANT_FRAMEWORK_DETAILS, TENANT_FRAMEWORK_POLICIES,\
+from .sql_queries import TENANT_CONTROL_ID, CONTROLS_MASTER, TENANT_FRAMEWORK_DETAILS, TENANT_FRAMEWORK_POLICIES, \
     CONTROL_FRAMEWORK_DETAILS
 from .sql_queries import TENANT_CONTROL_ID, CONTROLS_MASTER
 
@@ -263,7 +263,8 @@ class TenantControlMasterData(BaseConstant):
 
     @staticmethod
     def get_policies_count_by_tenant_id(tenant_id):
-        hierarchy_mappings = TenantHierarchyMapping.objects.filter(tenant_id=tenant_id, tenant_framework_id__isnull=False).\
+        hierarchy_mappings = TenantHierarchyMapping.objects.filter(tenant_id=tenant_id,
+                                                                   tenant_framework_id__isnull=False). \
             values("tenant_policy_id", "tenant_framework_id", "tenant_control_id")
         return hierarchy_mappings
 
@@ -327,8 +328,10 @@ class TennatControlHelpers(BaseConstant):
         control_details = data.get('controlDetails', [])
         master_framework_id = data.get('frameworkId')
         selected_control_ids = [entry.get('controlId') for entry in control_details]
-        tenant_controls = TenantControlMaster.objects.filter(tenant_id=int(tenant_id)).filter(master_framework_id=int(master_framework_id)).values()
-        framework_details = TenantFrameworkMaster.objects.filter(tenant_id=int(tenant_id)).filter(master_framework_id=master_framework_id)
+        tenant_controls = TenantControlMaster.objects.filter(tenant_id=int(tenant_id)).filter(
+            master_framework_id=int(master_framework_id)).values()
+        framework_details = TenantFrameworkMaster.objects.filter(tenant_id=int(tenant_id)).filter(
+            master_framework_id=master_framework_id)
         framework_details = framework_details[0]
         active_controls = {}
         inactive_controls = {}
@@ -375,13 +378,12 @@ class TennatControlHelpers(BaseConstant):
             q2 = Q(master_framework_id=master_framework_id)
             q3 = Q(is_active=1)
             # TODO at present going with one policy for one framework
-            selected_framework_controls = TenantControlMaster.objects.filter(q1&q2&q3).values('master_control_id')
+            selected_framework_controls = TenantControlMaster.objects.filter(q1 & q2 & q3).values('master_control_id')
             selected_master_controls = [con['master_control_id'] for con in selected_framework_controls]
             # TennatControlHelpers.policy_handler_on_control_selection(tenant_id,
             #                                                          master_framework_id,
             #                                                          framework_details,
             #                                                          selected_master_controls)
-
 
     @staticmethod
     def policy_handler_on_control_selection(tenant_id,
@@ -415,14 +417,13 @@ class TennatControlHelpers(BaseConstant):
     @staticmethod
     def policy_handler_for_new_controls(added_controls, tennant_id, master_framework_id):
         master_polices_query = "select id as policyId, PolicyName, policy_code, Summery from PolicyMaster pm  " \
-                        "where id in (select DISTINCT(PolicyId) from HirerecyMapper hm where Fid  = {f_id} and Cid  " \
-                        "in {cids}}) "
-        master_polices_query = master_polices_query.format(cids = str(tuple(added_controls)),
-                                             f_id=str(master_framework_id))
+                               "where id in (select DISTINCT(PolicyId) from HirerecyMapper hm where Fid  = {f_id} and Cid  " \
+                               "in {cids}}) "
+        master_polices_query = master_polices_query.format(cids=str(tuple(added_controls)),
+                                                           f_id=str(master_framework_id))
         master_policies = fetch_data_from_sql_query(master_polices_query)
 
         existing_policies = ""
-
 
     @staticmethod
     def get_tenant_selected_control(tenant_id, key='master_hierarchy_id', all=False):
@@ -459,9 +460,13 @@ class ControlManagementDetailData(BaseConstant):
     @staticmethod
     def get_control_history(tenant_id, control_id):
         history = TenantControlAudit.objects.filter(tenant_id=tenant_id, tenant_control_id=control_id).values("version",
-                                        "created_by", "old_control_name", "new_control_name",
-                                        "old_control_description", "new_control_description", "created_on").\
-                        order_by('-created_on')
+                                                                                                              "created_by",
+                                                                                                              "old_control_name",
+                                                                                                              "new_control_name",
+                                                                                                              "old_control_description",
+                                                                                                              "new_control_description",
+                                                                                                              "created_on"). \
+            order_by('-created_on')
         return history
 
     @staticmethod
@@ -478,20 +483,19 @@ class ControlManagementDetailData(BaseConstant):
         last_audit = TenantControlAudit.objects.filter(tenant_control_id=data.get("id")).last()
         if last_audit:
             version = last_audit.version
-            version = int(version)+1
+            version = int(version) + 1
         else:
             version = 1
         tenant_audit = TenantControlAudit(tenant_control_id=data.get("id"), old_control_description=old_description,
-                           new_control_description=new_description, tenant_framework_id=tenant_control_object.tenant_framework_id,
-                           version=version,
-                           old_control_name=old_name, new_control_name=new_control_name, tenant_id=data.get("tenant_id"),
+                                          new_control_description=new_description,
+                                          tenant_framework_id=tenant_control_object.tenant_framework_id,
+                                          version=version,
+                                          old_control_name=old_name, new_control_name=new_control_name,
+                                          tenant_id=data.get("tenant_id"),
                                           created_by=data.get("created_by"))
         tenant_audit.save()
 
         return tenant_control_object
-
-
-
 
 
 class PolicyDetailsData(BaseConstant):
@@ -531,3 +535,25 @@ class PolicyDetailsData(BaseConstant):
             # STEP 2: Upload to S3 with new url and url is s3_host+bucket_name+ tenant_id + file_name
             # STEP 3: Save the URL to tenant policy
         # HERE send policy details
+
+
+class PolicyDepartmentsHandlerData(BaseConstant):
+
+    @staticmethod
+    def save_policy_department_details(data):
+        departments_list = data.get("department_ids")
+        policy_instancess = []
+        for each_department in departments_list:
+            tpd_obj = TenantPolicyDepartments(tenant_id=data.get("tenant_id"),
+                                              tenant_policy_id=data.get("tenant_policy_id"),
+                                              tenant_dep_id=each_department, created_by=data.get("created_by"))
+            policy_instancess.append(tpd_obj)
+
+        TenantPolicyDepartments.objects.bulk_create(policy_instancess)
+        return True
+
+    @staticmethod
+    def delete_policy_department(policy_department_id):
+        tpd_obj = TenantPolicyDepartments.objects.get(id=policy_department_id)
+        tpd_obj.delete()
+        return True
