@@ -1,11 +1,12 @@
 import json
+from datetime import datetime
 
 from django.db import connection
 from django.db.models import Q
 from rest_framework.response import Response
 from AutoditApp.mixins import AuthMixin
 from AutoditApp.models import TenantGlobalVariables, TenantDepartment, Roles, FrameworkMaster, TenantFrameworkMaster, \
-    ControlMaster, TenantPolicyComments, TenantPolicyManager
+    ControlMaster, TenantPolicyComments, TenantPolicyManager, TenantPolicyVersionHistory
 from AutoditApp.dal import DeparmentsData, TenantGlobalVariableData, TenantMasterData, RolesData, GlobalVariablesData, \
     RolePoliciesData, TenantFrameworkData, TennatControlHelpers, PolicyDetailsData, TenantControlMasterData, \
     ControlManagementDetailData, PolicyDepartmentsHandlerData, TenantPolicyCustomTagsData
@@ -502,7 +503,7 @@ class PolicyContentHandler(AuthMixin):
         policy_id = data.get('policyId')
         user = request.user
         tenant_id = user.tenant_id
-        PolicyLifeCycleHandler.policy_content_details_handler(data, policy_id, tenant_id)
+        PolicyLifeCycleHandler.policy_content_details_handler(data, policy_id, tenant_id, user.username_cognito, user.email)
         return Response({"message": "Policy Content updated successfully", "status": True})
 
 
@@ -555,17 +556,40 @@ class PolicyStatesHandler(AuthMixin):
         # Step 1 get next state or prev state
         # Step 2 create tasks
         # Step 3 publish to users
-        # Step 4 update policy state
+        # {
+        #     "stateId": "REV",
+        #     "status": 1,
+        #     "displayText": "Move To Reveiw"
+        # },
         # TODO need to create tasks for users and publish to users
         # TODO check user has role or not
         data = request.data
         policy_id = data.get('policyId')
         state_id = data.get('stateId')
         status = data.get('status')
+        user = request.user
         policy_details = TenantPolicyManager.objects.get(id=int(policy_id))
         policy_details.state = state_id
+        new_version = policy_details.version
+        if state_id == 'PUB':
+            policy_details.published_date = datetime.now().strftime("%Y-%m-%d")
+            new_version = str(int(float((policy_details.version))) + 1)
+
+        TenantPolicyVersionHistory(tenant_id=request.user.tenant_id,
+                                   policy_id=policy_id,
+                                   tenant_policy_name=policy_details.tenant_policy_name,
+                                   old_version=str(policy_details.version),
+                                   new_version=str(new_version),
+                                   policy_file_name=policy_details.policy_file_name,
+                                   status='Approved' if policy_details.state == 'PUB' else 'Pending',
+                                   action_performed=state_id,
+                                   action_performed_by=user.username_cognito,
+                                   action_performed_by_id=user.email,
+                                   action_date=datetime.now()).save()
+        policy_details.version = new_version
         policy_details.save()
         return Response({"message": "Policy State Updated Successfully", "status": True})
+
 
 class PolicyEligibleUsers(AuthMixin):
     def get(self, request):
@@ -618,3 +642,21 @@ class PolicyCommentsHandler(AuthMixin):
         return Response({"status": status, "message": message})
 
 
+class PolicyVersionHistory(AuthMixin):
+    def get(self, request):
+        policy_id = request.GET.get('policyId')
+        user = request.user
+        tenant_id = user.tenant_id
+        details = PolicyLifeCycleHandler.get_policy_version_history(policy_id, tenant_id)
+        return Response(details)
+
+
+class PolicyVersionHistoryDetails(AuthMixin):
+
+    def get(self, request):
+        version_id = request.GET.get('versionId')
+        policy_id = request.GET.get('policyId')
+        user = request.user
+        tenant_id = user.tenant_id
+        details = PolicyLifeCycleHandler.get_version_history_details(policy_id, tenant_id, version_id)
+        return Response(details)

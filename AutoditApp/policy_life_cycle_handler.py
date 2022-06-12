@@ -1,7 +1,9 @@
 import calendar
 import json
 from collections import defaultdict
-from datetime import timedelta, date
+from datetime import timedelta, date, datetime
+
+from django.db.models import Q
 
 from Autodit import settings
 from .AWSCognito import Cognito
@@ -34,9 +36,9 @@ class PolicyLifeCycleHandler:
     @staticmethod
     def policy_summery_details_handler(policy_data, policy_id):
         policy_details = TenantPolicyManager.objects.get(id=policy_id)
-        policy_details.tenant_policy_name= policy_data.get('policyName', policy_details.tenant_policy_name)
+        policy_details.tenant_policy_name = policy_data.get('policyName', policy_details.tenant_policy_name)
         policy_details.summery = policy_data.get('summery', policy_details.summery)
-        policy_details.code=policy_data.get('policyCode', policy_details.code)
+        policy_details.code = policy_data.get('policyCode', policy_details.code)
         policy_details.review_period = policy_data.get('reviewPeriod', policy_details.review_period)
         policy_details.save()
         return {"policyId": policy_details.id,
@@ -56,7 +58,7 @@ class PolicyLifeCycleHandler:
         return policy_params
 
     @staticmethod
-    def policy_content_details_handler(policy_data, policy_id, tennant_id):
+    def policy_content_details_handler(policy_data, policy_id, tennant_id, user_name, user_id):
         updated_content = policy_data.get('policyContent')
         policy_details = TenantPolicyManager.objects.get(id=policy_id)
         try:
@@ -82,7 +84,47 @@ class PolicyLifeCycleHandler:
                                    tenant_policy_name=policy_details.tenant_policy_name,
                                    old_version=str(version),
                                    new_version=str(new_version),
-                                   policy_file_name=file_name).save()
+                                   policy_file_name=file_name,
+                                   status=policy_details.state,
+                                   action_performed='Save as Draft',
+                                   action_performed_by=user_name,
+                                   action_performed_by_id=user_id,
+                                   action_date=datetime.now()).save()
+
+    @staticmethod
+    def get_version_history_details(policy_id, tenant_id, version_id):
+        version_history = TenantPolicyVersionHistory.objects.get(id=version_id)
+        policy_details = TenantPolicyManager.objects.get(id=policy_id)
+        version_content = S3FileHandlerConstant.read_s3_content(version_history.policy_file_name)
+        policy_content = S3FileHandlerConstant.read_s3_content(policy_details.policy_file_name)
+        template_variables = PolicyLifeCycleHandler.get_template_parameters(policy_id, tenant_id)
+        return {'versionContent': version_content,
+                'policyContent': policy_content,
+                'templateVariables': template_variables}
+
+
+    @staticmethod
+    def get_policy_version_history(policy_id, tennant_id):
+        meta_details = MetaData.objects.filter(category='POLICYSTATUS').values('id', 'key', 'display_name', 'next',
+                                                                               'prev', 'state_display_name')
+        formatted_meta = {meta.get('key'): meta for meta in meta_details}
+        query = Q(policy_id=policy_id) & Q(tenant_id=tennant_id)
+        query = query & Q(action_performed__in=formatted_meta.keys())
+        history_objects = TenantPolicyVersionHistory.objects.filter(query).values()
+        history_details = []
+        for history in history_objects:
+            action_details = formatted_meta.get(history.get('action_performed'))
+            details = {'versionId': history.get('id'),
+                       'policyId': history.get('policy_id'),
+                       'policyName': history.get('tenant_policy_name'),
+                       'oldVersion': history.get('old_version'),
+                       'newVersion': history.get('new_version'),
+                       'status': history.get('status'),
+                       'actionPerformed': action_details.get('display_name'),
+                       'actionPerformedBy': history.get('action_performed_by'),
+                       'actionPerformedDate': history.get('action_date')}
+            history_details.append(details)
+        return history_details
 
     @staticmethod
     def add_months(sourcedate, months):
@@ -121,12 +163,13 @@ class PolicyLifeCycleHandler:
                                       "userCode": user.get('name')[:2],
                                       "userEmail": user.get('email'),
                                       "userId": user.get('userid'),
-                                     "asignedRoles": list(user_roles.values())})
+                                      "asignedRoles": list(user_roles.values())})
         return elgible_users
 
     @staticmethod
     def get_policy_states(policy_present_state):
-        meta_details = MetaData.objects.filter(category='POLICYSTATUS').values('id', 'key', 'display_name', 'next', 'prev', 'state_display_name')
+        meta_details = MetaData.objects.filter(category='POLICYSTATUS').values('id', 'key', 'display_name', 'next',
+                                                                               'prev', 'state_display_name')
         formatted_meta = {meta.get('key'): meta for meta in meta_details}
         present_state = formatted_meta.get(policy_present_state)
         try:
@@ -139,7 +182,6 @@ class PolicyLifeCycleHandler:
             prev_details = None
         present_details = {'key': policy_present_state, 'display_name': present_state.get('state_display_name')}
         return prev_details, present_details, next_details
-
 
     @staticmethod
     def get_complete_policy_details(policy_id, tenant_id):
@@ -159,7 +201,7 @@ class PolicyLifeCycleHandler:
             pub_date = ''
         try:
             comment_details = TenantPolicyComments.objects.filter(tenant_policy_id=policy_id,
-                                                       tenant_id=tenant_id).values('comment')[0]
+                                                                  tenant_id=tenant_id).values('comment')[0]
             comment = eval(comment_details['comment'])
         except:
             comment = []
@@ -178,10 +220,10 @@ class PolicyLifeCycleHandler:
             "assignee": policy_details.editor,
             "approves": policy_details.approver,
             "reviewer": policy_details.reviewer,
-            "renewPeriod":policy_details.review_period,
+            "renewPeriod": policy_details.review_period,
             "nextReviewDate": str(pub_date),
             'policyComments': comment,
-            "policyTags":TenantPolicyCustomTagsData.get_policy_tags(policy_id, tenant_id),
+            "policyTags": TenantPolicyCustomTagsData.get_policy_tags(policy_id, tenant_id),
             "departments": departments,
             "policyControls": [],
             "eligibleUsers": users,
@@ -194,7 +236,7 @@ class MetaDataDetails:
     @staticmethod
     def tenant_meta_data(tenant_id):
         meta_data = {}
-        meta_details = MetaData.objects.filter(category__in = ['POLICYSTATUS', 'REV'])
+        meta_details = MetaData.objects.filter(category__in=['POLICYSTATUS', 'REV'])
         status_details = []
         review_details = []
         for met in meta_details:
@@ -208,8 +250,10 @@ class MetaDataDetails:
         meta_data['statusDetails'] = status_details
         meta_data['reviewCycle'] = review_details
         meta_data['frameworkPolicies'] = MetaDataDetails.tenant_policy_frameworks(tenant_id).values()
-        meta_data['departments'] =TenantDepartment.objects.filter(tenant_id=tenant_id).values('name', 'code')
-        meta_data['customTags'] = [t['tag_name'] for t in TenantControlsCustomTags.objects.filter(tenant_id=tenant_id).filter(is_active=1).values('tag_name')]
+        meta_data['departments'] = TenantDepartment.objects.filter(tenant_id=tenant_id).values('name', 'code')
+        meta_data['customTags'] = [t['tag_name'] for t in
+                                   TenantControlsCustomTags.objects.filter(tenant_id=tenant_id).filter(
+                                       is_active=1).values('tag_name')]
         meta_data['customTags'] = list(set(meta_data.get('customTags', [])))
         return meta_data
 
@@ -228,10 +272,10 @@ class MetaDataDetails:
             exiting_obj['frameworkId'] = det['id']
             exiting_obj['frameworkDescription'] = det['Description']
             try:
-                exiting_obj['policyDetails'].append({'policyName':det['tenantPolicyName'],
-                                                 'poicyId': det['policyId']})
+                exiting_obj['policyDetails'].append({'policyName': det['tenantPolicyName'],
+                                                     'poicyId': det['policyId']})
             except:
                 exiting_obj['policyDetails'] = [{'policyName': det['tenantPolicyName'],
-                                                     'poicyId': det['policyId']}]
+                                                 'poicyId': det['policyId']}]
             result[det['f_name']] = exiting_obj
         return result

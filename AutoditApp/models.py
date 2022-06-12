@@ -369,6 +369,12 @@ class TenantPolicyVersionHistory(Base):
     old_version = models.CharField(db_column='oldVersion', max_length=10)
     new_version = models.CharField(db_column='newVersion', max_length=10)
     policy_file_name = models.CharField(db_column='policyFileName', max_length=250)
+    status = models.CharField(db_column='Status', max_length=50)
+    action_performed = models.CharField(db_column='actionPerformed', max_length=150)
+    old_policy_name = models.CharField(db_column='oldpolicyFileName', max_length=250)
+    action_performed_by = models.CharField(db_column='actionPerformedBy', max_length=250)
+    action_performed_by_id = models.CharField(db_column='actionPerformedById', max_length=250)
+    action_date = models.DateTimeField(db_column='actionDate')
 
     class Meta:
         db_table = 'TenantPolicyVersionHistory'

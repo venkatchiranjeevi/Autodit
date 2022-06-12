@@ -157,7 +157,6 @@ class TenantGlobalVariableData(BaseConstant):
 
     @staticmethod
     def save_tenant_global_varialble(data):
-        # TODO need to ask this
         tbv_obj, created = TenantGlobalVariables.objects.get_or_create(tenant_id=data.get("tenant_id"))
         tbv_obj.result = data.get("globalVarialbes", '{}')
         tbv_obj.save()
