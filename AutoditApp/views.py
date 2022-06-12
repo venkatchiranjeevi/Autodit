@@ -5,7 +5,7 @@ from django.db.models import Q
 from rest_framework.response import Response
 from AutoditApp.mixins import AuthMixin
 from AutoditApp.models import TenantGlobalVariables, TenantDepartment, Roles, FrameworkMaster, TenantFrameworkMaster, \
-    ControlMaster, TenantPolicyComments
+    ControlMaster, TenantPolicyComments, TenantPolicyManager
 from AutoditApp.dal import DeparmentsData, TenantGlobalVariableData, TenantMasterData, RolesData, GlobalVariablesData, \
     RolePoliciesData, TenantFrameworkData, TennatControlHelpers, PolicyDetailsData, TenantControlMasterData, \
     ControlManagementDetailData, PolicyDepartmentsHandlerData, TenantPolicyCustomTagsData
@@ -549,6 +549,23 @@ class TenantDepartmentUsers(AuthMixin):
     def post(self, request):
         pass
 
+
+class PolicyStatesHandler(AuthMixin):
+    def post(self, request):
+        # Step 1 get next state or prev state
+        # Step 2 create tasks
+        # Step 3 publish to users
+        # Step 4 update policy state
+        # TODO need to create tasks for users and publish to users
+        # TODO check user has role or not
+        data = request.data
+        policy_id = data.get('policyId')
+        state_id = data.get('stateId')
+        status = data.get('status')
+        policy_details = TenantPolicyManager.objects.get(id=int(policy_id))
+        policy_details.state = state_id
+        policy_details.save()
+        return Response({"message": "Policy State Updated Successfully", "status": True})
 
 class PolicyEligibleUsers(AuthMixin):
     def get(self, request):

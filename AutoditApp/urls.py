@@ -5,7 +5,7 @@ from AutoditApp.views import DepartmentsAPI, RolesAPI, SettingManagementAPI, Con
     PolicyManagementAPI, TenantGlobalVariablesAPI, TenantFrameworkMasterAPI, TenantLogoUploaderAPI, PolicyDetailsAPI, \
     ControlsManagementAPIALl, ControlManagementDetailAPI, ControlManagementDetailHistoryAPI, \
     PolicyDetailsHandler, PolicyContentHandler, MetaDetailsHandler, PolicyDepartmentsHandler, TenantPolicyCustomTags, \
-    TenantPolicyVariables, PolicyCommentsHandler, PolicyEligibleUsers
+    TenantPolicyVariables, PolicyCommentsHandler, PolicyEligibleUsers, PolicyStatesHandler
 
 urlpatterns = [
     url("user/", user_management.UsersList.as_view()),
@@ -33,8 +33,7 @@ urlpatterns = [
     url("^policy/department", PolicyDepartmentsHandler.as_view()),
     url("^policy/custom-tags", TenantPolicyCustomTags.as_view()),
     url("^policy/eligible-users", PolicyEligibleUsers.as_view()),
-    url("^policy/comments", PolicyCommentsHandler.as_view())
-
-
+    url("^policy/comments", PolicyCommentsHandler.as_view()),
+    url("^policy/state-change", PolicyStatesHandler.as_view()),
 
 ]
