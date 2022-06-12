@@ -193,7 +193,7 @@ class PolicyLifeCycleHandler:
         policy_details = TenantPolicyManager.objects.get(id=int(policy_id))
         policy_content = S3FileHandlerConstant.read_s3_content(policy_details.policy_file_name)
         departments = PolicyDepartmentsHandlerData.get_departments_by_policy_id(tenant_id, policy_id)
-        users = PolicyLifeCycleHandler.get_eligible_users(policy_id, tenant_id)
+        eligible_users = PolicyLifeCycleHandler.get_eligible_users(policy_id, tenant_id)
         published_date = policy_details.published_date
         try:
             pub_date = PolicyLifeCycleHandler.add_months(published_date, int(policy_details.review_period))
@@ -239,7 +239,7 @@ class PolicyLifeCycleHandler:
             "policyTags": TenantPolicyCustomTagsData.get_policy_tags(policy_id, tenant_id),
             "departments": departments,
             "policyControls": [],
-            "eligibleUsers": users,
+            "eligibleUsers": eligible_users,
             "globalVariables": gb,
             "templateVariables": PolicyLifeCycleHandler.get_template_parameters(policy_id, tenant_id)
         }
