@@ -320,7 +320,7 @@ class TenantPolicyManager(Base):
     policy_reference = models.CharField(db_column='policyReference', max_length=500)
     summery = models.TextField(db_column='summery', null=True)
     created_by = models.CharField(db_column='created_by', max_length=120)
-    version = models.IntegerField(db_column='version', default=1)
+    version = models.CharField(db_column='version', max_length=10, default=1.0)
     editor = models.IntegerField(db_column='editor', null=True)
     reviewer = models.IntegerField(db_column='reviewer', null=True)
     approver = models.IntegerField(db_column='approver', null=True)
@@ -400,7 +400,7 @@ class TenantPolicyDepartments(Base):
     tenant_id = models.IntegerField(db_column='tenant_id')
     tenant_policy_id = models.IntegerField(db_column='TenantPolicyID')
     tenant_dep_id = models.IntegerField(db_column="TenantDepartment_id")
-    created_by = models.CharField(db_column='createdBy', max_length=150)
+    created_by = models.CharField(db_column='created_by', max_length=150)
     is_active = models.IntegerField(db_column="IsActive", default=True)
     department_name = models.CharField(db_column="DepartmentName", max_length=15, null=True)
 
@@ -415,8 +415,9 @@ class TenantControlsCustomTags(Base):
     id = models.AutoField(primary_key=True, db_column='id')
     tenant_id = models.IntegerField(db_column='tenantId')
     tenant_policy_id = models.IntegerField(db_column='tenantPolicyID')
-    tag_name = models.CharField(db_column="TagName", null=True)
-    tag_description = models.CharField(db_column="TagDescription", null=True)
+    tag_name = models.CharField(db_column="TagName", null=True, max_length=250)
+    tag_description = models.CharField(db_column="TagDescription", null=True, max_length=250)
+    is_active = models.IntegerField(db_column="is_active", default=1)
 
     def __int__(self):
         return self.id
@@ -431,6 +432,20 @@ class MetaData(Base):
     display_name = models.CharField(db_column='DisplayName', max_length=250)
     next = models.TextField(db_column='next')
     prev = models.TextField(db_column='prev')
+    state_display_name = models.CharField(db_column='stateDisplayName', max_length=150)
 
     class Meta:
         db_table = 'MetaData'
+
+
+class TenantPolicyComments(Base):
+    id = models.AutoField(primary_key=True, db_column='id')
+    tenant_id = models.IntegerField(db_column='tenantId')
+    comment_name = models.CharField(db_column='CommentName',null=True, max_length=50)
+    comment = models.TextField(db_column='Comment')
+    tenant_policy_id = models.IntegerField(db_column='tenantPolicyID')
+    is_deleted = models.IntegerField(db_column='is_deleted', default=0)
+    is_active = models.IntegerField(db_column='is_active', default=1)
+
+    class Meta:
+        db_table = 'TenantPolicyComments'

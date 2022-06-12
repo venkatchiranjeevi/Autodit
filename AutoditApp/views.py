@@ -1,9 +1,11 @@
+import json
+
 from django.db import connection
 from django.db.models import Q
 from rest_framework.response import Response
 from AutoditApp.mixins import AuthMixin
 from AutoditApp.models import TenantGlobalVariables, TenantDepartment, Roles, FrameworkMaster, TenantFrameworkMaster, \
-    ControlMaster
+    ControlMaster, TenantPolicyComments
 from AutoditApp.dal import DeparmentsData, TenantGlobalVariableData, TenantMasterData, RolesData, GlobalVariablesData, \
     RolePoliciesData, TenantFrameworkData, TennatControlHelpers, PolicyDetailsData, TenantControlMasterData, \
     ControlManagementDetailData, PolicyDepartmentsHandlerData, TenantPolicyCustomTagsData
@@ -78,11 +80,9 @@ class GlobalVariablesAPI(AuthMixin):
 class TenantGlobalVariablesAPI(AuthMixin):
 
     def get(self, request):
-        tenant_id = request.GET.get("tenant_id")
-        query = Q()
-        if tenant_id:
-            query &= Q(id=tenant_id)
-        t_global_var_data = TenantGlobalVariableData.get_tenant_global_varialbles(query)
+        user = request.user
+        tenant_id = user.tenant_id
+        t_global_var_data = TenantGlobalVariableData.get_tenant_global_varialbles(tenant_id)
         return Response(t_global_var_data)
 
     def post(self, request):
@@ -105,6 +105,15 @@ class TenantGlobalVariablesAPI(AuthMixin):
         return Response({"message": "Deleted Successfully", "status": True})
 
 
+class TenantPolicyVariables(AuthMixin):
+
+    def get(self, request):
+        policy_id = request.GET.get("policyId")
+        user = request.user
+        tenant_id = user.tenant_id
+        details = PolicyLifeCycleHandler.get_template_parameters(policy_id, tenant_id)
+        return Response(details)
+
 class RolesAPI(AuthMixin):
 
     def get(self, request):
@@ -118,9 +127,6 @@ class RolesAPI(AuthMixin):
 
 
 class TenantMasterAPI(AuthMixin):
-    # # def get(self, request):
-    #     roles_data = get_roles_data()
-    #     return Response(roles_data)
 
     def post(self, request):
         data = request.data
@@ -400,6 +406,7 @@ class PolicyDetailsAPI(AuthMixin):
         details = PolicyLifeCycleHandler.get_complete_policy_details(int(policy_id), int(tenant_id))
         return Response(details)
 
+
 class ControlsManagementAPIALl(APIView):
 
     def get(self, request):
@@ -468,7 +475,6 @@ class ControlsManagementAPIALl(APIView):
         return Response(final_frameworks_controls)
 
 
-# Fields - id, description, policy variables along with values, configured review cycle,
 class PolicyDetailsHandler(AuthMixin):
     def get(self, request):
         data = request.data
@@ -486,12 +492,10 @@ class PolicyDetailsHandler(AuthMixin):
         tenant_id = user.tenant_id
         updated_policy_data = PolicyLifeCycleHandler.policy_summery_details_handler(data, policy_id)
         updated_policy_data['policy_params'] = PolicyLifeCycleHandler.policy_variables_handler(data, policy_id, tenant_id)
-        return Response({"meassage": "Policy Details Updated Successfully", "status": True, "data": updated_policy_data})
+        return Response({"message": "Policy Details Updated Successfully", "status": True, "data": updated_policy_data})
 
 
 class PolicyContentHandler(AuthMixin):
-    # def get(self, request):
-    #     pass
 
     def post(self, request):
         data = request.data
@@ -502,26 +506,7 @@ class PolicyContentHandler(AuthMixin):
         return Response({"message": "Policy Content updated successfully", "status": True})
 
 
-class TenantDepartmentUsers(AuthMixin):
-    def get(self, request):
-        pass
-
-    def post(self, request):
-        pass
-
-
-class PolicyStateHandler(AuthMixin):
-    def get(self, request):
-        pass
-
-    def post(self, request):
-        pass
-
-
 class PolicyDepartmentsHandler(AuthMixin):
-    def get(self, request):
-        pass
-
     def post(self, request):
         data = request.data
         data["tenant_id"] = request.user.tenant_id
@@ -544,7 +529,7 @@ class TenantPolicyCustomTags(AuthMixin):
         return Response({"status": result, "message": "Custom Tags Added Successfully"})
 
     def delete(self, request):
-        custom_tag_id = request.GET.get("id")
+        custom_tag_id = request.GET.get("tagId")
         result = TenantPolicyCustomTagsData.delete_policy_custom_tag(custom_tag_id)
         return Response({"status": result, "message": "Custom Tags Deleted Successfully"})
 
@@ -555,4 +540,64 @@ class MetaDetailsHandler(AuthMixin):
         tenant_id = user.tenant_id
         details = MetaDataDetails.tenant_meta_data(tenant_id)
         return Response(details)
+
+
+class TenantDepartmentUsers(AuthMixin):
+    def get(self, request):
+        pass
+
+    def post(self, request):
+        pass
+
+
+class PolicyEligibleUsers(AuthMixin):
+    def get(self, request):
+        policy_id = request.GET.get('policyId')
+        user = request.user
+        tenant_id = user.tenant_id
+        users = PolicyLifeCycleHandler.get_eligible_users(policy_id, tenant_id)
+        return Response(users)
+
+class PolicyCommentsHandler(AuthMixin):
+    def get(self, request):
+        policy_id = request.GET.get('policyId')
+        user = request.user
+        tenant_id = user.tenant_id
+        try:
+            comment_details = TenantPolicyComments.objects.filter(tenant_policy_id=policy_id,
+                                                       tenant_id=tenant_id).values('comment')[0]
+            comment = eval(comment_details['comment'])
+        except:
+            comment = []
+        return Response(comment)
+
+    def post(self, request):
+        user = request.user
+        tenant_id = user.tenant_id
+        data = request.data
+        PolicyLifeCycleHandler.comments_add_handler(tenant_id, data)
+        return Response({"message": "Comment updated successfully", "status": True})
+
+    def delete(self, request):
+        policy_id = request.GET.get('policyId')
+        user = request.user
+        tenant_id = user.tenant_id
+        thread_id = request.GET.get('threadId')
+        try:
+            comments_obj, created = TenantPolicyComments.objects.get_or_create(tenant_id=tenant_id,
+                                                                               tenant_policy_id=policy_id)
+            comment = eval(comments_obj.comment)
+            final_comment = []
+            for thread in comment:
+                if thread.get('threadId') != thread_id:
+                    final_comment.append(thread)
+            comments_obj.comment = str(final_comment)
+            comments_obj.save()
+            status = True
+            message = "Comment Deleted Successfully"
+        except:
+            status = False
+            message = "Comment not found for policy"
+        return Response({"status": status, "message": message})
+
 

@@ -60,7 +60,7 @@ def get_policies_and_access_policy_id(role_id=[]):
     return policies
 
 
-def get_users_by_tenant_id(all_users, tenant_id, userid):
+def get_users_by_tenant_id(all_users, tenant_id, userid=None):
     final_users = list()
     for each_user in all_users:
         user_record = dict()

@@ -1,6 +1,7 @@
 from AutoditApp.models import TenantDepartment as Departments, Roles, TenantGlobalVariables, Tenant, GlobalVariables, \
     RolePolicies, AccessPolicy, TenantFrameworkMaster, TenantHierarchyMapping, TenantPolicyManager, \
-    PolicyMaster, ControlMaster, TenantControlMaster, TenantControlAudit, TenantPolicyDepartments, TenantControlsCustomTags
+    PolicyMaster, ControlMaster, TenantControlMaster, TenantControlAudit, TenantPolicyDepartments, \
+    TenantControlsCustomTags
 from django.db.models import Q
 from .constants import DEFAULT_VIEWS, EDITIOR_VIEWS
 from AutoditApp.AWSCognito import Cognito
@@ -147,14 +148,18 @@ class GlobalVariablesData(BaseConstant):
 class TenantGlobalVariableData(BaseConstant):
 
     @staticmethod
-    def get_tenant_global_varialbles(query):
-        t_global_var_data = TenantGlobalVariables.objects.filter(query).values()
-        return t_global_var_data
+    def get_tenant_global_varialbles(tenant_id):
+        t_global_var_data = TenantGlobalVariables.objects.get(tenant_id=tenant_id).result
+        try:
+            return eval(t_global_var_data)
+        except:
+            return {}
 
     @staticmethod
     def save_tenant_global_varialble(data):
+        # TODO need to ask this
         tbv_obj, created = TenantGlobalVariables.objects.get_or_create(tenant_id=data.get("tenant_id"))
-        tbv_obj.result = data.get("globalVarialbes")
+        tbv_obj.result = data.get("globalVarialbes", '{}')
         tbv_obj.save()
         roles = data.get("role_id", '[]')
         for each_role in eval(roles):
@@ -541,10 +546,10 @@ class PolicyDepartmentsHandlerData(BaseConstant):
 
     @staticmethod
     def get_departments_by_policy_id(tenant_id, policy_id):
-        departments = list(TenantPolicyDepartments.objects.filter(tenant_id=tenant_id, tenant_policy_id=policy_id).values("id",
-                                                                    "department_name", ))
+        departments = list(
+            TenantPolicyDepartments.objects.filter(tenant_id=tenant_id,
+                                                   tenant_policy_id=policy_id).values("id","department_name"))
         return departments
-
 
     @staticmethod
     def save_policy_department_details(data):
@@ -554,7 +559,8 @@ class PolicyDepartmentsHandlerData(BaseConstant):
             tpd_obj = TenantPolicyDepartments(tenant_id=data.get("tenant_id"),
                                               tenant_policy_id=data.get("policyId"),
                                               department_name=each_department.get("departmentName"),
-                                              tenant_dep_id=each_department.get("id"), created_by=data.get("created_by"))
+                                              tenant_dep_id=each_department.get("departmentId"),
+                                              created_by=data.get("created_by"))
             policy_instancess.append(tpd_obj)
 
         TenantPolicyDepartments.objects.bulk_create(policy_instancess)
@@ -570,18 +576,20 @@ class PolicyDepartmentsHandlerData(BaseConstant):
 class TenantPolicyCustomTagsData(BaseConstant):
     @staticmethod
     def get_policy_custom_tags(tenant_id, policy_id):
-        custom_tags = TenantControlsCustomTags.objects.filter(tenant_id=tenant_id, tenant_policy_id=policy_id).values("id",
-                                                                                        "tag_name", "tag_description")
+        custom_tags = TenantControlsCustomTags.objects.filter(tenant_id=tenant_id, tenant_policy_id=policy_id).values(
+            "id",
+            "tag_name",
+            "tag_description")
         return custom_tags
 
     @staticmethod
     def save_custom_tags(data):
         custom_tags = data.get("tagsDetails")
-        custom_tags_instancess = []
-        for each_tag in custom_tags:
-            tcc_obj = TenantControlsCustomTags(tenant_id=data.get("tennat_id"), tenant_policy_id=data.get("policyId"),
-                                     tag_name=each_tag.get("tagName"))
-            custom_tags_instancess.append(tcc_obj)
+        custom_tags_instancess = [TenantControlsCustomTags(tenant_id=data.get("tenant_id"),
+                                                           tenant_policy_id=data.get("policyId"),
+                                                           tag_name=each_tag.get("tagName"),
+                                                           is_active=1) for each_tag in
+                                  custom_tags]
 
         TenantControlsCustomTags.objects.bulk_create(custom_tags_instancess)
         return True
@@ -592,4 +600,8 @@ class TenantPolicyCustomTagsData(BaseConstant):
         tcc_obj.delete()
         return True
 
-
+    @staticmethod
+    def get_policy_tags(policy_id, tenant_id):
+        details = TenantControlsCustomTags.objects.filter(tenant_id=tenant_id).filter(tenant_policy_id=policy_id)
+        details = details.values('tag_name', 'id')
+        return [{'tagId': det['id'], 'tagName': det['tag_name']} for det in details]

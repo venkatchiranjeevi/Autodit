@@ -164,25 +164,3 @@ class Cognito:
         """Taking input as cognito sub and Return user object as Avileap object"""
         user = Cognito.map_cognito_to_user(sub)
         return user
-
-    @staticmethod
-    def get_all_cognito_users_by_userpool_id(userpool_id):
-        more_users = True
-        pagination_token = None
-        all_users = []
-        while more_users:
-            params = {"UserPoolId": userpool_id}
-            if pagination_token is not None:
-                params["PaginationToken"] = pagination_token
-            response = Cognito.CLIENT.list_users(**params)
-            users = response['Users']
-            pagination_token = response.get('PaginationToken')
-            if pagination_token:
-                more_users = True
-            else:
-                more_users = False
-            all_users += users
-
-        return all_users
-
-

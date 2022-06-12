@@ -4,7 +4,8 @@ from AutoditApp.user_management import UserProfile
 from AutoditApp.views import DepartmentsAPI, RolesAPI, SettingManagementAPI, ControlsManagementAPI, GlobalVariablesAPI, \
     PolicyManagementAPI, TenantGlobalVariablesAPI, TenantFrameworkMasterAPI, TenantLogoUploaderAPI, PolicyDetailsAPI, \
     ControlsManagementAPIALl, ControlManagementDetailAPI, ControlManagementDetailHistoryAPI, \
-    PolicyDetailsHandler, PolicyContentHandler, MetaDetailsHandler, PolicyDepartmentsHandler, TenantPolicyCustomTags
+    PolicyDetailsHandler, PolicyContentHandler, MetaDetailsHandler, PolicyDepartmentsHandler, TenantPolicyCustomTags, \
+    TenantPolicyVariables, PolicyCommentsHandler, PolicyEligibleUsers
 
 urlpatterns = [
     url("user/", user_management.UsersList.as_view()),
@@ -20,14 +21,20 @@ urlpatterns = [
     # url("^get-tenant-policies/", TenantPolicyDetails.as_view()),
     url("^global/variables", GlobalVariablesAPI.as_view()),
     url("^tenant/global/variables", TenantGlobalVariablesAPI.as_view()),
+    url("^tenant/policy-parameters", TenantPolicyVariables.as_view()),
+
     url("^tenant/frameworks", TenantFrameworkMasterAPI.as_view()),
     # url("^tenant/all", ControlsManagementAPIALl.as_view()),
 
     url("^tenant/logo", TenantLogoUploaderAPI.as_view()),
-    url("^policy/get-details", PolicyDetailsAPI.as_view()),
+    url("^policy/get-policy", PolicyDetailsAPI.as_view()),
     url("^policy/policy-details", PolicyDetailsHandler.as_view()),
     url("^policy/update-content", PolicyContentHandler.as_view()),
     url("^policy/department", PolicyDepartmentsHandler.as_view()),
-    url("^policy/custom-tags", TenantPolicyCustomTags.as_view())
+    url("^policy/custom-tags", TenantPolicyCustomTags.as_view()),
+    url("^policy/eligible-users", PolicyEligibleUsers.as_view()),
+    url("^policy/comments", PolicyCommentsHandler.as_view())
+
+
 
 ]
