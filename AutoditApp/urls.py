@@ -40,4 +40,5 @@ urlpatterns = [
     url("^policy/version-history-details", PolicyVersionHistoryDetails.as_view()),
 
 
+
 ]
