@@ -326,7 +326,7 @@ class PolicyManagementAPI(AuthMixin):
                                                   'a.editor, a.reviewer, a.approver, a.Departments,a.PolicyReference,'
                                                   ' a.State,b.id as FrameworkId, b.FrameworkName, b.Description '
                                                   'from TenantPolicyManager a'
-                                                  ' Inner Join FrameworkMaster b on a.MasterFrameworkId = b.id')
+                                                  ' Inner Join FrameworkMaster b on a.MasterFrameworkId = b.id where a.tenant_id={}'.format(tenant_id))
         data = {'policiesData': policies_data}
 
         selected_frameworks = TenantFrameworkMaster.objects.filter(is_active=1).filter(tenant_id=int(tenant_id)).values(
