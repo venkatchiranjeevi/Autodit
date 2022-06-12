@@ -1,7 +1,7 @@
 from AutoditApp.models import TenantDepartment as Departments, Roles, TenantGlobalVariables, Tenant, GlobalVariables, \
     RolePolicies, AccessPolicy, TenantFrameworkMaster, TenantHierarchyMapping, TenantPolicyManager, \
     PolicyMaster, ControlMaster, TenantControlMaster, TenantControlAudit, TenantPolicyDepartments, \
-    TenantControlsCustomTags
+    TenantControlsCustomTags, TenantPolicyLifeCycleUsers
 from django.db.models import Q
 from .constants import DEFAULT_VIEWS, EDITIOR_VIEWS
 from AutoditApp.AWSCognito import Cognito
@@ -605,3 +605,36 @@ class TenantPolicyCustomTagsData(BaseConstant):
         details = TenantControlsCustomTags.objects.filter(tenant_id=tenant_id).filter(tenant_policy_id=policy_id)
         details = details.values('tag_name', 'id')
         return [{'tagId': det['id'], 'tagName': det['tag_name']} for det in details]
+
+
+class TenantPolicyLifeCycleUsersData(BaseConstant):
+
+    @staticmethod
+    def get_assigned_users_by_policy_id(tenant_id, policy_id):
+        owners = TenantPolicyLifeCycleUsers.objects.filter(tenant_id=tenant_id, policy_id=policy_id).values("id", "owner_type",
+                                                                                                   "owner_name")
+        return owners
+
+    @staticmethod
+    def save_policy_assigned_users(data):
+        assignee_type = data.get("type")
+        TenantPolicyLifeCycleUsers.objects.filter(tenant_id=data.get("tenant_id"), policy_id=data.get("policyId"),\
+                                                  owner_type=assignee_type).delete()
+        users = data.get("userDetails")
+        tlcu_instancess = []
+        for each_user in users:
+            tlcu_obj = TenantPolicyLifeCycleUsers(tenant_id=data.get("tenant_id"), policy_id=data.get("policyId"),
+                                       owner_type=assignee_type, owner_name=each_user.get("ownerName"),
+                                       owner_email=each_user.get("ownerEmail"),
+                                       owner_user_id=each_user.get("userId"))
+            tlcu_instancess.append(tlcu_obj)
+        TenantPolicyLifeCycleUsers.objects.bulk_create(tlcu_instancess)
+
+        return True
+
+    @staticmethod
+    def delete_assignee_user_by_assignee_id(assignee_id):
+        TenantPolicyLifeCycleUsers.objects.filter(id=assignee_id).delete()
+        return True
+
+

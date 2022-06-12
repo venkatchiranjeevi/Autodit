@@ -9,7 +9,7 @@ from AutoditApp.S3_FileHandler import S3FileHandlerConstant
 from AutoditApp.core import fetch_data_from_sql_query, get_users_by_tenant_id
 from AutoditApp.models import TenantPolicyManager, TenantPolicyParameter, TenantPolicyVersionHistory, \
     TenantGlobalVariables, MetaData, TenantDepartment, TenantControlsCustomTags, TenantPolicyComments
-from AutoditApp.dal import PolicyDepartmentsHandlerData, TenantPolicyCustomTagsData
+from AutoditApp.dal import PolicyDepartmentsHandlerData, TenantPolicyCustomTagsData, TenantPolicyLifeCycleUsersData
 
 
 class PolicyLifeCycleHandler:
@@ -165,6 +165,19 @@ class PolicyLifeCycleHandler:
             comment = []
         # TODO find next review date
         prev, present, next = PolicyLifeCycleHandler.get_policy_states(policy_details.state)
+        users = TenantPolicyLifeCycleUsersData.get_assigned_users_by_policy_id(tenant_id, policy_id)
+        approvers = []
+        assignees = []
+        reviewers = []
+        for each_user in users:
+            owner_type = each_user.get("owner_type")
+            if owner_type == "assignee":
+                assignees.append(each_user)
+            elif owner_type == "approver":
+                approvers.append(each_user)
+            elif owner_type == "reviewer":
+                reviewers.append(each_user)
+
         return {
             "policyId": policy_id,
             "policyName": policy_details.tenant_policy_name,
@@ -175,10 +188,10 @@ class PolicyLifeCycleHandler:
             "policyPresentState": present,
             "nextState": next,
             "prevState": prev,
-            "assignee": policy_details.editor,
-            "approves": policy_details.approver,
-            "reviewer": policy_details.reviewer,
-            "renewPeriod":policy_details.review_period,
+            "assignee": assignees,
+            "approves": approvers,
+            "reviewer": reviewers,
+            "renewPeriod": policy_details.review_period,
             "nextReviewDate": str(pub_date),
             'policyComments': comment,
             "policyTags":TenantPolicyCustomTagsData.get_policy_tags(policy_id, tenant_id),

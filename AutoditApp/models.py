@@ -449,3 +449,22 @@ class TenantPolicyComments(Base):
 
     class Meta:
         db_table = 'TenantPolicyComments'
+
+
+class TenantPolicyLifeCycleUsers(Base):
+    id = models.AutoField(primary_key=True, db_column='id')
+    tenant_id = models.IntegerField(db_column='tenantId', null=False)
+    policy_id = models.IntegerField(db_column='policyId', null=False)
+    owner_type = models.CharField(db_column="ownerType", max_length=250, null=True)
+    owner_name = models.CharField(db_column="ownerName", max_length=250, null=True)
+    owner_email = models.CharField(db_column="ownerEmail", max_length=250, null=True)
+    owner_user_id = models.CharField(db_column="ownerUserId", max_length=250, null=True)
+
+    class Meta:
+        db_table = 'TenantPolicyLifeCycleUsers'
+
+
+
+
+
+

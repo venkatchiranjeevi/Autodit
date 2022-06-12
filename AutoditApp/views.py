@@ -8,7 +8,7 @@ from AutoditApp.models import TenantGlobalVariables, TenantDepartment, Roles, Fr
     ControlMaster, TenantPolicyComments, TenantPolicyManager
 from AutoditApp.dal import DeparmentsData, TenantGlobalVariableData, TenantMasterData, RolesData, GlobalVariablesData, \
     RolePoliciesData, TenantFrameworkData, TennatControlHelpers, PolicyDetailsData, TenantControlMasterData, \
-    ControlManagementDetailData, PolicyDepartmentsHandlerData, TenantPolicyCustomTagsData
+    ControlManagementDetailData, PolicyDepartmentsHandlerData, TenantPolicyCustomTagsData,TenantPolicyLifeCycleUsersData
 from AutoditApp.constants import RolesConstant as RC, TENANT_LOGOS_BUCKET, S3_ROOT
 from AutoditApp.Admin_Handler.dal import FrameworkMasterData
 from .AWSCognito import Cognito
@@ -616,5 +616,20 @@ class PolicyCommentsHandler(AuthMixin):
             status = False
             message = "Comment not found for policy"
         return Response({"status": status, "message": message})
+
+
+class TenantPolicyLifeCycleUsersAPI(AuthMixin):
+
+    def post(self, request):
+        data = request.body
+        data['tenant_id'] = request.user.tenant_id
+        result = TenantPolicyLifeCycleUsersData.save_policy_assigned_users(data)
+        return Response({"status": result, "message": "User assigned Successfully"})
+
+    def delete(self, request):
+        id = request.GET.get("Id")
+        result = TenantPolicyLifeCycleUsersData.delete_assignee_user_by_assignee_id(id)
+        return Response({"status": result, "message": "Deleted Successfully"})
+
 
 
