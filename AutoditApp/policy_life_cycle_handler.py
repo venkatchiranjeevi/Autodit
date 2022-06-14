@@ -102,7 +102,6 @@ class PolicyLifeCycleHandler:
                 'policyContent': policy_content,
                 'templateVariables': template_variables}
 
-
     @staticmethod
     def get_policy_version_history(policy_id, tennant_id):
         meta_details = MetaData.objects.filter(category='POLICYSTATUS').values('id', 'key', 'display_name', 'next',
@@ -238,7 +237,23 @@ class PolicyLifeCycleHandler:
             'policyComments': comment,
             "policyTags": TenantPolicyCustomTagsData.get_policy_tags(policy_id, tenant_id),
             "departments": departments,
-            "policyControls": [],
+            "policyControls": [{"id": 1,
+                                "frameworkId": 1,
+                                "controlCode": "code",
+                                "controlName": "4.1 Understanding the organization and its context",
+                                "description": "The organization shall determine external and internal issues that are relevant to its purpose and its strategic direction and that affect its ability to achieve the intended result(s) of its quality management system.\nThe organization shall monitor and review information about these external and internal issues.\nNOTE 1 Issues can include positive and negative factors or conditions for consideration.\nNOTE 2 Understanding the external context can be facilitated by considering issues arising from legal,\ntechnological, competitive, market, cultural, social and economic environments, whether international, national,\nregional or local.\nNOTE 3 Understanding the internal context can be facilitated by considering issues related to values, culture,\nknowledge and performance of the organization.",
+                                "isActive": 1,
+                                "category": None
+                                },
+                               {
+                                   "id": 2,
+                                   "frameworkId": 1,
+                                   "controlCode": None,
+                                   "controlName": "4.2 Understanding the needs and expectations of in",
+                                   "description": "Due to their effect or potential effect on the organization’s ability to consistently provide products and services that meet customer and applicable statutory and regulatory requirements, the organization\nshall determine:\na) the interested parties that are relevant to the quality management system;\nb) the requirements of these interested parties that are relevant to the quality management system.\nThe organization shall monitor and review information about these interested parties and their\nrelevant requirements.",
+                                   "isActive": 1,
+                                   "category": None
+                               }],
             "eligibleUsers": eligible_users,
             "globalVariables": gb,
             "templateVariables": PolicyLifeCycleHandler.get_template_parameters(policy_id, tenant_id)
