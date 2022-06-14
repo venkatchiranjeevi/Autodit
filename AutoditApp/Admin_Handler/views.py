@@ -2,6 +2,8 @@ from collections import defaultdict
 
 from django.forms import model_to_dict
 from rest_framework.response import Response
+
+from AutoditApp.Admin_Handler.models import IndustryTypes
 from AutoditApp.mixins import AuthMixin
 from AutoditApp.Admin_Handler.dal import ControlHandlerData, FrameworkMasterData, HirerecyMapperData, PolicyMasterData
 from AutoditApp.Admin_Handler.sql_queries import policy_master_details, policy_master_by_f_id
@@ -128,3 +130,10 @@ class PolicyVariablesHandler(AuthMixin):
         parameterId = request.GET.get('parameterId')
         MasterPolicyParameter.objects.filter(id=int(parameterId)).delete()
         return Response({'Delete success full'})
+
+
+class IndustryType(AuthMixin):
+
+    def get(self, request):
+        industry_types = list(IndustryTypes.objects.all().values("id", "industry_type"))
+        return Response(industry_types)
