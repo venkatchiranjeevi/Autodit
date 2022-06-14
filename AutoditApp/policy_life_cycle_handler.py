@@ -263,7 +263,7 @@ class MetaDataDetails:
         meta_data['statusDetails'] = status_details
         meta_data['reviewCycle'] = review_details
         meta_data['frameworkPolicies'] = MetaDataDetails.tenant_policy_frameworks(tenant_id).values()
-        meta_data['departments'] = TenantDepartment.objects.filter(tenant_id=tenant_id).values('name', 'code')
+        meta_data['departments'] = TenantDepartment.objects.filter(tenant_id=tenant_id).values('id', 'name', 'code')
         meta_data['customTags'] = [t['tag_name'] for t in
                                    TenantControlsCustomTags.objects.filter(tenant_id=tenant_id).filter(
                                        is_active=1).values('tag_name')]
