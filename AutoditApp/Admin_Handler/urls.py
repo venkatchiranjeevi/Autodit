@@ -10,6 +10,6 @@ urlpatterns = [
     url("^policy-template-parameters", views.PolicyVariablesHandler.as_view()),
     url("^policy-control-handler", views.PolicyFrameworkControlHandler.as_view()),
     url("^get-policy-details", views.AdminSinglePolicyHandler.as_view()),
-
+    url("^get-industry-types", views.IndustryType.as_view()),
 
 ]
