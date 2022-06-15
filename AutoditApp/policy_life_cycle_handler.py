@@ -68,9 +68,10 @@ class PolicyLifeCycleHandler:
         new_version = round(version + 0.1, 2)
         old_content = S3FileHandlerConstant.read_s3_content(policy_details.policy_file_name)
         file_names = policy_details.policy_file_name.split('/')
-        file_name = '{root}/{tenant_id}/{version}/{file_name}'
+        file_name = '{root}/{tenant_id}/{policyId}/{version}/{file_name}'
         file_name = file_name.format(root=file_names[0],
                                      tenant_id=str(tennant_id),
+                                     policyId=str(policy_id),
                                      version=str(new_version),
                                      file_name=file_names[-1])
         version_url = S3FileHandlerConstant.upload_s3_file(old_content, file_name)
