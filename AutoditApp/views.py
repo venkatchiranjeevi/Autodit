@@ -149,6 +149,8 @@ class SettingManagementAPI(AuthMixin):
         select_framework_ids = [entry['master_framework_id'] for entry in selected_frameworks]
         total_frameworks = FrameworkMaster.objects.filter(is_active=1).values('id', 'framework_name', 'framework_type',
                                                                               'description')
+        formatted_departments = list_of_dict_to_dict(departments, "id")
+        formatted_role_departments = {each_role.get("role_id"): each_role.get("department_id") for each_role in tenant_roles}
         framework_details = []
         for det in total_frameworks:
             entry = det
@@ -157,6 +159,13 @@ class SettingManagementAPI(AuthMixin):
 
         all_users = Cognito.get_all_cognito_users_by_userpool_id(settings.COGNITO_USERPOOL_ID)
         tenant_users = get_users_by_tenant_id(all_users, tenant_id, user.userid)
+        for each_user in tenant_users:
+            user_departments = []
+            user_roles = each_user.get("role_details")
+            for each_role in user_roles:
+                department_id = formatted_role_departments.get(each_role.get("role_id"))
+                user_departments.append(formatted_departments.get(department_id))
+            each_user["department_details"] = user_departments
 
         return Response({'globalVarialbes': global_varialbles_data,
                          'departments': departments,
