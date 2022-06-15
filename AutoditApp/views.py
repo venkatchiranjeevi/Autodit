@@ -143,7 +143,7 @@ class SettingManagementAPI(AuthMixin):
         global_varialbles_data = eval(t_global_var_data if t_global_var_data else '{}')
         departments = list(TenantDepartment.objects.filter(tenant_id=int(tenant_id)).values('name', 'code', 'id'))
         tenant_roles = list(
-            Roles.objects.filter(tenant_id=int(tenant_id)).values('role_id', 'role_name', 'code', 'department_id'))
+            Roles.objects.filter(tenant_id=int(tenant_id)).values('role_id', 'role_name', 'code', 'department_id', 'tenant_id'))
         selected_frameworks = TenantFrameworkMaster.objects.filter(is_active=1).filter(tenant_id=int(tenant_id)).values(
             'master_framework_id')
         select_framework_ids = [entry['master_framework_id'] for entry in selected_frameworks]

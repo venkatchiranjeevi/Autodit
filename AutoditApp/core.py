@@ -61,6 +61,7 @@ def get_policies_and_access_policy_id(role_id=[]):
 
 
 def get_users_by_tenant_id(all_users, tenant_id, userid=None):
+    # TODO collect all roles and get  departements based on policies and send department details of users
     final_users = list()
     for each_user in all_users:
         user_record = dict()
@@ -76,6 +77,7 @@ def get_users_by_tenant_id(all_users, tenant_id, userid=None):
             user_record['name'] = all_attributes.get("name")
             role_details = RolesData.get_role_details(eval(all_attributes.get('custom:role_id', '[]')))
             user_record['role_details'] = role_details
+
             user_record['tenant_id'] = all_attributes.get('custom:tenant_id')
             user_record['userid'] = all_attributes.get("sub")
             user_record['status'] = 'NEW' if each_user['UserStatus'] == 'FORCE_CHANGE_PASSWORD' else each_user['UserStatus']
