@@ -200,6 +200,7 @@ class PolicyLifeCycleHandler:
         published_date = policy_details.published_date
         try:
             pub_date = PolicyLifeCycleHandler.add_months(published_date, int(policy_details.review_period))
+            pub_date = datetime.strftime(pub_date, '%d-%m-%Y')
         except:
             pub_date = ''
         try:
@@ -252,7 +253,7 @@ class PolicyLifeCycleHandler:
                                {
                                    "id": 2,
                                    "frameworkId": 1,
-                                   "controlCode": None,
+                                   "controlCode": "test",
                                    "controlName": "4.2 Understanding the needs and expectations of in",
                                    "description": "Due to their effect or potential effect on the organization’s ability to consistently provide products and services that meet customer and applicable statutory and regulatory requirements, the organization\nshall determine:\na) the interested parties that are relevant to the quality management system;\nb) the requirements of these interested parties that are relevant to the quality management system.\nThe organization shall monitor and review information about these interested parties and their\nrelevant requirements.",
                                    "isActive": 1,
@@ -277,9 +278,11 @@ class MetaDataDetails:
                                        'displayName': met.display_name})
             elif met.category == 'REV':
                 review_details.append({'key': met.key,
+                                       'sortKey': int(met.sort_key),
                                        'displayName': met.display_name})
 
         meta_data['statusDetails'] = status_details
+        review_details = sorted(review_details, key=lambda d: d['sortKey'])
         meta_data['reviewCycle'] = review_details
         meta_data['frameworkPolicies'] = MetaDataDetails.tenant_policy_frameworks(tenant_id).values()
         meta_data['departments'] = TenantDepartment.objects.filter(tenant_id=tenant_id).values('id', 'name', 'code')

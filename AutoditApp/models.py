@@ -439,7 +439,7 @@ class MetaData(Base):
     next = models.TextField(db_column='next')
     prev = models.TextField(db_column='prev')
     state_display_name = models.CharField(db_column='stateDisplayName', max_length=150)
-
+    sort_key = models.IntegerField(db_column='sortKey')
     class Meta:
         db_table = 'MetaData'
 
