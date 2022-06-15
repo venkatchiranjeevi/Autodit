@@ -547,7 +547,7 @@ class PolicyDepartmentsHandlerData(BaseConstant):
     def get_departments_by_policy_id(tenant_id, policy_id):
         departments = list(
             TenantPolicyDepartments.objects.filter(tenant_id=tenant_id,
-                                                   tenant_policy_id=policy_id).values("id","department_name"))
+                                                   tenant_policy_id=policy_id).values("id", "department_name"))
         return departments
 
     @staticmethod
@@ -610,22 +610,28 @@ class TenantPolicyLifeCycleUsersData(BaseConstant):
 
     @staticmethod
     def get_assigned_users_by_policy_id(tenant_id, policy_id):
-        owners = TenantPolicyLifeCycleUsers.objects.filter(tenant_id=tenant_id, policy_id=policy_id).values("id", "owner_type",
-                                                                                                   "owner_name")
+        owners = TenantPolicyLifeCycleUsers.objects.filter(tenant_id=tenant_id, policy_id=policy_id).values("id",
+                                                                                                            "owner_type",
+                                                                                                            "owner_name")
+        owners = [{"ownerId": owner.get("id"),
+                   "owner_type": owner.get("owner_type"),
+                   "owner_name": owner.get("owner_name"),
+                   "owner_code": owner.get("owner_name")[:2]}
+                  for owner in owners]
         return owners
 
     @staticmethod
     def save_policy_assigned_users(data):
         assignee_type = data.get("type")
-        TenantPolicyLifeCycleUsers.objects.filter(tenant_id=data.get("tenant_id"), policy_id=data.get("policyId"),\
+        TenantPolicyLifeCycleUsers.objects.filter(tenant_id=data.get("tenant_id"), policy_id=data.get("policyId"), \
                                                   owner_type=assignee_type).delete()
         users = data.get("userDetails")
         tlcu_instancess = []
         for each_user in users:
             tlcu_obj = TenantPolicyLifeCycleUsers(tenant_id=data.get("tenant_id"), policy_id=data.get("policyId"),
-                                       owner_type=assignee_type, owner_name=each_user.get("ownerName"),
-                                       owner_email=each_user.get("ownerEmail"),
-                                       owner_user_id=each_user.get("userId"))
+                                                  owner_type=assignee_type, owner_name=each_user.get("ownerName"),
+                                                  owner_email=each_user.get("ownerEmail"),
+                                                  owner_user_id=each_user.get("userId"))
             tlcu_instancess.append(tlcu_obj)
         TenantPolicyLifeCycleUsers.objects.bulk_create(tlcu_instancess)
 
@@ -635,5 +641,3 @@ class TenantPolicyLifeCycleUsersData(BaseConstant):
     def delete_assignee_user_by_assignee_id(assignee_id):
         TenantPolicyLifeCycleUsers.objects.filter(id=assignee_id).delete()
         return True
-
-
