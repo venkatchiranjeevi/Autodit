@@ -76,13 +76,10 @@ class PolicyLifeCycleHandler:
                                      file_name=file_names[-1])
         version_url = S3FileHandlerConstant.upload_s3_file(old_content, file_name)
         new_content_url = S3FileHandlerConstant.upload_s3_file(updated_content, policy_details.policy_file_name)
-        policy_details.version = version
-        policy_details.policy_reference = new_content_url
-        policy_details.version = str(new_version)
-        policy_details.save()
         TenantPolicyVersionHistory(tenant_id=tennant_id,
                                    policy_id=policy_id,
-                                   tenant_policy_name=policy_details.tenant_policy_name,
+                                   tenant_policy_name=file_name,
+                                   old_policy_name=policy_details.tenant_policy_name,
                                    old_version=str(version),
                                    new_version=str(new_version),
                                    policy_file_name=file_name,
@@ -91,6 +88,12 @@ class PolicyLifeCycleHandler:
                                    action_performed_by=user_name,
                                    action_performed_by_id=user_id,
                                    action_date=datetime.now()).save()
+        policy_details.version = version
+        policy_details.policy_file_name = file_name
+        policy_details.policy_reference = new_content_url
+        policy_details.version = str(new_version)
+        policy_details.save()
+
 
     @staticmethod
     def get_version_history_details(policy_id, tenant_id, version_id):
