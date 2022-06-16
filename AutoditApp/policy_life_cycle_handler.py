@@ -112,11 +112,11 @@ class PolicyLifeCycleHandler:
                                                                                'prev', 'state_display_name')
         formatted_meta = {meta.get('key'): meta for meta in meta_details}
         query = Q(policy_id=policy_id) & Q(tenant_id=tennant_id)
-        query = query & Q(action_performed__in=formatted_meta.keys())
+        query = query & Q(status__in=formatted_meta.keys())
         history_objects = TenantPolicyVersionHistory.objects.filter(query).values()
         history_details = []
         for history in history_objects:
-            action_details = formatted_meta.get(history.get('action_performed'))
+            action_details = formatted_meta.get(history.get('status'))
             details = {'versionId': history.get('id'),
                        'policyId': history.get('policy_id'),
                        'policyName': history.get('tenant_policy_name'),
