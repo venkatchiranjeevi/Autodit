@@ -6,7 +6,8 @@ from django.db.models import Q
 from rest_framework.response import Response
 from AutoditApp.mixins import AuthMixin
 from AutoditApp.models import TenantGlobalVariables, TenantDepartment, Roles, FrameworkMaster, TenantFrameworkMaster, \
-    ControlMaster, TenantPolicyComments, TenantPolicyManager, TenantPolicyVersionHistory
+    ControlMaster, TenantPolicyComments, TenantPolicyManager, TenantPolicyVersionHistory, TenantPolicyDepartments, \
+    TenantPolicyLifeCycleUsers
 from AutoditApp.dal import DeparmentsData, TenantGlobalVariableData, TenantMasterData, RolesData, GlobalVariablesData, \
     RolePoliciesData, TenantFrameworkData, TennatControlHelpers, PolicyDetailsData, TenantControlMasterData, \
     ControlManagementDetailData, PolicyDepartmentsHandlerData, TenantPolicyCustomTagsData,TenantPolicyLifeCycleUsersData
@@ -333,11 +334,28 @@ class PolicyManagementAPI(AuthMixin):
 
         policies_data = fetch_data_from_sql_query('select a.id as policyId, a.code as policyCode, a.tenant_id, a.tenantPolicyName, a.version, '
                                                   'a.editor, a.reviewer, a.approver, a.Departments,a.PolicyReference,'
-                                                  ' a.State,b.id as FrameworkId, b.FrameworkName, b.Description '
+                                                  ' a.State, md.stateDisplayName, b.id as FrameworkId, b.FrameworkName, b.Description '
                                                   'from TenantPolicyManager a'
-                                                  ' Inner Join FrameworkMaster b on a.MasterFrameworkId = b.id where a.tenant_id={}'.format(tenant_id))
-        data = {'policiesData': policies_data}
+                                                  ' Inner Join FrameworkMaster b on a.MasterFrameworkId = b.id '
+                                                  'Left  Join MetaData md  on a.state = md.key where a.tenant_id={}'.format(tenant_id))
 
+        departments = TenantPolicyDepartments.objects.filter(tenant_id=tenant_id).filter(is_active=1).values()
+        policy_users = TenantPolicyLifeCycleUsers.objects.filter(tenant_id=tenant_id).values()
+        formatter_departments = defaultdict(list)
+        for each_department in departments:
+            formatter_departments[each_department['tenant_policy_id']].append(each_department['department_name'])
+        formatted_user_details = defaultdict(dict)
+        for user in policy_users:
+            data = {'userName': user['owner_name'], 'userType': user['owner_type'], 'userCode': user['owner_name'][:2]}
+            try:
+                formatted_user_details[user['policy_id']][user['owner_type']].append(data)
+            except Exception:
+                formatted_user_details[user['policy_id']][user['owner_type']] = [data]
+
+        for each_policy in policies_data:
+            each_policy['departments'] = formatter_departments.get(each_policy['policyId'], [])
+            each_policy['users'] = formatted_user_details.get(each_policy['policyId'], {})
+        data = {'policiesData': policies_data}
 
         selected_frameworks = TenantFrameworkMaster.objects.filter(is_active=1).filter(tenant_id=int(tenant_id)).values(
             'tenant_framework_name',
