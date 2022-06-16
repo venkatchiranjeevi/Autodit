@@ -333,8 +333,8 @@ class PolicyManagementAPI(AuthMixin):
         tenant_id = request.user.tenant_id
 
         policies_data = fetch_data_from_sql_query('select a.id as policyId, a.code as policyCode, a.tenant_id, a.tenantPolicyName, a.version, '
-                                                  'a.editor, a.reviewer, a.approver, a.Departments,a.PolicyReference,'
-                                                  ' a.State, md.stateDisplayName, b.id as FrameworkId, b.FrameworkName, b.Description '
+                                                  'a.PolicyReference,'
+                                                  'a.State, md.stateDisplayName, b.id as FrameworkId, b.FrameworkName, b.Description '
                                                   'from TenantPolicyManager a'
                                                   ' Inner Join FrameworkMaster b on a.MasterFrameworkId = b.id '
                                                   'Left  Join MetaData md  on a.state = md.key where a.tenant_id={}'.format(tenant_id))
