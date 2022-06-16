@@ -113,7 +113,7 @@ class PolicyLifeCycleHandler:
         formatted_meta = {meta.get('key'): meta for meta in meta_details}
         query = Q(policy_id=policy_id) & Q(tenant_id=tennant_id)
         query = query & Q(status__in=formatted_meta.keys())
-        history_objects = TenantPolicyVersionHistory.objects.filter(query).values()
+        history_objects = TenantPolicyVersionHistory.objects.filter(query).values().order_by('-action_date')
         history_details = []
         for history in history_objects:
             action_details = formatted_meta.get(history.get('status'))
@@ -122,7 +122,7 @@ class PolicyLifeCycleHandler:
                        'policyName': history.get('tenant_policy_name'),
                        'oldVersion': history.get('old_version'),
                        'newVersion': history.get('new_version'),
-                       'status': history.get('status'),
+                       'status': 'Approved' if history.get('status') == 'PUB' else 'Pending',
                        'actionPerformed': action_details.get('display_name'),
                        'actionPerformedBy': history.get('action_performed_by'),
                        'actionPerformedDate': history.get('action_date')}
