@@ -74,8 +74,8 @@ class PolicyLifeCycleHandler:
                                      policyId=str(policy_id),
                                      version=str(new_version),
                                      file_name=file_names[-1])
-        version_url = S3FileHandlerConstant.upload_s3_file(old_content, file_name)
-        new_content_url = S3FileHandlerConstant.upload_s3_file(updated_content, policy_details.policy_file_name)
+        version_url = S3FileHandlerConstant.upload_s3_file(old_content, policy_details.policy_file_name)
+        new_content_url = S3FileHandlerConstant.upload_s3_file(updated_content, file_name)
         TenantPolicyVersionHistory(tenant_id=tennant_id,
                                    policy_id=policy_id,
                                    tenant_policy_name=policy_details.tenant_policy_name,
