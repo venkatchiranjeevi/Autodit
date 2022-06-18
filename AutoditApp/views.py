@@ -550,7 +550,7 @@ class PolicyDepartmentsHandler(AuthMixin):
         user = request.user
         tenant_id = user.tenant_id
         result = PolicyDepartmentsHandlerData.delete_policy_department(policy_department_id, tenant_id, policy_id)
-        return Response({"status": result, "message": "Department Deleted Successfully", "data": result})
+        return Response({"status": True, "message": "Department Deleted Successfully", "data": result})
 
 
 class TenantPolicyCustomTags(AuthMixin):
