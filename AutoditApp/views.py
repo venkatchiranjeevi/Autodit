@@ -20,6 +20,7 @@ from .Utils import list_of_dict_to_dict
 from collections import defaultdict
 import boto3
 from rest_framework.views import APIView
+from AutoditApp.subscriptions import Subscription
 
 # Create your views here.
 from .core import get_users_by_tenant_id, fetch_data_from_sql_query
@@ -703,3 +704,9 @@ class PolicyVersionHistoryDetails(AuthMixin):
         tenant_id = user.tenant_id
         details = PolicyLifeCycleHandler.get_version_history_details(policy_id, tenant_id, version_id)
         return Response(details)
+
+class SubscriptionsPolicyAPI(AuthMixin):
+    def post(self, request):
+        request_body = json.loads(request.body.decode("utf-8"))
+        print(request_body)
+        return Response({"subscription_id": Subscription.createSubscription(data=request_body)})
