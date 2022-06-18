@@ -685,8 +685,12 @@ class TenantPolicyLifeCycleUsersAPI(AuthMixin):
         return Response({"status": True, "message": "User assigned Successfully", "users": result})
 
     def delete(self, request):
-        id = request.GET.get("Id")
-        result = TenantPolicyLifeCycleUsersData.delete_assignee_user_by_assignee_id(id)
+        id = request.GET.get("id")
+        policy_id = request.GET.get('policyId')
+        user_type = request.GET.get('type')
+        user = request.user
+        tenant_id = user.tenant_id
+        result = TenantPolicyLifeCycleUsersData.delete_assignee_user_by_assignee_id(id, policy_id, user_type, tenant_id)
         return Response({"status": result, "message": "Deleted Successfully"})
 
 

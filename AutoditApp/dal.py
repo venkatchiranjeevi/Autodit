@@ -672,10 +672,15 @@ class TenantPolicyLifeCycleUsersData(BaseConstant):
         return assignee_users
 
     @staticmethod
-    def delete_assignee_user_by_assignee_id(assignee_id):
+    def delete_assignee_user_by_assignee_id(assignee_id, policy_id, assignee_type, tenant_id):
 
         tplc_obj = TenantPolicyLifeCycleUsers.objects.get(id=assignee_id)
         tplc_obj.is_active = False
         tplc_obj.in_active_date = datetime.now()
         tplc_obj.save()
-        return True
+        assignee_users = TenantPolicyLifeCycleUsers.objects.filter(tenant_id=tenant_id,
+                                                                   policy_id=policy_id,
+                                                                   owner_type=assignee_type,
+                                                                   is_active=True). \
+            values("id", "owner_type", "owner_name", "owner_user_id", "owner_code")
+        return assignee_users
