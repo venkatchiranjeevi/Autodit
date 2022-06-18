@@ -679,7 +679,7 @@ class TenantPolicyLifeCycleUsersAPI(AuthMixin):
             data = eval(data.decode('utf-8'))
         data['tenant_id'] = request.user.tenant_id
         result = TenantPolicyLifeCycleUsersData.save_policy_assigned_users(data)
-        return Response({"status": True, "message": "User assigned Successfully", "assigned_users": result})
+        return Response({"status": True, "message": "User assigned Successfully", "users": result})
 
     def delete(self, request):
         id = request.GET.get("Id")
