@@ -675,6 +675,8 @@ class TenantPolicyLifeCycleUsersAPI(AuthMixin):
 
     def post(self, request):
         data = request.body
+        if type(data) == bytes:
+            data = eval(data.decode('utf-8'))
         data['tenant_id'] = request.user.tenant_id
         result = TenantPolicyLifeCycleUsersData.save_policy_assigned_users(data)
         return Response({"status": True, "message": "User assigned Successfully", "assigned_users": result})

@@ -18,7 +18,7 @@ class Subscription:
                 "expire_by": int(round(tm.timestamp())),
                 "customer_notify": 0
             })
-            return subscription_response.get('id');
+            return subscription_response.get('id')
         except Exception as e:
             print(e)
         return None
