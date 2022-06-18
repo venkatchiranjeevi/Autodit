@@ -610,10 +610,11 @@ class TenantPolicyLifeCycleUsersData(BaseConstant):
 
     @staticmethod
     def get_assigned_users_by_policy_id(tenant_id, policy_id):
-        owners = TenantPolicyLifeCycleUsers.objects.filter(tenant_id=tenant_id, policy_id=policy_id, is_active=True).values("id",
-                                                                                                            "owner_type",
-                                                                                                            "owner_name",
-                                                                                                            "owner_user_id")
+        owners = TenantPolicyLifeCycleUsers.objects.filter(tenant_id=tenant_id, policy_id=policy_id,
+                                                           is_active=True).values("id",
+                                                                                  "owner_type",
+                                                                                  "owner_name",
+                                                                                  "owner_user_id")
         owners = [{"ownerId": owner.get("id"),
                    "owner_type": owner.get("owner_type"),
                    "owner_name": owner.get("owner_name"),
@@ -631,28 +632,32 @@ class TenantPolicyLifeCycleUsersData(BaseConstant):
         #                                           owner_type=assignee_type).delete()
         users = data.get("userDetails")
         for each_user in users:
-            tlc_obj, created = TenantPolicyLifeCycleUsers.objects.get_or_create(tenant_id=tenant_id, policy_id=policy_id,
-                                                  owner_type=assignee_type, owner_user_id=each_user.get("userId"),
+            tlc_obj, created = TenantPolicyLifeCycleUsers.objects.get_or_create(tenant_id=tenant_id,
+                                                                                policy_id=policy_id,
+                                                                                owner_type=assignee_type,
+                                                                                owner_user_id=each_user.get("userId"),
                                                                                 is_active=True)
-            if created:
-                tlc_obj.owner_name = each_user.get("ownerName")
-                tlc_obj.owner_email = each_user.get("ownerEmail")
-                tlc_obj.owner_code = each_user.get("ownerCode")
-                tlc_obj.save()
-            else:
-                tlc_obj.in_active_date = datetime.now()
-                tlc_obj.is_active = False
-                tlc_obj.save()
-                tlcu_obj = TenantPolicyLifeCycleUsers(tenant_id=tenant_id, policy_id=policy_id,
-                                                      owner_type=assignee_type, owner_name=each_user.get("ownerName"),
-                                                      owner_email=each_user.get("ownerEmail"),
-                                                      owner_user_id=each_user.get("userId"),
-                                                      owner_code=each_user.get("ownerCode"))
-                tlcu_obj.save()
+            print(created)
+            # if created:
+            #     tlc_obj.owner_name = each_user.get("ownerName")
+            #     tlc_obj.owner_email = each_user.get("ownerEmail")
+            #     tlc_obj.owner_code = each_user.get("ownerCode")
+            #     tlc_obj.save()
+            # else:
+            #     tlc_obj.in_active_date = datetime.now()
+            #     tlc_obj.is_active = False
+            #     tlc_obj.save()
+            #     tlcu_obj = TenantPolicyLifeCycleUsers(tenant_id=tenant_id, policy_id=policy_id,
+            #                                           owner_type=assignee_type, owner_name=each_user.get("ownerName"),
+            #                                           owner_email=each_user.get("ownerEmail"),
+            #                                           owner_user_id=each_user.get("userId"),
+            #                                           owner_code=each_user.get("ownerCode"))
+            #     tlcu_obj.save()
 
         assignee_users = TenantPolicyLifeCycleUsers.objects.filter(tenant_id=tenant_id,
-                                                            policy_id=policy_id, owner_type=assignee_type,
-                                                                   is_active=True).\
+                                                                   policy_id=policy_id,
+                                                                   owner_type=assignee_type,
+                                                                   is_active=True). \
             values("id", "owner_type", "owner_name", "owner_user_id", "owner_code")
         return assignee_users
 
