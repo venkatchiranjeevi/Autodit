@@ -691,7 +691,7 @@ class TenantPolicyLifeCycleUsersAPI(AuthMixin):
         user = request.user
         tenant_id = user.tenant_id
         result = TenantPolicyLifeCycleUsersData.delete_assignee_user_by_assignee_id(id, policy_id, user_type, tenant_id)
-        return Response({"status": result, "message": "Deleted Successfully"})
+        return Response({"status": True, "message": "Deleted Successfully", "users": result})
 
 
 
