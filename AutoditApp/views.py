@@ -436,6 +436,13 @@ class PolicyDetailsAPI(AuthMixin):
         details = PolicyLifeCycleHandler.get_complete_policy_details(int(policy_id), int(tenant_id))
         return Response(details)
 
+class PolicyRenewUpdateAPI(AuthMixin):
+
+    def post(self, request):
+        data = request.data
+        policy_id = data.get('policyId')
+        details = PolicyLifeCycleHandler.policy_revision_period_handler(data, policy_id)
+        return Response({"message": "Review Period Updated Successfully", "status": True, "details": details})
 
 class ControlsManagementAPIALl(APIView):
 
@@ -714,8 +721,12 @@ class PolicyVersionHistoryDetails(AuthMixin):
         details = PolicyLifeCycleHandler.get_version_history_details(policy_id, tenant_id, version_id)
         return Response(details)
 
+
 class SubscriptionsPolicyAPI(AuthMixin):
     def post(self, request):
         request_body = json.loads(request.body.decode("utf-8"))
         print(request_body)
         return Response({"subscription_id": Subscription.createSubscription(data=request_body)})
+
+
+

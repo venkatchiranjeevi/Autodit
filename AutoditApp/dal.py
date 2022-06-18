@@ -638,8 +638,6 @@ class TenantPolicyLifeCycleUsersData(BaseConstant):
         assignee_type = data.get("type")
         policy_id = data.get("policyId")
         tenant_id = data.get("tenant_id")
-        # TenantPolicyLifeCycleUsers.objects.filter(tenant_id=data.get("tenant_id"), policy_id=data.get("policyId"), \
-        #                                           owner_type=assignee_type).delete()
         users = data.get("userDetails")
         for each_user in users:
             tlc_obj, created = TenantPolicyLifeCycleUsers.objects.get_or_create(tenant_id=tenant_id,
@@ -647,23 +645,11 @@ class TenantPolicyLifeCycleUsersData(BaseConstant):
                                                                                 owner_type=assignee_type,
                                                                                 owner_user_id=each_user.get("userId"),
                                                                                 is_active=True)
-            print(created)
             if created:
                 tlc_obj.owner_name = each_user.get("ownerName")
                 tlc_obj.owner_email = each_user.get("ownerEmail")
                 tlc_obj.owner_code = each_user.get("ownerCode")
                 tlc_obj.save()
-            # else:
-            #     tlc_obj.in_active_date = datetime.now()
-            #     tlc_obj.is_active = False
-            #     tlc_obj.save()
-            #     tlcu_obj = TenantPolicyLifeCycleUsers(tenant_id=tenant_id, policy_id=policy_id,
-            #                                           owner_type=assignee_type, owner_name=each_user.get("ownerName"),
-            #                                           owner_email=each_user.get("ownerEmail"),
-            #                                           owner_user_id=each_user.get("userId"),
-            #                                           owner_code=each_user.get("ownerCode"))
-            #     tlcu_obj.save()
-
         assignee_users = TenantPolicyLifeCycleUsers.objects.filter(tenant_id=tenant_id,
                                                                    policy_id=policy_id,
                                                                    owner_type=assignee_type,
@@ -684,3 +670,26 @@ class TenantPolicyLifeCycleUsersData(BaseConstant):
                                                                    is_active=True). \
             values("id", "owner_type", "owner_name", "owner_user_id", "owner_code")
         return assignee_users
+
+    @staticmethod
+    def create_tasks(assignee_type, policy_id, tenant_id):
+        assignee_users = TenantPolicyLifeCycleUsers.objects.filter(tenant_id=tenant_id,
+                                                                   policy_id=policy_id,
+                                                                   owner_type=assignee_type,
+                                                                   is_active=True).values()
+        department_details = TenantPolicyDepartments.objects.filter(tenant_id=tenant_id,
+                                                                   tenant_policy_id=policy_id).values("id",
+                                                                                                      "department_name")
+        if assignee_users:
+            if assignee_type == "assignee" or assignee_type == "DRF":
+                pass
+            elif assignee_type == "REV" or assignee_type == "reviewer":
+                pass
+            elif assignee_type == "APR" or assignee_type == "approver":
+                pass
+            elif assignee_type == "PUB" or assignee_type == "publisher":
+                pass
+        else:
+            # Create Department Task
+            pass
+

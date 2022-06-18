@@ -39,12 +39,39 @@ class PolicyLifeCycleHandler:
         policy_details.tenant_policy_name = policy_data.get('policyName', policy_details.tenant_policy_name)
         policy_details.summery = policy_data.get('summery', policy_details.summery)
         policy_details.code = policy_data.get('policyCode', policy_details.code)
-        policy_details.review_period = policy_data.get('reviewPeriod', policy_details.review_period)
+        # policy_details.review_period = policy_data.get('reviewPeriod', policy_details.review_period)
         policy_details.save()
+        published_date = policy_details.published_date
+        try:
+            pub_date_object = PolicyLifeCycleHandler.add_months(published_date, int(policy_details.review_period))
+            pub_date = datetime.strftime(pub_date_object, '%d-%m-%Y')
+        except:
+            pub_date = ''
         return {"policyId": policy_details.id,
                 "policyName": policy_details.tenant_policy_name,
                 "policyCode": policy_details.code,
-                "policyDescription": policy_details.summery}
+                "policyDescription": policy_details.summery,
+                "renewPeriod": policy_details.review_period,
+                "nextReviewDate": str(pub_date),
+                }
+
+    @staticmethod
+    def policy_revision_period_handler(policy_data, policy_id):
+        policy_details = TenantPolicyManager.objects.get(id=policy_id)
+        policy_details.review_period = policy_data.get('reviewPeriod', policy_details.review_period)
+        policy_details.save()
+        published_date = policy_details.published_date
+        try:
+            pub_date = PolicyLifeCycleHandler.add_months(published_date, int(policy_details.review_period))
+            pub_date = datetime.strftime(pub_date, '%d-%m-%Y')
+        except:
+            pub_date = ''
+        return {"policyId": policy_details.id,
+                "policyName": policy_details.tenant_policy_name,
+                "policyCode": policy_details.code,
+                "policyDescription": policy_details.summery,
+                "reviewPeriod": policy_details.review_period,
+                "nextReviewDate": str(pub_date)}
 
     @staticmethod
     def get_template_parameters(policy_id, tenant_id):
@@ -308,9 +335,9 @@ class MetaDataDetails:
             exiting_obj['frameworkDescription'] = det['Description']
             try:
                 exiting_obj['policyDetails'].append({'policyName': det['tenantPolicyName'],
-                                                     'poicyId': det['policyId']})
+                                                     'policyId': det['policyId']})
             except:
                 exiting_obj['policyDetails'] = [{'policyName': det['tenantPolicyName'],
-                                                 'poicyId': det['policyId']}]
+                                                 'policyId': det['policyId']}]
             result[det['f_name']] = exiting_obj
         return result
