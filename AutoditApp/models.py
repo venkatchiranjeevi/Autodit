@@ -472,5 +472,3 @@ class TenantPolicyLifeCycleUsers(Base):
 
 
 
-
-
