@@ -638,11 +638,11 @@ class TenantPolicyLifeCycleUsersData(BaseConstant):
                                                                                 owner_user_id=each_user.get("userId"),
                                                                                 is_active=True)
             print(created)
-            # if created:
-            #     tlc_obj.owner_name = each_user.get("ownerName")
-            #     tlc_obj.owner_email = each_user.get("ownerEmail")
-            #     tlc_obj.owner_code = each_user.get("ownerCode")
-            #     tlc_obj.save()
+            if created:
+                tlc_obj.owner_name = each_user.get("ownerName")
+                tlc_obj.owner_email = each_user.get("ownerEmail")
+                tlc_obj.owner_code = each_user.get("ownerCode")
+                tlc_obj.save()
             # else:
             #     tlc_obj.in_active_date = datetime.now()
             #     tlc_obj.is_active = False
