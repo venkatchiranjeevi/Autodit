@@ -507,7 +507,7 @@ class ControlsManagementAPIALl(APIView):
 
 class PolicyDetailsHandler(AuthMixin):
     def get(self, request):
-        data = request.data
+        data = request.GET
         policy_id = data.get('policyId')
         user = request.user
         tenant_id = user.tenant_id
