@@ -546,7 +546,10 @@ class PolicyDepartmentsHandler(AuthMixin):
 
     def delete(self, request):
         policy_department_id = request.GET.get("id")
-        result = PolicyDepartmentsHandlerData.delete_policy_department(policy_department_id)
+        policy_id = request.GET.get("policyId")
+        user = request.user
+        tenant_id = user.tenant_id
+        result = PolicyDepartmentsHandlerData.delete_policy_department(policy_department_id, tenant_id, policy_id)
         return Response({"status": result, "message": "Department Deleted Successfully", "data": result})
 
 

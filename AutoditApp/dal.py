@@ -555,27 +555,30 @@ class PolicyDepartmentsHandlerData(BaseConstant):
         departments_list = data.get("departmentDetails")
         policy_instancess = []
         for each_department in departments_list:
-            tpd_obj = TenantPolicyDepartments(tenant_id=data.get("tenant_id"),
-                                              tenant_policy_id=data.get("policyId"),
-                                              department_name=each_department.get("name"),
-                                              tenant_dep_id=each_department.get("id"),
-                                              created_by=data.get("created_by"))
+            tpd_obj, created = TenantPolicyDepartments.objects.get_or_create(tenant_id=data.get("tenant_id"),
+                                                                             tenant_policy_id=data.get("policyId"),
+                                                                             tenant_dep_id=each_department.get("id"),
+                                                                             created_by=data.get("created_by"))
+            tpd_obj.department_name = each_department.get("name")
+            tpd_obj.save()
             policy_instancess.append(tpd_obj)
 
         TenantPolicyDepartments.objects.bulk_create(policy_instancess)
 
         deparment_details = TenantPolicyDepartments.objects.filter(tenant_id=data.get("tenant_id"),
-                                                                   tenant_policy_id=data.get("policyId")).values("id", "department_name")
-        details = [{'id': each_department.get("id"), 'name': each_department.get("department_name")} for each_department in deparment_details]
+                                                                   tenant_policy_id=data.get("policyId")).values("id",
+                                                                                                                 "department_name")
+        details = [{'id': each_department.get("id"), 'name': each_department.get("department_name")} for each_department
+                   in deparment_details]
         return details
 
     @staticmethod
-    def delete_policy_department(policy_department_id):
+    def delete_policy_department(policy_department_id, tenant_id, policy_id):
         tpd_obj = TenantPolicyDepartments.objects.get(id=policy_department_id)
         tpd_obj.delete()
-        deparment_details = TenantPolicyDepartments.objects.filter(tenant_id=data.get("tenant_id"),
-                                                                   tenant_policy_id=data.get("policyId")).values("id",
-                                                                                                                 "department_name")
+        deparment_details = TenantPolicyDepartments.objects.filter(tenant_id=tenant_id,
+                                                                   tenant_policy_id=policy_id).values("id",
+                                                                                                      "department_name")
         details = [{'id': each_department.get("id"), 'name': each_department.get("department_name")} for each_department
                    in deparment_details]
         return details
