@@ -612,10 +612,12 @@ class TenantPolicyLifeCycleUsersData(BaseConstant):
     def get_assigned_users_by_policy_id(tenant_id, policy_id):
         owners = TenantPolicyLifeCycleUsers.objects.filter(tenant_id=tenant_id, policy_id=policy_id).values("id",
                                                                                                             "owner_type",
-                                                                                                            "owner_name")
+                                                                                                            "owner_name",
+                                                                                                            "owner_user_id")
         owners = [{"ownerId": owner.get("id"),
                    "owner_type": owner.get("owner_type"),
                    "owner_name": owner.get("owner_name"),
+                   "user_id": owner.get("owner_user_id"),
                    "owner_code": owner.get("owner_name")[:2]}
                   for owner in owners]
         return owners
