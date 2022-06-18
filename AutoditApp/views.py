@@ -542,12 +542,12 @@ class PolicyDepartmentsHandler(AuthMixin):
         data["tenant_id"] = request.user.tenant_id
         data['created_by'] = request.user.userid
         result = PolicyDepartmentsHandlerData.save_policy_department_details(data)
-        return Response({"status": result, "message": "Department Added Successfully"})
+        return Response({"status": result, "message": "Department Added Successfully", "data": result})
 
     def delete(self, request):
         policy_department_id = request.GET.get("id")
         result = PolicyDepartmentsHandlerData.delete_policy_department(policy_department_id)
-        return Response({"status": result, "message": "Department Deleted Successfully"})
+        return Response({"status": result, "message": "Department Deleted Successfully", "data": result})
 
 
 class TenantPolicyCustomTags(AuthMixin):

@@ -557,19 +557,28 @@ class PolicyDepartmentsHandlerData(BaseConstant):
         for each_department in departments_list:
             tpd_obj = TenantPolicyDepartments(tenant_id=data.get("tenant_id"),
                                               tenant_policy_id=data.get("policyId"),
-                                              department_name=each_department.get("departmentName"),
-                                              tenant_dep_id=each_department.get("departmentId"),
+                                              department_name=each_department.get("name"),
+                                              tenant_dep_id=each_department.get("id"),
                                               created_by=data.get("created_by"))
             policy_instancess.append(tpd_obj)
 
         TenantPolicyDepartments.objects.bulk_create(policy_instancess)
-        return True
+
+        deparment_details = TenantPolicyDepartments.objects.filter(tenant_id=data.get("tenant_id"),
+                                                                   tenant_policy_id=data.get("policyId")).values("id", "department_name")
+        details = [{'id': each_department.get("id"), 'name': each_department.get("department_name")} for each_department in deparment_details]
+        return details
 
     @staticmethod
     def delete_policy_department(policy_department_id):
         tpd_obj = TenantPolicyDepartments.objects.get(id=policy_department_id)
         tpd_obj.delete()
-        return True
+        deparment_details = TenantPolicyDepartments.objects.filter(tenant_id=data.get("tenant_id"),
+                                                                   tenant_policy_id=data.get("policyId")).values("id",
+                                                                                                                 "department_name")
+        details = [{'id': each_department.get("id"), 'name': each_department.get("department_name")} for each_department
+                   in deparment_details]
+        return details
 
 
 class TenantPolicyCustomTagsData(BaseConstant):
