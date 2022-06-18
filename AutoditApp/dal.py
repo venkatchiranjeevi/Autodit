@@ -563,8 +563,6 @@ class PolicyDepartmentsHandlerData(BaseConstant):
             tpd_obj.save()
             policy_instancess.append(tpd_obj)
 
-        TenantPolicyDepartments.objects.bulk_create(policy_instancess)
-
         deparment_details = TenantPolicyDepartments.objects.filter(tenant_id=data.get("tenant_id"),
                                                                    tenant_policy_id=data.get("policyId")).values("id",
                                                                                                                  "department_name")
