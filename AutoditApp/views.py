@@ -341,7 +341,7 @@ class PolicyManagementAPI(AuthMixin):
                                                   'Left  Join MetaData md  on a.state = md.key where a.tenant_id={}'.format(tenant_id))
 
         departments = TenantPolicyDepartments.objects.filter(tenant_id=tenant_id).filter(is_active=1).values()
-        policy_users = TenantPolicyLifeCycleUsers.objects.filter(tenant_id=tenant_id).values()
+        policy_users = TenantPolicyLifeCycleUsers.objects.filter(tenant_id=tenant_id, is_active=True).values()
         formatter_departments = defaultdict(list)
         for each_department in departments:
             formatter_departments[each_department['tenant_policy_id']].append(each_department['department_name'])
@@ -677,7 +677,7 @@ class TenantPolicyLifeCycleUsersAPI(AuthMixin):
         data = request.body
         data['tenant_id'] = request.user.tenant_id
         result = TenantPolicyLifeCycleUsersData.save_policy_assigned_users(data)
-        return Response({"status": result, "message": "User assigned Successfully"})
+        return Response({"status": True, "message": "User assigned Successfully", "assigned_users": result})
 
     def delete(self, request):
         id = request.GET.get("Id")

@@ -461,10 +461,14 @@ class TenantPolicyLifeCycleUsers(Base):
     id = models.AutoField(primary_key=True, db_column='id')
     tenant_id = models.IntegerField(db_column='tenantId', null=False)
     policy_id = models.IntegerField(db_column='policyId', null=False)
+    owner_code = models.CharField(db_column="owernCode", max_length=50, null=True)
     owner_type = models.CharField(db_column="ownerType", max_length=250, null=True)
     owner_name = models.CharField(db_column="ownerName", max_length=250, null=True)
     owner_email = models.CharField(db_column="ownerEmail", max_length=250, null=True)
     owner_user_id = models.CharField(db_column="ownerUserId", max_length=250, null=True)
+    is_active = models.IntegerField(db_column="isActive", null=True, default=True)
+    active_date = models.DateTimeField(db_column="activeDate", auto_now_add=True)
+    in_active_date = models.DateTimeField(db_column="inActiveDate")
 
     class Meta:
         db_table = 'TenantPolicyLifeCycleUsers'

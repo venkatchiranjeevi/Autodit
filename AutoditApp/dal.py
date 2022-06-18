@@ -7,7 +7,7 @@ from .constants import DEFAULT_VIEWS, EDITIOR_VIEWS
 from AutoditApp.AWSCognito import Cognito
 from .core import fetch_data_from_sql_query
 from .S3_FileHandler import S3FileHandlerConstant
-
+from datetime import datetime
 from .sql_queries import TENANT_CONTROL_ID, CONTROLS_MASTER, TENANT_FRAMEWORK_DETAILS, TENANT_FRAMEWORK_POLICIES, \
     CONTROL_FRAMEWORK_DETAILS
 from .sql_queries import TENANT_CONTROL_ID, CONTROLS_MASTER
@@ -610,7 +610,7 @@ class TenantPolicyLifeCycleUsersData(BaseConstant):
 
     @staticmethod
     def get_assigned_users_by_policy_id(tenant_id, policy_id):
-        owners = TenantPolicyLifeCycleUsers.objects.filter(tenant_id=tenant_id, policy_id=policy_id).values("id",
+        owners = TenantPolicyLifeCycleUsers.objects.filter(tenant_id=tenant_id, policy_id=policy_id, is_active=True).values("id",
                                                                                                             "owner_type",
                                                                                                             "owner_name",
                                                                                                             "owner_user_id")
@@ -625,21 +625,42 @@ class TenantPolicyLifeCycleUsersData(BaseConstant):
     @staticmethod
     def save_policy_assigned_users(data):
         assignee_type = data.get("type")
-        TenantPolicyLifeCycleUsers.objects.filter(tenant_id=data.get("tenant_id"), policy_id=data.get("policyId"), \
-                                                  owner_type=assignee_type).delete()
+        policy_id = data.get("policyId")
+        tenant_id = data.get("tenant_id")
+        # TenantPolicyLifeCycleUsers.objects.filter(tenant_id=data.get("tenant_id"), policy_id=data.get("policyId"), \
+        #                                           owner_type=assignee_type).delete()
         users = data.get("userDetails")
-        tlcu_instancess = []
         for each_user in users:
-            tlcu_obj = TenantPolicyLifeCycleUsers(tenant_id=data.get("tenant_id"), policy_id=data.get("policyId"),
-                                                  owner_type=assignee_type, owner_name=each_user.get("ownerName"),
-                                                  owner_email=each_user.get("ownerEmail"),
-                                                  owner_user_id=each_user.get("userId"))
-            tlcu_instancess.append(tlcu_obj)
-        TenantPolicyLifeCycleUsers.objects.bulk_create(tlcu_instancess)
+            tlc_obj, created = TenantPolicyLifeCycleUsers.objects.get_or_create(tenant_id=tenant_id, policy_id=policy_id,
+                                                  owner_type=assignee_type, owner_user_id=each_user.get("userId"),
+                                                                                is_active=True)
+            if created:
+                tlc_obj.owner_name = each_user.get("ownerName")
+                tlc_obj.owner_email = each_user.get("ownerEmail")
+                tlc_obj.owner_code = each_user.get("ownerCode")
+                tlc_obj.save()
+            else:
+                tlc_obj.in_active_date = datetime.now()
+                tlc_obj.is_active = False
+                tlc_obj.save()
+                tlcu_obj = TenantPolicyLifeCycleUsers(tenant_id=tenant_id, policy_id=policy_id,
+                                                      owner_type=assignee_type, owner_name=each_user.get("ownerName"),
+                                                      owner_email=each_user.get("ownerEmail"),
+                                                      owner_user_id=each_user.get("userId"),
+                                                      owner_code=each_user.get("ownerCode"))
+                tlcu_obj.save()
 
-        return True
+        assignee_users = TenantPolicyLifeCycleUsers.objects.filter(tenant_id=tenant_id,
+                                                            policy_id=policy_id, owner_type=assignee_type,
+                                                                   is_active=True).\
+            values("id", "owner_type", "owner_name", "owner_user_id", "owner_code")
+        return assignee_users
 
     @staticmethod
     def delete_assignee_user_by_assignee_id(assignee_id):
-        TenantPolicyLifeCycleUsers.objects.filter(id=assignee_id).delete()
+
+        tplc_obj = TenantPolicyLifeCycleUsers.objects.get(id=assignee_id)
+        tplc_obj.is_active = False
+        tplc_obj.in_active_date = datetime.now()
+        tplc_obj.save()
         return True
