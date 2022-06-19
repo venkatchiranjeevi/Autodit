@@ -8,6 +8,7 @@ from AutoditApp.AWSCognito import Cognito
 from .core import fetch_data_from_sql_query
 from .S3_FileHandler import S3FileHandlerConstant
 from datetime import datetime
+from .policy_life_cycle_handler import PolicyLifeCycleHandler, MetaDataDetails
 from .sql_queries import TENANT_CONTROL_ID, CONTROLS_MASTER, TENANT_FRAMEWORK_DETAILS, TENANT_FRAMEWORK_POLICIES, \
     CONTROL_FRAMEWORK_DETAILS
 from .sql_queries import TENANT_CONTROL_ID, CONTROLS_MASTER
@@ -684,20 +685,43 @@ class TenantPolicyLifeCycleUsersData(BaseConstant):
 
         # Tasks --> TenantPolicyTasks
         # Meta Data --> MetaData
-
+        policy_id = data.get("policyId")
+        tenant_id = data.get("tenant_id")
+        policy_life_obj = PolicyLifeCycleHandler.get_policy_details_by_policy_id(policy_id)
+        policy_state = policy_life_obj.state
+        policy_meta_data = MetaDataDetails.get_policy_access_users(policy_state)
+        state_users = policy_meta_data[0].get("state_user")
+        access_user = policy_meta_data[0].get("access_user")
+        task_verify = policy_meta_data[0].get("task_verify")
         assignee_type = data.get("type")
         if assignee_type == 'assignee':
             # TODO will remove once complete integration is done
             assignee_type = 'editor'
-        policy_id = data.get("policyId")
-        tenant_id = data.get("tenant_id")
+
         users = data.get("userDetails")
         for each_user in users:
             # TODO If any pending task for this department is avaialbe then need to assign task for user
+            user_id = each_user.get("userId")
+
+            user_details = Cognito.get_cognito_user_by_user_id(user_id)
+            user_role_ids = eval(user_details.get('custom:role_id', "[]"))
+            role_types = Roles.objects.filter(role_id__in=user_role_ids).values('role_type')
+            role_types = [each_role_type.get("role_type") for each_role_type in role_types]
+            if access_user in role_types:
+                query = (Q(user_email__isnull=True) | Q(user_email=""))
+                query &= Q(tenant_id=tenant_id, policy_id=policy_id, policy_state=policy_meta_data[0].get("key"))
+                TenantPolicyTasks.objects.filter(query).update(task_status=2, department_id=0)
+                TenantPolicyTasks.objects.create(tenant_id=tenant_id, policy_id=policy_id, access_user=access_user,
+                                                 task_status=0, user_email=each_user.get("ownerEmail"),
+                                                 task_type=task_verify, allowed_roles=state_users,
+                                                 task_name=policy_meta_data[0].get("state_display_name"),
+                                                 policy_state=policy_meta_data[0].get("key"),
+                                                 department_id=0)
+
             tlc_obj, created = TenantPolicyLifeCycleUsers.objects.get_or_create(tenant_id=tenant_id,
                                                                                 policy_id=policy_id,
                                                                                 owner_type=assignee_type,
-                                                                                owner_user_id=each_user.get("userId"),
+                                                                                owner_user_id=user_id,
                                                                                 is_active=True)
             if created:
                 tlc_obj.owner_name = each_user.get("ownerName")

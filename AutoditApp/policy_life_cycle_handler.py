@@ -12,10 +12,15 @@ from AutoditApp.core import fetch_data_from_sql_query, get_users_by_tenant_id
 from AutoditApp.models import TenantPolicyManager, TenantPolicyParameter, TenantPolicyVersionHistory, \
     TenantGlobalVariables, MetaData, TenantDepartment, TenantControlsCustomTags, TenantPolicyComments, \
     TenantPolicyTasks, TenantPolicyDepartments, TenantPolicyLifeCycleUsers, Roles, PolicyMaster
-from AutoditApp.dal import PolicyDepartmentsHandlerData, TenantPolicyCustomTagsData, TenantPolicyLifeCycleUsersData
+from AutoditApp import dal
 
 
 class PolicyLifeCycleHandler:
+
+    @staticmethod
+    def get_policy_details_by_policy_id(policy_id):
+        policy_details = TenantPolicyManager.objects.get(id=int(policy_id))
+        return policy_details
 
     @staticmethod
     def policy_variables_handler(policy_data, policy_id, tenant_id):
@@ -36,7 +41,7 @@ class PolicyLifeCycleHandler:
 
     @staticmethod
     def policy_summery_details_handler(policy_data, policy_id):
-        policy_details = TenantPolicyManager.objects.get(id=policy_id)
+        policy_details = PolicyLifeCycleHandler.get_policy_details_by_policy_id(policy_id)
         policy_details.tenant_policy_name = policy_data.get('policyName', policy_details.tenant_policy_name)
         policy_details.summery = policy_data.get('summery', policy_details.summery)
         policy_details.code = policy_data.get('policyCode', policy_details.code)
@@ -368,7 +373,7 @@ class PolicyLifeCycleHandler:
         policy_details = TenantPolicyManager.objects.get(id=int(policy_id),tenant_id=tenant_id)
         # TODO need to find if policy content exists
         policy_content = PolicyLifeCycleHandler.get_or_create_policy_content(policy_details, tenant_id)
-        departments = PolicyDepartmentsHandlerData.get_departments_by_policy_id(tenant_id, policy_id)
+        departments = dal.PolicyDepartmentsHandlerData.get_departments_by_policy_id(tenant_id, policy_id)
         eligible_users = PolicyLifeCycleHandler.get_eligible_users(policy_id, tenant_id)
         published_date = policy_details.published_date
         try:
@@ -384,7 +389,7 @@ class PolicyLifeCycleHandler:
             comment = []
         # TODO find next review date
         prev, present, next = PolicyLifeCycleHandler.get_policy_states(policy_details.state)
-        users = TenantPolicyLifeCycleUsersData.get_assigned_users_by_policy_id(tenant_id, policy_id)
+        users = dal.TenantPolicyLifeCycleUsersData.get_assigned_users_by_policy_id(tenant_id, policy_id)
         approvers = []
         assignees = []
         reviewers = []
@@ -414,7 +419,7 @@ class PolicyLifeCycleHandler:
             "renewPeriod": policy_details.review_period,
             "nextReviewDate": str(pub_date),
             'policyComments': comment,
-            "policyTags": TenantPolicyCustomTagsData.get_policy_tags(policy_id, tenant_id),
+            "policyTags": dal.TenantPolicyCustomTagsData.get_policy_tags(policy_id, tenant_id),
             "departments": departments,
             "policyControls": [{"id": 1,
                                 "frameworkId": 1,
@@ -440,6 +445,12 @@ class PolicyLifeCycleHandler:
 
 
 class MetaDataDetails:
+
+    @staticmethod
+    def get_policy_access_users(state):
+        meta_data_details = MetaData.objects.filter(key=state).values()
+        return meta_data_details
+
     @staticmethod
     def tenant_meta_data(tenant_id):
         meta_data = {}
