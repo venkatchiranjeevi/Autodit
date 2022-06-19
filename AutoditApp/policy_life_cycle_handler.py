@@ -370,7 +370,7 @@ class PolicyLifeCycleHandler:
         reviewers = []
         for each_user in users:
             owner_type = each_user.get("owner_type")
-            if owner_type == "assignee" or owner_type =="editors":
+            if owner_type == "assignee" or owner_type =="editor":
                 assignees.append(each_user)
             elif owner_type == "approver":
                 approvers.append(each_user)
