@@ -6,7 +6,8 @@ from AutoditApp.views import DepartmentsAPI, RolesAPI, SettingManagementAPI, Con
     ControlsManagementAPIALl, ControlManagementDetailAPI, ControlManagementDetailHistoryAPI, \
     PolicyDetailsHandler, PolicyContentHandler, MetaDetailsHandler, PolicyDepartmentsHandler, TenantPolicyCustomTags, \
     TenantPolicyVariables, PolicyCommentsHandler, PolicyEligibleUsers, PolicyStatesHandler, PolicyVersionHistory, \
-    PolicyVersionHistoryDetails, TenantPolicyLifeCycleUsersAPI, SubscriptionsPolicyAPI
+    PolicyVersionHistoryDetails, TenantPolicyLifeCycleUsersAPI, SubscriptionsPolicyAPI, PolicyRenewUpdateAPI, \
+    DashBoardAPIHandler, SubscriptionPaymentHandlerAPI
 
 urlpatterns = [
     url("user/", user_management.UsersList.as_view()),
@@ -25,10 +26,9 @@ urlpatterns = [
     url("^tenant/policy-parameters", TenantPolicyVariables.as_view()),
 
     url("^tenant/frameworks", TenantFrameworkMasterAPI.as_view()),
-    # url("^tenant/all", ControlsManagementAPIALl.as_view()),
-
     url("^tenant/logo", TenantLogoUploaderAPI.as_view()),
     url("^policy/get-policy", PolicyDetailsAPI.as_view()),
+    url("^policy/policy-renew-update", PolicyRenewUpdateAPI.as_view()),
     url("^policy/policy-details", PolicyDetailsHandler.as_view()),
     url("^policy/update-content", PolicyContentHandler.as_view()),
     url("^policy/department", PolicyDepartmentsHandler.as_view()),
@@ -39,5 +39,7 @@ urlpatterns = [
     url("^policy/version_history", PolicyVersionHistory.as_view()),
     url("^policy/version-history-details", PolicyVersionHistoryDetails.as_view()),
     url("^policy/lifecycle-users", TenantPolicyLifeCycleUsersAPI.as_view()),
-    url("^subscriptions/create", SubscriptionsPolicyAPI.as_view())
+    url("user-dashboard", DashBoardAPIHandler.as_view()),
+    url("^subscriptions/create", SubscriptionsPolicyAPI.as_view()),
+    url("^subscriptions/payment/handle", SubscriptionPaymentHandlerAPI.as_view())
 ]

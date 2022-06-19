@@ -10,7 +10,8 @@ from AutoditApp.models import TenantGlobalVariables, TenantDepartment, Roles, Fr
     TenantPolicyLifeCycleUsers
 from AutoditApp.dal import DeparmentsData, TenantGlobalVariableData, TenantMasterData, RolesData, GlobalVariablesData, \
     RolePoliciesData, TenantFrameworkData, TennatControlHelpers, PolicyDetailsData, TenantControlMasterData, \
-    ControlManagementDetailData, PolicyDepartmentsHandlerData, TenantPolicyCustomTagsData,TenantPolicyLifeCycleUsersData
+    ControlManagementDetailData, PolicyDepartmentsHandlerData, TenantPolicyCustomTagsData, \
+    TenantPolicyLifeCycleUsersData, DashBoardData
 from AutoditApp.constants import RolesConstant as RC, TENANT_LOGOS_BUCKET, S3_ROOT
 from AutoditApp.Admin_Handler.dal import FrameworkMasterData
 from .AWSCognito import Cognito
@@ -57,6 +58,7 @@ class DepartmentsAPI(AuthMixin):
                                                                                                       each_role)),
                     "tenant_id": tenant_id,
                     "role_for": each_role, "departments": [dep_obj.id],
+                    "role_type": each_role.lower(),
                     "policy_name": dep_name}
             # default_roles.append(role)
             RolesData.save_single_role(role)
@@ -288,8 +290,8 @@ class ControlsManagementAPI(APIView):
         data = request.data
         tenant_id = request.user.tenant_id
         user_id = request.user.userid
-        control_details = data.get('controlDetails', [])
-        TennatControlHelpers.control_update_handler(tenant_id, data, user_id)
+        user_email =request.user.email
+        TennatControlHelpers.control_update_handler(tenant_id, data, user_id, user_email)
         return Response({'status': 200, 'data': 'Controls updated successfully'})
 
 
@@ -436,6 +438,13 @@ class PolicyDetailsAPI(AuthMixin):
         details = PolicyLifeCycleHandler.get_complete_policy_details(int(policy_id), int(tenant_id))
         return Response(details)
 
+class PolicyRenewUpdateAPI(AuthMixin):
+
+    def post(self, request):
+        data = request.data
+        policy_id = data.get('policyId')
+        details = PolicyLifeCycleHandler.policy_revision_period_handler(data, policy_id)
+        return Response({"message": "Review Period Updated Successfully", "status": True, "details": details})
 
 class ControlsManagementAPIALl(APIView):
 
@@ -507,7 +516,7 @@ class ControlsManagementAPIALl(APIView):
 
 class PolicyDetailsHandler(AuthMixin):
     def get(self, request):
-        data = request.data
+        data = request.GET
         policy_id = data.get('policyId')
         user = request.user
         tenant_id = user.tenant_id
@@ -542,12 +551,15 @@ class PolicyDepartmentsHandler(AuthMixin):
         data["tenant_id"] = request.user.tenant_id
         data['created_by'] = request.user.userid
         result = PolicyDepartmentsHandlerData.save_policy_department_details(data)
-        return Response({"status": result, "message": "Department Added Successfully"})
+        return Response({"status": True, "message": "Department Added Successfully", "data": result})
 
     def delete(self, request):
         policy_department_id = request.GET.get("id")
-        result = PolicyDepartmentsHandlerData.delete_policy_department(policy_department_id)
-        return Response({"status": result, "message": "Department Deleted Successfully"})
+        policy_id = request.GET.get("policyId")
+        user = request.user
+        tenant_id = user.tenant_id
+        result = PolicyDepartmentsHandlerData.delete_policy_department(policy_department_id, tenant_id, policy_id)
+        return Response({"status": True, "message": "Department Deleted Successfully", "data": result})
 
 
 class TenantPolicyCustomTags(AuthMixin):
@@ -556,12 +568,12 @@ class TenantPolicyCustomTags(AuthMixin):
         data["tenant_id"] = request.user.tenant_id
         data['created_by'] = request.user.userid
         result = TenantPolicyCustomTagsData.save_custom_tags(data)
-        return Response({"status": result, "message": "Custom Tags Added Successfully"})
+        return Response({"status": True, "message": "Custom Tags Added Successfully", 'policyTags':result})
 
     def delete(self, request):
         custom_tag_id = request.GET.get("tagId")
-        result = TenantPolicyCustomTagsData.delete_policy_custom_tag(custom_tag_id)
-        return Response({"status": result, "message": "Custom Tags Deleted Successfully"})
+        result = TenantPolicyCustomTagsData.delete_policy_custom_tag(custom_tag_id, request.user.tenant_id, request.GET.get("policyId"))
+        return Response({"status": True, "message": "Custom Tags Deleted Successfully", 'policyTags':result})
 
 
 class MetaDetailsHandler(AuthMixin):
@@ -572,24 +584,8 @@ class MetaDetailsHandler(AuthMixin):
         return Response(details)
 
 
-class TenantDepartmentUsers(AuthMixin):
-    def get(self, request):
-        pass
-
-    def post(self, request):
-        pass
-
-
 class PolicyStatesHandler(AuthMixin):
     def post(self, request):
-        # Step 1 get next state or prev state
-        # Step 2 create tasks
-        # Step 3 publish to users
-        # {
-        #     "stateId": "REV",
-        #     "status": 1,
-        #     "displayText": "Move To Reveiw"
-        # },
         # TODO need to create tasks for users and publish to users
         # TODO check user has role or not
         data = request.data
@@ -597,27 +593,47 @@ class PolicyStatesHandler(AuthMixin):
         state_id = data.get('stateId')
         status = data.get('status')
         user = request.user
+        tenant_id = user.tenant_id
         policy_details = TenantPolicyManager.objects.get(id=int(policy_id))
-        policy_details.state = state_id
         new_version = policy_details.version
-        if state_id == 'PUB':
-            policy_details.published_date = datetime.now().strftime("%Y-%m-%d")
-            new_version = str(int(float((policy_details.version))) + 1)
+        if policy_details.state == 'DRF':
+            status = PolicyLifeCycleHandler.policy_submit(tenant_id, policy_details, data, user)
+            if status:
+                PolicyLifeCycleHandler.policy_task_creation(tenant_id, policy_details, data, user.email, state_id)
+                policy_details.state = state_id
+                policy_details.version = new_version
+                policy_details.save()
+            details = PolicyLifeCycleHandler.get_complete_policy_details(int(policy_id), int(tenant_id))
+            return Response(
+                {"message": "Policy State Updated Successfully", "status": True, "policyDetails": details})
 
-        TenantPolicyVersionHistory(tenant_id=request.user.tenant_id,
-                                   policy_id=policy_id,
-                                   tenant_policy_name=policy_details.tenant_policy_name,
-                                   old_version=str(policy_details.version),
-                                   new_version=str(new_version),
-                                   policy_file_name=policy_details.policy_file_name,
-                                   status='Approved' if policy_details.state == 'PUB' else 'Pending',
-                                   action_performed=state_id,
-                                   action_performed_by=user.username_cognito,
-                                   action_performed_by_id=user.email,
-                                   action_date=datetime.now()).save()
-        policy_details.version = new_version
-        policy_details.save()
-        return Response({"message": "Policy State Updated Successfully", "status": True})
+
+        else:
+            state_change = PolicyLifeCycleHandler.policy_state_tasks_check(tenant_id, policy_details, data, user, status)
+            if not state_change:
+                return Response({"message": "Policy Tasks are pending", "status": False})
+            if state_id == 'PUB':
+                policy_details.published_date = datetime.now().strftime("%Y-%m-%d")
+                new_version = str(int(float((policy_details.version))) + 1)
+                TenantPolicyVersionHistory(tenant_id=request.user.tenant_id,
+                                           policy_id=policy_id,
+                                           tenant_policy_name=policy_details.tenant_policy_name,
+                                           old_version=str(policy_details.version),
+                                           new_version=str(new_version),
+                                           policy_file_name=policy_details.policy_file_name,
+                                           status='Approved' if state_id == 'PUB' else 'Pending',
+                                           action_performed=state_id,
+                                           action_performed_by=user.username_cognito,
+                                           action_performed_by_id=user.email,
+                                           action_date=datetime.now()).save()
+
+            else:
+                PolicyLifeCycleHandler.policy_task_creation(tenant_id, policy_details, data, user.email, state_id)
+            policy_details.state = state_id
+            policy_details.version = new_version
+            policy_details.save()
+            details = PolicyLifeCycleHandler.get_complete_policy_details(int(policy_id), int(tenant_id))
+            return Response({"message": "Policy State Updated Successfully", "status": True, "policyDetails": details})
 
 
 class PolicyEligibleUsers(AuthMixin):
@@ -682,9 +698,13 @@ class TenantPolicyLifeCycleUsersAPI(AuthMixin):
         return Response({"status": True, "message": "User assigned Successfully", "users": result})
 
     def delete(self, request):
-        id = request.GET.get("Id")
-        result = TenantPolicyLifeCycleUsersData.delete_assignee_user_by_assignee_id(id)
-        return Response({"status": result, "message": "Deleted Successfully"})
+        id = request.GET.get("id")
+        policy_id = request.GET.get('policyId')
+        user_type = request.GET.get('type')
+        user = request.user
+        tenant_id = user.tenant_id
+        result = TenantPolicyLifeCycleUsersData.delete_assignee_user_by_assignee_id(id, policy_id, user_type, tenant_id)
+        return Response({"status": True, "message": "Deleted Successfully", "users": result})
 
 
 
@@ -707,8 +727,31 @@ class PolicyVersionHistoryDetails(AuthMixin):
         details = PolicyLifeCycleHandler.get_version_history_details(policy_id, tenant_id, version_id)
         return Response(details)
 
+
 class SubscriptionsPolicyAPI(AuthMixin):
     def post(self, request):
-        request_body = json.loads(request.body.decode("utf-8"))
-        print(request_body)
-        return Response({"subscription_id": Subscription.createSubscription(data=request_body)})
+        #request_body = json.loads(request.body.decode("utf-8"))
+        request_body = request.data
+        request_body["tenant_id"] = request.user.tenant_id
+        return Response(Subscription.createSubscription(data=request_body))
+
+
+class SubscriptionPaymentHandlerAPI(AuthMixin):
+    def post(self, request):
+        print(request.data)
+        data = request.data
+        tenant_id = request.user.tenant_id;
+        print(data.get("razorpay_payment_id"))
+        print(data.get("razorpay_subscription_id"))
+        print(data.get("razorpay_signature"))
+        return Response(Subscription.handlePaymentSubscription(tenant_id, data))
+
+
+
+class DashBoardAPIHandler(AuthMixin):
+    def get(self, request):
+        user = request.user
+        tenant_id = user.tenant_id
+        framework_id = request.GET.get('frameworkId')
+        data = DashBoardData.get_dashboard_data(tenant_id, framework_id, user)
+        return Response(data)

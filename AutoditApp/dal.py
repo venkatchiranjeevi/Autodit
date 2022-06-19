@@ -1,7 +1,7 @@
 from AutoditApp.models import TenantDepartment as Departments, Roles, TenantGlobalVariables, Tenant, GlobalVariables, \
     RolePolicies, AccessPolicy, TenantFrameworkMaster, TenantHierarchyMapping, TenantPolicyManager, \
     PolicyMaster, ControlMaster, TenantControlMaster, TenantControlAudit, TenantPolicyDepartments, \
-    TenantControlsCustomTags, TenantPolicyLifeCycleUsers
+    TenantControlsCustomTags, TenantPolicyLifeCycleUsers, TenantPolicyTasks, HirerecyMapper
 from django.db.models import Q
 from .constants import DEFAULT_VIEWS, EDITIOR_VIEWS
 from AutoditApp.AWSCognito import Cognito
@@ -54,7 +54,10 @@ class RolesData(BaseConstant):
     @staticmethod
     def save_single_role(data):
         department_id = data.get("departments", [])
-        role_obj = Roles(role_name=data.get("role_name"), code=data.get("role_code"), tenant_id=data.get("tenant_id"),
+        role_obj = Roles(role_name=data.get("role_name"),
+                         code=data.get("role_code"),
+                         tenant_id=data.get("tenant_id"),
+                         role_type=data.get('role_type'),
                          department_id=department_id[0] if department_id else None)
         role_obj.save()
 
@@ -223,7 +226,7 @@ class TenantFrameworkData(BaseConstant):
     @staticmethod
     def get_tenant_selected_controls(tenant_id, framework_id):
         query = "select  Id as tenantControlid, TenantFrameworkId, Master_Control_Id as ControlId," \
-                " ControlName, Description, Category, ControlCode from TenantControlMaster tcm where TenantFrameworkId  in" \
+                " ControlName, Description, Category, ControlCode from TenantControlMaster tcm where TenantFrameworkId in" \
                 " (select id from TenantFrameworkMaster tfm where MasterFid = {master_f_id}) and tenantId = {t_id}" \
                 " and IsActive = 1"
         tenant_controls_query = query.format(master_f_id=framework_id,
@@ -328,7 +331,7 @@ class TenantControlMasterData(BaseConstant):
 class TennatControlHelpers(BaseConstant):
 
     @staticmethod
-    def control_update_handler(tenant_id, data, user_id):
+    def control_update_handler(tenant_id, data, user_id, user_email):
         control_details = data.get('controlDetails', [])
         master_framework_id = data.get('frameworkId')
         selected_control_ids = [entry.get('controlId') for entry in control_details]
@@ -355,13 +358,11 @@ class TennatControlHelpers(BaseConstant):
             q2 = Q(master_framework_id=int(master_framework_id))
             q3 = Q(master_control_id__in=controls_to_inactive)
             TenantControlMaster.objects.filter(q1 & q2 & q3).update(is_active=0)
-        #     TODO play with policies
         if controls_to_active_ids:
             q1 = Q(tenant_id=int(tenant_id))
             q2 = Q(master_framework_id=int(master_framework_id))
             q3 = Q(master_control_id__in=controls_to_active_ids)
             TenantControlMaster.objects.filter(q1 & q2 & q3).update(is_active=1)
-        #     TODO play with policies
         if new_master_controls:
             control_details = ControlMaster.objects.filter(id__in=new_master_controls).values()
             fcd = {cont.get('id'): cont for cont in control_details}
@@ -373,50 +374,78 @@ class TennatControlHelpers(BaseConstant):
                                                           master_control_id=control,
                                                           control_name=master_control.get('control_name'),
                                                           control_description=master_control.get('description'),
-                                                          created_by=user_id,
+                                                          created_by=user_email,
                                                           master_framework_id=master_framework_id))
             TenantControlMaster.objects.bulk_create(need_insertion)
-        # TODO change this to local control ids instead of query. For ease of purpose querying
-        if new_master_controls or controls_to_inactive or controls_to_active_ids:
-            q1 = Q(tenant_id=int(tenant_id))
-            q2 = Q(master_framework_id=master_framework_id)
-            q3 = Q(is_active=1)
-            # TODO at present going with one policy for one framework
-            selected_framework_controls = TenantControlMaster.objects.filter(q1 & q2 & q3).values('master_control_id')
-            selected_master_controls = [con['master_control_id'] for con in selected_framework_controls]
-            # TennatControlHelpers.policy_handler_on_control_selection(tenant_id,
-            #                                                          master_framework_id,
-            #                                                          framework_details,
-            #                                                          selected_master_controls)
+
+        q1 = Q(tenant_id=int(tenant_id))
+        q2 = Q(master_framework_id=master_framework_id)
+        q3 = Q(is_active=1)
+        selected_framework_controls = TenantControlMaster.objects.filter(q1 & q2 & q3).values('master_control_id',
+                                                                                              'master_framework_id',
+                                                                                              'tenant_framework_id',
+                                                                                              'id')
+
+        TennatControlHelpers.policy_handler_on_control_selection(tenant_id,
+                                                                 master_framework_id,
+                                                                 selected_framework_controls,
+                                                                 user_id,
+                                                                 user_email)
 
     @staticmethod
     def policy_handler_on_control_selection(tenant_id,
                                             master_framework_id,
-                                            tenant_framework_details,
-                                            inactivated_controls,
-                                            activated_controls,
-                                            added_controls):
-        if inactivated_controls:
-            if len(inactivated_controls) == 1:
-                inactivated_controls += 1
+                                            selected_framework_controls,
+                                            user_id,
+                                            user_email):
+        selcted_control = [con.get('master_control_id') for con in selected_framework_controls]
+        master_selected_polices = HirerecyMapper.objects.filter(f_id=master_framework_id,
+                                                         c_id__in=selcted_control).values('policy_id').distinct()
+        formatted_master_selected_policies = {sp.get('policy_id'): sp for sp in master_selected_polices}
+        exiting_policies = TenantPolicyManager.objects.filter(tenant_id=tenant_id,master_framework_id=master_framework_id ).values()
+        active_policies = {}
+        inactive_polices = {}
+        existing_all_policies = {}
+        for pol in exiting_policies:
+            existing_all_policies[pol.get('parent_policy_id')] = pol
+            if pol.get('is_active'):
+                active_policies[pol.get('parent_policy_id')] = pol
+            else:
+                inactive_polices[pol.get('parent_policy_id')] = pol
 
-        if activated_controls:
-            if len(activated_controls) == 1:
-                activated_controls += 1
+        new_master_policy_ids = list(set(formatted_master_selected_policies.keys()) - set(list(existing_all_policies.keys())))
+        inactive_policy_ids = list(set(list(existing_all_policies.keys())) - set(formatted_master_selected_policies))
+        policies_to_active_ids = list(set(inactive_polices.keys()).intersection(set(formatted_master_selected_policies)))
+        if inactive_policy_ids:
+            q1 = Q(tenant_id=int(tenant_id))
+            q2 = Q(master_framework_id=int(master_framework_id))
+            q3 = Q(parent_policy_id__in=inactive_policy_ids)
+            TenantPolicyManager.objects.filter(q1 & q2 & q3).update(is_active=0)
+        if policies_to_active_ids:
+            q1 = Q(tenant_id=int(tenant_id))
+            q2 = Q(master_framework_id=int(master_framework_id))
+            q3 = Q(parent_policy_id__in=policies_to_active_ids)
+            TenantPolicyManager.objects.filter(q1 & q2 & q3).update(is_active=1)
+        if new_master_policy_ids:
+            policy_details = PolicyMaster.objects.filter(id__in=new_master_policy_ids).values()
+            fcd = {cont.get('id'): cont for cont in policy_details}
+            need_insertion = []
+            for pol in new_master_policy_ids:
+                master_policy = fcd.get(pol)
+                need_insertion.append(TenantPolicyManager(tenant_id=tenant_id,
+                                                          tenant_policy_name=master_policy.get('policy_name'),
+                                                          category=master_policy.get('category'),
+                                                          summery=master_policy.get('policy_summery'),
+                                                          created_by=user_email,
+                                                          version='1',
+                                                          status=1,
+                                                          is_active=1,
+                                                          user_id=user_id,
+                                                          parent_policy_id = master_policy.get('id'),
+                                                          code=master_policy.get('policy_code'),
+                                                          master_framework_id=master_framework_id))
+            TenantPolicyManager.objects.bulk_create(need_insertion)
 
-        if added_controls:
-            if len(added_controls) == 1:
-                added_controls += 1
-
-        polices_query = "select id as policyId, PolicyName, policy_code, Summery from PolicyMaster pm  " \
-                        "where id in (select DISTINCT(PolicyId) from HirerecyMapper hm where Fid  = {f_id} and Cid  " \
-                        "in {cids}}) "
-        if len(selected_controls) == 1:
-            selected_controls += 1
-        polices_query = polices_query.format(f_id=str(master_framework_id),
-                                             cids=str(tuple(selected_controls)))
-        policy_details = fetch_data_from_sql_query(polices_query)
-        formatted_policy_details = {po.get('policyId'): po for po in policy_details}
 
     @staticmethod
     def policy_handler_for_new_controls(added_controls, tennant_id, master_framework_id):
@@ -555,21 +584,31 @@ class PolicyDepartmentsHandlerData(BaseConstant):
         departments_list = data.get("departmentDetails")
         policy_instancess = []
         for each_department in departments_list:
-            tpd_obj = TenantPolicyDepartments(tenant_id=data.get("tenant_id"),
-                                              tenant_policy_id=data.get("policyId"),
-                                              department_name=each_department.get("departmentName"),
-                                              tenant_dep_id=each_department.get("departmentId"),
-                                              created_by=data.get("created_by"))
+            tpd_obj, created = TenantPolicyDepartments.objects.get_or_create(tenant_id=data.get("tenant_id"),
+                                                                             tenant_policy_id=data.get("policyId"),
+                                                                             tenant_dep_id=each_department.get("id"),
+                                                                             created_by=data.get("created_by"))
+            tpd_obj.department_name = each_department.get("name")
+            tpd_obj.save()
             policy_instancess.append(tpd_obj)
 
-        TenantPolicyDepartments.objects.bulk_create(policy_instancess)
-        return True
+        deparment_details = TenantPolicyDepartments.objects.filter(tenant_id=data.get("tenant_id"),
+                                                                   tenant_policy_id=data.get("policyId")).values("id",
+                                                                                                                 "department_name")
+        details = [{'id': each_department.get("id"), 'name': each_department.get("department_name")} for each_department
+                   in deparment_details]
+        return details
 
     @staticmethod
-    def delete_policy_department(policy_department_id):
+    def delete_policy_department(policy_department_id, tenant_id, policy_id):
         tpd_obj = TenantPolicyDepartments.objects.get(id=policy_department_id)
         tpd_obj.delete()
-        return True
+        deparment_details = TenantPolicyDepartments.objects.filter(tenant_id=tenant_id,
+                                                                   tenant_policy_id=policy_id).values("id",
+                                                                                                      "department_name")
+        details = [{'id': each_department.get("id"), 'name': each_department.get("department_name")} for each_department
+                   in deparment_details]
+        return details
 
 
 class TenantPolicyCustomTagsData(BaseConstant):
@@ -587,17 +626,20 @@ class TenantPolicyCustomTagsData(BaseConstant):
         custom_tags_instancess = [TenantControlsCustomTags(tenant_id=data.get("tenant_id"),
                                                            tenant_policy_id=data.get("policyId"),
                                                            tag_name=each_tag.get("tagName"),
+                                                           tag_description='',
                                                            is_active=1) for each_tag in
                                   custom_tags]
 
         TenantControlsCustomTags.objects.bulk_create(custom_tags_instancess)
-        return True
+        tags = TenantPolicyCustomTagsData.get_policy_tags(data.get("policyId"), data.get("tenant_id"))
+        return tags
 
     @staticmethod
-    def delete_policy_custom_tag(tag_id):
+    def delete_policy_custom_tag(tag_id, tenant_id, policy_id):
         tcc_obj = TenantControlsCustomTags.objects.get(id=tag_id)
         tcc_obj.delete()
-        return True
+        tags = TenantPolicyCustomTagsData.get_policy_tags(policy_id,tenant_id)
+        return tags
 
     @staticmethod
     def get_policy_tags(policy_id, tenant_id):
@@ -614,11 +656,12 @@ class TenantPolicyLifeCycleUsersData(BaseConstant):
                                                            is_active=True).values("id",
                                                                                   "owner_type",
                                                                                   "owner_name",
-                                                                                  "owner_user_id")
+                                                                                  "owner_user_id", "owner_email")
         owners = [{"ownerId": owner.get("id"),
                    "owner_type": owner.get("owner_type"),
                    "owner_name": owner.get("owner_name"),
                    "user_id": owner.get("owner_user_id"),
+                   "owner_email": owner.get("owner_email"),
                    "owner_code": owner.get("owner_name")[:2]}
                   for owner in owners]
         return owners
@@ -626,34 +669,24 @@ class TenantPolicyLifeCycleUsersData(BaseConstant):
     @staticmethod
     def save_policy_assigned_users(data):
         assignee_type = data.get("type")
+        if assignee_type == 'assignee':
+            # TODO will remove once complete integration is done
+            assignee_type = 'editor'
         policy_id = data.get("policyId")
         tenant_id = data.get("tenant_id")
-        # TenantPolicyLifeCycleUsers.objects.filter(tenant_id=data.get("tenant_id"), policy_id=data.get("policyId"), \
-        #                                           owner_type=assignee_type).delete()
         users = data.get("userDetails")
         for each_user in users:
+            # TODO If any pending task for this department is avaialbe then need to assign task for user
             tlc_obj, created = TenantPolicyLifeCycleUsers.objects.get_or_create(tenant_id=tenant_id,
                                                                                 policy_id=policy_id,
                                                                                 owner_type=assignee_type,
                                                                                 owner_user_id=each_user.get("userId"),
                                                                                 is_active=True)
-            print(created)
             if created:
                 tlc_obj.owner_name = each_user.get("ownerName")
                 tlc_obj.owner_email = each_user.get("ownerEmail")
                 tlc_obj.owner_code = each_user.get("ownerCode")
                 tlc_obj.save()
-            # else:
-            #     tlc_obj.in_active_date = datetime.now()
-            #     tlc_obj.is_active = False
-            #     tlc_obj.save()
-            #     tlcu_obj = TenantPolicyLifeCycleUsers(tenant_id=tenant_id, policy_id=policy_id,
-            #                                           owner_type=assignee_type, owner_name=each_user.get("ownerName"),
-            #                                           owner_email=each_user.get("ownerEmail"),
-            #                                           owner_user_id=each_user.get("userId"),
-            #                                           owner_code=each_user.get("ownerCode"))
-            #     tlcu_obj.save()
-
         assignee_users = TenantPolicyLifeCycleUsers.objects.filter(tenant_id=tenant_id,
                                                                    policy_id=policy_id,
                                                                    owner_type=assignee_type,
@@ -662,10 +695,131 @@ class TenantPolicyLifeCycleUsersData(BaseConstant):
         return assignee_users
 
     @staticmethod
-    def delete_assignee_user_by_assignee_id(assignee_id):
-
+    def delete_assignee_user_by_assignee_id(assignee_id, policy_id, assignee_type, tenant_id):
+        if assignee_type == 'assignee':
+            assignee_type = 'editor'
         tplc_obj = TenantPolicyLifeCycleUsers.objects.get(id=assignee_id)
         tplc_obj.is_active = False
         tplc_obj.in_active_date = datetime.now()
         tplc_obj.save()
-        return True
+        assignee_users = TenantPolicyLifeCycleUsers.objects.filter(tenant_id=tenant_id,
+                                                                   policy_id=policy_id,
+                                                                   owner_type=assignee_type,
+                                                                   is_active=True). \
+            values("id", "owner_type", "owner_name", "owner_user_id", "owner_code")
+        # TODO If any pending task is der then either make it department task or another task
+        return assignee_users
+
+
+class DashBoardData(BaseConstant):
+
+    @staticmethod
+    def get_dashboard_controls_details(tenant_id, master_f_id):
+        result = {}
+        selected_controls, tenant_framework_id = TenantFrameworkData.get_tenant_selected_controls(tenant_id,
+                                                                                                  master_f_id)
+        all_controls = ControlMaster.objects.filter(framework_id=int(master_f_id)).values('id',
+                                                                                                  'control_name',
+                                                                                                  'control_code',
+                                                                                                  'category')
+        framework_policy_counts = TenantFrameworkData.get_policy_counts(tenant_framework_id=tenant_framework_id,
+                                                                        tenant_id=tenant_id)
+        selected_control_ids = selected_controls.keys()
+        control_details_list = []
+        selected_count = 0
+        for control in all_controls:
+            opted = False
+            control_details = {'master_control_id': control.get('id'), 'control_name': control.get('control_name'),
+                               'control_code': control.get('control_code'), 'policies_count': 0}
+            if control.get('id') in selected_control_ids:
+                selected_con = selected_controls[control.get('id')]
+                control_details['control_name'] = selected_con.get('ControlName')
+                control_details['control_code'] = selected_con.get('ControlCode')
+                control_details['policies_count'] = framework_policy_counts.get(selected_con.get('tenantControlid'), 0)
+                opted = True
+                selected_count += 1
+            control_details['is_control_selected'] = opted
+            control_details_list.append(control_details)
+        result['controls'] = control_details_list
+        result['totalControls']= len(control_details_list)
+        result['selectedControls'] = selected_count
+        result['pendingControls'] = result['totalControls'] - result['selectedControls']
+        return result
+
+    @staticmethod
+    def get_policies_details(tenant_id, master_f_id):
+        # total_policies = "SELECT * from PolicyMaster pm where Id in (SELECT DISTINCT(PolicyId) from HirerecyMapper where Fid=%s)" % master_f_id
+        # total_policies_res = fetch_data_from_sql_query(total_policies)
+        selected_policies = TenantPolicyManager.objects.filter(tenant_id=tenant_id,is_active=True,master_framework_id=master_f_id).values()
+        approved_count = 0
+        final_details = {}
+        policy_dets = []
+        formatted_policies = {}
+        for each_policy in selected_policies:
+            formatted_policies[each_policy.get('id')] = each_policy
+            details = {'policyName': each_policy.get('tenant_policy_name'), 'category': each_policy.get('category'),
+                       'policyId': each_policy.get('id'), 'policyCode': each_policy.get('policy_code'),'policyState':each_policy.get('state')}
+            if each_policy.get('state') == 'PUB':
+                approved_count += 1
+                details['isPolicyApproved'] = True
+            details['isPolicySelected'] = True
+            policy_dets.append(details)
+        final_details['policies'] = policy_dets
+        final_details['totalPolicies'] = len(policy_dets)
+        final_details['approvedPolicies'] = approved_count
+        final_details['pendingPolicies'] = final_details['totalPolicies'] - final_details['approvedPolicies']
+        return final_details, formatted_policies
+
+    @staticmethod
+    def admin_tasks(tenant_id, policy_ids):
+        return {}
+
+
+    @staticmethod
+    def pending_tasks(tenant_id, master_f_id, user, policy_details):
+        # USER tasks
+        # Department tasks
+        policyids = list(policy_details.keys())
+        email = user.email
+        role_details = eval(user.role_id)
+        role_details = Roles.objects.filter(role_id__in=role_details).values('role_type', 'department_id')
+        role_types = [role.get('role_type') for role in role_details]
+        department_ids = [role.get('department_id') for role in role_details]
+        role_types = []
+        department_ids = []
+        for role in role_details:
+            department_ids.append(role.get('department_id'))
+            role_types.append(role.get('role_type'))
+
+        tasks = TenantPolicyTasks.objects.filter(tenant_id=tenant_id).values()
+        details = []
+        status = {0: 'Pending', 1:'Completed', 2:'Rejected'}
+        for task in tasks:
+            policy_det = policy_details.get(task.get('policy_id'), {})
+            det = {'policyName': policy_det.get('tenant_policy_name'),
+                   'taskName': task.get('task_name'),
+                   'taskAssignee': task.get('user_email'),
+                   'taskStatus': status.get(task.get('task_status')),
+                   'createdOn': task.get('created_on'),
+                   'policyState': task.get('policy_state'),
+                   'taskPerformedBy': task.get('task_performed_by'),
+                   'taskPerformedOn': task.get('task_performed_on')}
+            details.append(det)
+        return details
+        # if 'ADMIN' in role_types:9
+        #     return {}
+        # return {}
+
+
+    @staticmethod
+    def get_dashboard_data(tenant_id, framework_id, user):
+        # STEP1: Get policy details
+        data={}
+        data['policyDetails'], formatted_policies = DashBoardData.get_policies_details(tenant_id, framework_id)
+        data['pendingTasks'] = DashBoardData.pending_tasks(tenant_id, framework_id, user, formatted_policies)
+        data['recentActivities'] = DashBoardData.pending_tasks(tenant_id, framework_id, user, formatted_policies)
+        data['controlDetails'] = DashBoardData.get_dashboard_controls_details(tenant_id, framework_id)
+
+
+        return data
+
