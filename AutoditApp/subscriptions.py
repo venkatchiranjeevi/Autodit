@@ -37,6 +37,7 @@ class Subscription:
             client = razorpay.Client(auth=("rzp_test_WRFdDZQHEaoM2q", "srk7PllgG016CY2DrczYYPbQ"))
             client.set_app_details({"title": "Autodit", "version": "1.0"})
             try:
+                print(subscription_data)
                 subscription_response = client.subscription.create(subscription_data)
                 expire_by = datetime.fromtimestamp(subscription_response.get("expire_by"))
                 tenant_subscription = TenantSubscriptions.objects.create(tenant_id=tenant_id,
