@@ -11,7 +11,7 @@ from AutoditApp.S3_FileHandler import S3FileHandlerConstant
 from AutoditApp.core import fetch_data_from_sql_query, get_users_by_tenant_id
 from AutoditApp.models import TenantPolicyManager, TenantPolicyParameter, TenantPolicyVersionHistory, \
     TenantGlobalVariables, MetaData, TenantDepartment, TenantControlsCustomTags, TenantPolicyComments, \
-    TenantPolicyTasks, TenantPolicyDepartments, TenantPolicyLifeCycleUsers, Roles, PolicyMaster
+    TenantPolicyTasks, TenantPolicyDepartments, TenantPolicyLifeCycleUsers, Roles, PolicyMaster, MasterPolicyParameter
 from AutoditApp.dal import PolicyDepartmentsHandlerData, TenantPolicyCustomTagsData, TenantPolicyLifeCycleUsersData
 
 
@@ -210,7 +210,8 @@ class PolicyLifeCycleHandler:
             prev_details = eval(str(present_state.get('prev')))
         except:
             prev_details = None
-        present_details = {'stateId': policy_present_state, 'status': 1, 'displayText': present_state.get('state_display_name')}
+        present_details = {'stateId': policy_present_state, 'status': 1,
+                           'displayText': present_state.get('state_display_name')}
         return prev_details, present_details, next_details
 
     @staticmethod
@@ -238,7 +239,7 @@ class PolicyLifeCycleHandler:
     @staticmethod
     def policy_state_tasks_check(tenant_id, policy_details, data, user, status):
         user_email = user.email
-        role_details =  eval(user.role_id)
+        role_details = eval(user.role_id)
         role_details = Roles.objects.filter(role_id__in=role_details).values('role_type')
         role_types = [role.get('role_type') for role in role_details]
         policy_id = policy_details.id
@@ -353,9 +354,27 @@ class PolicyLifeCycleHandler:
                                          version=str(1),
                                          file_name=file_names[-1])
             reference = S3FileHandlerConstant.upload_s3_file(content, file_name)
-            tenant_policy_details.policy_file_name=file_name
-            tenant_policy_details.version='1'
+            tenant_policy_details.policy_file_name = file_name
+            tenant_policy_details.version = '1'
             tenant_policy_details.save()
+            policy_parameters = MasterPolicyParameter.objects.filter(
+                policy_id=tenant_policy_details.parent_policy_id).values('type',
+                                                                         'parameter_key',
+                                                                         'parameter_type',
+                                                                         'parameter_value',
+                                                                         'description')
+            parameters = []
+            for parameter in policy_parameters:
+                tp = TenantPolicyParameter(tenant_id=tennat_id,
+                                           policy_id=tenant_policy_details.id,
+                                           parameter_key=parameter.get('parameter_key'),
+                                           parameter_type=parameter.get('parameter_type'),
+                                           parameter_value=parameter.get('parameter_value'),
+                                           description=parameter.get('description'),
+                                           is_active=1)
+                parameters.append(tp)
+            TenantPolicyParameter.objects.bulk_create(parameters)
+        #     Add template variables
         return S3FileHandlerConstant.read_s3_content(tenant_policy_details.policy_file_name)
 
     @staticmethod
@@ -365,7 +384,7 @@ class PolicyLifeCycleHandler:
             gb = eval(global_varialbles.result)
         except:
             gb = {}
-        policy_details = TenantPolicyManager.objects.get(id=int(policy_id),tenant_id=tenant_id)
+        policy_details = TenantPolicyManager.objects.get(id=int(policy_id), tenant_id=tenant_id)
         # TODO need to find if policy content exists
         policy_content = PolicyLifeCycleHandler.get_or_create_policy_content(policy_details, tenant_id)
         departments = PolicyDepartmentsHandlerData.get_departments_by_policy_id(tenant_id, policy_id)
@@ -390,7 +409,7 @@ class PolicyLifeCycleHandler:
         reviewers = []
         for each_user in users:
             owner_type = each_user.get("owner_type")
-            if owner_type == "assignee" or owner_type =="editor":
+            if owner_type == "assignee" or owner_type == "editor":
                 assignees.append(each_user)
             elif owner_type == "approver":
                 approvers.append(each_user)
@@ -452,9 +471,9 @@ class MetaDataDetails:
                                        'displayName': met.display_name,
                                        'next': met.next,
                                        'prev': met.prev,
-                                       'state':met.state_display_name,
-                                       'stateUser':met.state_user,
-                                       'accessUser':met.access_user})
+                                       'state': met.state_display_name,
+                                       'stateUser': met.state_user,
+                                       'accessUser': met.access_user})
             elif met.category == 'RENEWAL':
                 review_details.append({'key': met.key,
                                        'sortKey': int(met.sort_key),
