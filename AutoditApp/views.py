@@ -740,5 +740,5 @@ class DashBoardAPIHandler(AuthMixin):
         user = request.user
         tenant_id = user.tenant_id
         framework_id = request.GET.get('frameworkId')
-        data = DashBoardData.get_dashboard_data(tenant_id, framework_id)
+        data = DashBoardData.get_dashboard_data(tenant_id, framework_id, user)
         return Response(data)

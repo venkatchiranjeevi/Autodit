@@ -1,7 +1,7 @@
 from AutoditApp.models import TenantDepartment as Departments, Roles, TenantGlobalVariables, Tenant, GlobalVariables, \
     RolePolicies, AccessPolicy, TenantFrameworkMaster, TenantHierarchyMapping, TenantPolicyManager, \
     PolicyMaster, ControlMaster, TenantControlMaster, TenantControlAudit, TenantPolicyDepartments, \
-    TenantControlsCustomTags, TenantPolicyLifeCycleUsers
+    TenantControlsCustomTags, TenantPolicyLifeCycleUsers, TenantPolicyTasks
 from django.db.models import Q
 from .constants import DEFAULT_VIEWS, EDITIOR_VIEWS
 from AutoditApp.AWSCognito import Cognito
@@ -728,7 +728,9 @@ class DashBoardData(BaseConstant):
         approved_count = 0
         final_details = {}
         policy_dets = []
+        formatted_policies = {}
         for each_policy in selected_policies:
+            formatted_policies[each_policy.get('id')] = each_policy
             details = {'policyName': each_policy.get('tenant_policy_name'), 'category': each_policy.get('category'),
                        'policyId': each_policy.get('id'), 'policyCode': each_policy.get('policy_code'),'policyState':each_policy.get('state')}
             if each_policy.get('state') == 'PUB':
@@ -740,16 +742,58 @@ class DashBoardData(BaseConstant):
         final_details['totalPolicies'] = len(policy_dets)
         final_details['approvedPolicies'] = approved_count
         final_details['pendingPolicies'] = final_details['totalPolicies'] - final_details['approvedPolicies']
-        return final_details
+        return final_details, formatted_policies
+
+    @staticmethod
+    def admin_tasks(tenant_id, policy_ids):
+        return {}
 
 
     @staticmethod
-    def get_dashboard_data(tenant_id, framework_id):
+    def pending_tasks(tenant_id, master_f_id, user, policy_details):
+        # USER tasks
+        # Department tasks
+        policyids = list(policy_details.keys())
+        email = user.email
+        role_details = eval(user.role_id)
+        role_details = Roles.objects.filter(role_id__in=role_details).values('role_type', 'department_id')
+        role_types = [role.get('role_type') for role in role_details]
+        department_ids = [role.get('department_id') for role in role_details]
+        role_types = []
+        department_ids = []
+        for role in role_details:
+            department_ids.append(role.get('department_id'))
+            role_types.append(role.get('role_type'))
+
+        tasks = TenantPolicyTasks.objects.filter(tenant_id=tenant_id).values()
+        details = []
+        status = {0: 'Pending', 1:'Completed', 2:'Rejected'}
+        for task in tasks:
+            policy_det = policy_details.get(task.get('policy_id'), {})
+            det = {'policyName': policy_det.get('tenant_policy_name'),
+                   'taskName': task.get('task_name'),
+                   'taskAssignee': task.get('user_email'),
+                   'taskStatus': status.get(task.get('task_status')),
+                   'createdOn': task.get('created_on'),
+                   'policyState': task.get('policy_state'),
+                   'taskPerformedBy': task.get('task_performed_by'),
+                   'taskPerformedOn': task.get('task_performed_on')}
+            details.append(det)
+        return details
+        # if 'ADMIN' in role_types:9
+        #     return {}
+        # return {}
+
+
+    @staticmethod
+    def get_dashboard_data(tenant_id, framework_id, user):
         # STEP1: Get policy details
         data={}
+        data['policyDetails'], formatted_policies = DashBoardData.get_policies_details(tenant_id, framework_id)
+        data['pendingTasks'] = DashBoardData.pending_tasks(tenant_id, framework_id, user, formatted_policies)
+        data['recentActivities'] = DashBoardData.pending_tasks(tenant_id, framework_id, user, formatted_policies)
         data['controlDetails'] = DashBoardData.get_dashboard_controls_details(tenant_id, framework_id)
-        data['policyDetails'] = DashBoardData.get_policies_details(tenant_id, framework_id)
-        data['pendingTasks'] = {}
-        data['recentActivities'] = {}
+
+
         return data
 
