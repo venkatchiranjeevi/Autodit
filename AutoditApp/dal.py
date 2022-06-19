@@ -399,6 +399,7 @@ class TennatControlHelpers(BaseConstant):
                                             selected_framework_controls,
                                             user_id,
                                             user_email):
+        # TODO create TenantHirarect mapper
         selcted_control = [con.get('master_control_id') for con in selected_framework_controls]
         master_selected_polices = HirerecyMapper.objects.filter(f_id=master_framework_id,
                                                          c_id__in=selcted_control).values('policy_id').distinct()

@@ -7,7 +7,7 @@ from rest_framework.response import Response
 from AutoditApp.mixins import AuthMixin
 from AutoditApp.models import TenantGlobalVariables, TenantDepartment, Roles, FrameworkMaster, TenantFrameworkMaster, \
     ControlMaster, TenantPolicyComments, TenantPolicyManager, TenantPolicyVersionHistory, TenantPolicyDepartments, \
-    TenantPolicyLifeCycleUsers
+    TenantPolicyLifeCycleUsers, TenantControlMaster
 from AutoditApp.dal import DeparmentsData, TenantGlobalVariableData, TenantMasterData, RolesData, GlobalVariablesData, \
     RolePoliciesData, TenantFrameworkData, TennatControlHelpers, PolicyDetailsData, TenantControlMasterData, \
     ControlManagementDetailData, PolicyDepartmentsHandlerData, TenantPolicyCustomTagsData, \
@@ -306,16 +306,24 @@ class ControlManagementDetailAPI(APIView):
         tenant_id = request.user.tenant_id
         master_framework_id = request.GET.get("master_framework_id")
         master_control_id = request.GET.get("master_control_id")
-        tenant_framework_details = ControlManagementDetailData.get_controls_data_by_control_id_framework_id(
-                                                       master_control_id, master_framework_id, tenant_id)
+        tenant_framework_details = TenantControlMaster.objects.get(master_control_id=master_control_id, tenant_id=tenant_id)
+        details = {'tenant_c_id': tenant_framework_details.id,
+                   'tenant_f_id': tenant_framework_details.tenant_framework_id,
+                   "ControlName": tenant_framework_details.control_name,
+                   "Description": tenant_framework_details.control_description,
+                   "tenant_id": tenant_framework_details.tenant_id,
+                   "frameWork_id": tenant_framework_details.master_framework_id,
+                   "FrameworkName": ''}
         if tenant_framework_details:
-            tenant_f_id = tenant_framework_details[0].get("tenant_f_id")
-            tenant_c_id = tenant_framework_details[0].get("tenant_c_id")
+            tenant_f_id = tenant_framework_details.tenant_framework_id
+            tenant_c_id = tenant_framework_details.id
             hierarchy_data = ControlManagementDetailData.get_policies_by_tenant_framework_id_and_tenant_control_id(
                 tenant_f_id, tenant_c_id, tenant_id)
-            tenant_framework_details[0]['policies'] = hierarchy_data
+            details['policies'] = hierarchy_data
+            framework_details = FrameworkMaster.objects.get(id=master_framework_id)
+            details['FrameworkName'] = framework_details.framework_name
 
-        return Response(tenant_framework_details)
+        return Response(details)
 
     def post(self, request):
         data = request.data
@@ -345,7 +353,7 @@ class PolicyManagementAPI(AuthMixin):
                                                   'a.State, md.stateDisplayName, b.id as FrameworkId, b.FrameworkName, b.Description '
                                                   'from TenantPolicyManager a'
                                                   ' Inner Join FrameworkMaster b on a.MasterFrameworkId = b.id '
-                                                  'Left  Join MetaData md  on a.state = md.key where a.tenant_id={}'.format(tenant_id))
+                                                  'Left  Join MetaData md  on a.state = md.key where a.tenant_id={} and a.isActive=1'.format(tenant_id))
 
         departments = TenantPolicyDepartments.objects.filter(tenant_id=tenant_id).filter(is_active=1).values()
         policy_users = TenantPolicyLifeCycleUsers.objects.filter(tenant_id=tenant_id, is_active=True).values()
