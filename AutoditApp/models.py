@@ -174,7 +174,6 @@ class TenantControlMaster(models.Model):
     created_by = models.CharField(db_column="created_by", blank=True, max_length=150)
     master_framework_id = models.IntegerField(db_column="masterFrameworkId")
 
-
     def __int__(self):
         return self.id
 
@@ -202,7 +201,6 @@ class TenantControlAudit(Base):
 
     class Meta:
         db_table = 'TenantControlAudit'
-
 
 
 class TenantHierarchyMapping(Base):
@@ -268,7 +266,6 @@ class ControlMaster(Base):
     is_active = models.IntegerField(db_column='IsActive', default=1)
     created_by = models.CharField(db_column="created_by", null=True, max_length=150)
 
-
     def __int__(self):
         return self.id
 
@@ -296,7 +293,7 @@ class HirerecyMapper(Base):
 class PolicyMaster(Base):
     id = models.AutoField(primary_key=True, db_column='id')
     policy_name = models.CharField(db_column='PolicyName', max_length=120)
-    policy_code= models.CharField(db_column="policy_code", max_length=120)
+    policy_code = models.CharField(db_column="policy_code", max_length=120)
     category = models.CharField(db_column='Category', max_length=120)
     policy_reference = models.CharField(db_column='policyReference', max_length=500)
     created_by = models.CharField(db_column='created_by', max_length=120)
@@ -305,12 +302,12 @@ class PolicyMaster(Base):
     policy_file_name = models.CharField(db_column='policyFileName', max_length=250)
     policy_summery = models.TextField(db_column='Summery', blank=True)
     tennant_id = models.IntegerField(db_column='tennant_id', blank=False)
+
     def __int__(self):
         return self.id
 
     class Meta:
         db_table = 'PolicyMaster'
-
 
 
 class TenantPolicyManager(Base):
@@ -347,7 +344,7 @@ class TenantPolicyManager(Base):
 class MasterPolicyParameter(Base):
     id = models.AutoField(primary_key=True, db_column='id')
     policy_id = models.IntegerField(db_column='policyId')
-    type= models.CharField(db_column="type", max_length=50)
+    type = models.CharField(db_column="type", max_length=50)
     parameter_key = models.CharField(db_column='parameterKey', max_length=250)
     parameter_type = models.CharField(db_column='parameterType', max_length=250)
     parameter_value = models.CharField(db_column='parameterValue', max_length=500)
@@ -384,9 +381,9 @@ class TenantPolicyVersionHistory(Base):
 
 class TenantPolicyParameter(Base):
     id = models.AutoField(primary_key=True, db_column='id')
-    tenant_id=models.IntegerField(db_column='tenantId')
+    tenant_id = models.IntegerField(db_column='tenantId')
     policy_id = models.IntegerField(db_column='policyId')
-    type= models.CharField(db_column="type", max_length=50)
+    type = models.CharField(db_column="type", max_length=50)
     parameter_key = models.CharField(db_column='parameterKey', max_length=250)
     parameter_type = models.CharField(db_column='parameterType', max_length=250)
     parameter_value = models.CharField(db_column='parameterValue', max_length=500)
@@ -394,7 +391,6 @@ class TenantPolicyParameter(Base):
     created_by = models.CharField(db_column='createdBy', max_length=150)
     is_deleted = models.IntegerField(db_column='is_deleted', default=0)
     is_active = models.IntegerField(db_column='is_active', default=1)
-
 
     def __int__(self):
         return self.id
@@ -433,6 +429,7 @@ class TenantControlsCustomTags(Base):
     class Meta:
         db_table = 'TenantControlsCustomTags'
 
+
 class MetaData(Base):
     id = models.AutoField(primary_key=True, db_column='id')
     key = models.CharField(db_column='key', max_length=50)
@@ -453,7 +450,7 @@ class MetaData(Base):
 class TenantPolicyComments(Base):
     id = models.AutoField(primary_key=True, db_column='id')
     tenant_id = models.IntegerField(db_column='tenantId')
-    comment_name = models.CharField(db_column='CommentName',null=True, max_length=50)
+    comment_name = models.CharField(db_column='CommentName', null=True, max_length=50)
     comment = models.TextField(db_column='Comment')
     tenant_policy_id = models.IntegerField(db_column='tenantPolicyID')
     is_deleted = models.IntegerField(db_column='is_deleted', default=0)
@@ -499,5 +496,31 @@ class TenantPolicyTasks(Base):
         db_table = 'TenantPolicyTasks'
 
 
+class TenantSubscriptions(Base):
+    id = models.AutoField(primary_key=True, db_column='id')
+    tenant_id = models.BigIntegerField(db_column='tenantId', null=False)
+    subscription_id = models.CharField(db_column='subscriptionId', max_length=250, null=False)
+    plan_id = models.CharField(db_column="planId", max_length=250, null=False)
+    payment_id = models.CharField(db_column='paymentId', max_length=250, null=True)
+    status = models.CharField(db_column='status', max_length=50, null=False)
+    expire_by = models.CharField(db_column="expireBy", max_length=250, null=True)
+
+    class Meta:
+        db_table = 'TenantSubscriptions'
 
 
+class SubscriptionBillingDetails(Base):
+    id = models.AutoField(primary_key=True, db_column='id')
+    tenant_subscription_id = models.BigIntegerField(db_column='tenantSubscriptionId', null=False)
+    first_name = models.CharField(db_column="firstName", max_length=250, null=False)
+    last_name = models.CharField(db_column='lastName', max_length=250, null=True)
+    email = models.CharField(db_column='email', max_length=100, null=False)
+    phone_number = models.CharField(db_column="phoneNumber", max_length=250, null=True)
+    street_address = models.CharField(db_column="streetAddress", max_length=250, null=True)
+    city = models.CharField(db_column="city", max_length=100, null=True)
+    country = models.CharField(db_column="country", max_length=100, null=True)
+    organization = models.CharField(db_column="organization", max_length=250, null=True)
+    gst_number = models.CharField(db_column="gstNumber", max_length=100, null=True)
+
+    class Meta:
+        db_table = 'SubscriptionBillingDetails'
