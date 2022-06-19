@@ -426,7 +426,7 @@ class TenantLogoUploaderAPI(AuthMixin):
         tenant_result['logo_url'] = logo_url
         tenant_obj.result = tenant_result
         tenant_obj.save()
-        return Response({"message": "Logo Uploaded Successfully", "status": True})
+        return Response({"message": "Logo Uploaded Successfully", "status": True, "logo_url":logo_url})
 
 
 class PolicyDetailsAPI(AuthMixin):

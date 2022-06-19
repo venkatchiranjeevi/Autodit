@@ -14,11 +14,15 @@ class Subscription:
         for framework in data['frameworks']:
             framework__master_pks.append(framework['id'])
             selected_frameworks.append(
-                {"item": {"name": framework['framework_name'], "amount": 200, "currency": "INR"}})
+                {"item": {"name": framework['framework_name'], "amount": 20000, "currency": "INR"}})
+        if plan_id == "plan_JjEjWlJkjOPTXe":
+            selected_frameworks.clear()
+        else:
+            selected_frameworks.pop(0)
         subscription_data = {"plan_id": plan_id, "total_count": 2, "quantity": 1, "addons": selected_frameworks,
                              "expire_by": int(round(tm.timestamp())), "customer_notify": 0}
         framework_master = FrameworkMaster.objects.filter(id__in=framework__master_pks)
-        tenant_frameworks = [];
+        tenant_frameworks = []
         for framework_master_var in framework_master:
             tenant_frameworks.append(
                 TenantFrameworkMaster(tenant_framework_name=framework_master_var.framework_name,
@@ -33,6 +37,7 @@ class Subscription:
             client = razorpay.Client(auth=("rzp_test_WRFdDZQHEaoM2q", "srk7PllgG016CY2DrczYYPbQ"))
             client.set_app_details({"title": "Autodit", "version": "1.0"})
             try:
+                print(subscription_data)
                 subscription_response = client.subscription.create(subscription_data)
                 expire_by = datetime.fromtimestamp(subscription_response.get("expire_by"))
                 tenant_subscription = TenantSubscriptions.objects.create(tenant_id=tenant_id,
