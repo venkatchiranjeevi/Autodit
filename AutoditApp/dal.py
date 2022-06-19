@@ -671,6 +671,17 @@ class TenantPolicyLifeCycleUsersData(BaseConstant):
 
     @staticmethod
     def save_policy_assigned_users(data):
+        # FETCH policy present state
+        # Meta data get details based on policy state and get accessUser
+        # Fetch user roles and fetch user type
+        # if MetaData(PolictpresentState) in role_types:
+        #   CREATE USER TASK
+        #   check if same state has one or multiple department tasks
+        #   1)For same state check any department task
+        #   if dapartment task then convert department into user task
+        #   else
+        # Create user task
+
         assignee_type = data.get("type")
         if assignee_type == 'assignee':
             # TODO will remove once complete integration is done
