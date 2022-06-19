@@ -722,29 +722,24 @@ class DashBoardData(BaseConstant):
 
     @staticmethod
     def get_policies_details(tenant_id, master_f_id):
-        total_policies = "SELECT * from PolicyMaster pm where Id in (SELECT DISTINCT(PolicyId) from HirerecyMapper where Fid=%s)" % master_f_id
-        total_policies_res = fetch_data_from_sql_query(total_policies)
+        # total_policies = "SELECT * from PolicyMaster pm where Id in (SELECT DISTINCT(PolicyId) from HirerecyMapper where Fid=%s)" % master_f_id
+        # total_policies_res = fetch_data_from_sql_query(total_policies)
         selected_policies = TenantPolicyManager.objects.filter(tenant_id=tenant_id,is_active=True,master_framework_id=master_f_id).values()
-        selected_count = 0
         approved_count = 0
         final_details = {}
-        formated_selected_polices = {sel.get('parent_policy_id'): sel for sel in selected_policies}
         policy_dets = []
-        for total_pop in total_policies_res:
-            details = {'masterPolicyId': total_pop.get('id'), 'masterPolicyName': total_pop.get('PolicyName'),
-                          'masterPolicyCode': total_pop.get('policy_code'), 'masterPolicySummery': total_pop.get('Summery')}
-            if formated_selected_polices.get(total_pop.get('id')):
-                selected_count += 1
-                if formated_selected_polices.get(total_pop.get('id')).get('state') == 'PUB':
-                    approved_count += 1
-                    details['isPolicyApproved'] = True
-                details['isPolicySelected'] = True
+        for each_policy in selected_policies:
+            details = {'policyName': each_policy.get('tenant_policy_name'), 'category': each_policy.get('category'),
+                       'policyId': each_policy.get('id'), 'policyCode': each_policy.get('policy_code'),'policyState':each_policy.get('state')}
+            if each_policy.get('state') == 'PUB':
+                approved_count += 1
+                details['isPolicyApproved'] = True
+            details['isPolicySelected'] = True
             policy_dets.append(details)
-        final_details['policyDetails'] = policy_dets
-        final_details['totalPoliciesCount'] = len(total_policies_res)
-        final_details['selectedPoliciesCount'] = selected_count
-        final_details['approvedPoliciesCount'] = approved_count
-        final_details['pendingPoliciesCount'] = final_details['selectedPoliciesCount'] - final_details['approvedPoliciesCount']
+        final_details['policies'] = policy_dets
+        final_details['totalPolicies'] = len(policy_dets)
+        final_details['approvedPolicies'] = approved_count
+        final_details['pendingPolicies'] = final_details['totalPolicies'] - final_details['approvedPolicies']
         return final_details
 
 
