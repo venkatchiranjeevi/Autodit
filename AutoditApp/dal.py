@@ -712,7 +712,7 @@ class TenantPolicyLifeCycleUsersData(BaseConstant):
                 query = (Q(user_email__isnull=True) | Q(user_email=""))
                 query &= Q(tenant_id=tenant_id, policy_id=policy_id, policy_state=policy_meta_data[0].get("key"))
                 TenantPolicyTasks.objects.filter(query).update(task_status=2)
-                TenantPolicyTasks.objects.create(tenant_id=tenant_id, policy_id=policy_id, access_user=access_user,
+                TenantPolicyTasks.objects.create(tenant_id=tenant_id, policy_id=policy_id,
                                                  task_status=0, user_email=each_user.get("ownerEmail"),
                                                  task_type=task_verify, allowed_roles=state_users,
                                                  task_name=policy_meta_data[0].get("state_display_name"),
