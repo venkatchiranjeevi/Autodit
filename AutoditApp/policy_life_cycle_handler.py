@@ -10,7 +10,8 @@ from .AWSCognito import Cognito
 from AutoditApp.S3_FileHandler import S3FileHandlerConstant
 from AutoditApp.core import fetch_data_from_sql_query, get_users_by_tenant_id
 from AutoditApp.models import TenantPolicyManager, TenantPolicyParameter, TenantPolicyVersionHistory, \
-    TenantGlobalVariables, MetaData, TenantDepartment, TenantControlsCustomTags, TenantPolicyComments
+    TenantGlobalVariables, MetaData, TenantDepartment, TenantControlsCustomTags, TenantPolicyComments, \
+    TenantPolicyTasks, TenantPolicyDepartments, TenantPolicyLifeCycleUsers, Roles
 from AutoditApp.dal import PolicyDepartmentsHandlerData, TenantPolicyCustomTagsData, TenantPolicyLifeCycleUsersData
 
 
@@ -121,7 +122,6 @@ class PolicyLifeCycleHandler:
         policy_details.version = str(new_version)
         policy_details.save()
 
-
     @staticmethod
     def get_version_history_details(policy_id, tenant_id, version_id):
         version_history = TenantPolicyVersionHistory.objects.get(id=version_id)
@@ -210,8 +210,134 @@ class PolicyLifeCycleHandler:
             prev_details = eval(str(present_state.get('prev')))
         except:
             prev_details = None
-        present_details = {'key': policy_present_state, 'display_name': present_state.get('state_display_name')}
+        present_details = {'stateId': policy_present_state, 'status': 1, 'displayText': present_state.get('state_display_name')}
         return prev_details, present_details, next_details
+
+    @staticmethod
+    def policy_submit(tenant_id, policy_details, data, user):
+        user_email = user.email
+        policy_id = policy_details.id
+        policy_present_state = policy_details.state
+        pending_tasks = TenantPolicyTasks.objects.filter(tenant_id=tenant_id,
+                                                         policy_id=policy_id,
+                                                         policy_state=policy_present_state,
+                                                         task_status=0).values()
+        if not pending_tasks:
+            return True
+        for task in pending_tasks:
+            if task.get('user_email') == user_email:
+                TenantPolicyTasks.objects.filter(id=task.get('id')).update(task_status=1,
+                                                                           task_performed_on=datetime.now(),
+                                                                           task_performed_by=user_email)
+        pending_tasks = TenantPolicyTasks.objects.filter(tenant_id=tenant_id,
+                                                         policy_id=policy_id,
+                                                         policy_state=policy_present_state,
+                                                         task_status=0).values()
+        return True if not pending_tasks else False
+
+    @staticmethod
+    def policy_state_tasks_check(tenant_id, policy_details, data, user, status):
+        user_email = user.email
+        role_details =  eval(user.role_id)
+        role_details = Roles.objects.filter(role_id__in=role_details).values('role_type')
+        role_types = [role.get('role_type') for role in role_details]
+        policy_id = policy_details.id
+        policy_present_state = policy_details.state
+        display_text = data.get('displayText')
+        if 'Reject' in display_text or not status:
+            # COMPLETE ALL PendING TASKS
+            TenantPolicyTasks.objects.filter(tenant_id=tenant_id,
+                                             policy_id=policy_id,
+                                             task_status=0).update(task_status=2,
+                                                                   task_performed_by=user_email,
+                                                                   task_performed_on=datetime.now())
+
+            return True
+        pending_tasks = TenantPolicyTasks.objects.filter(tenant_id=tenant_id,
+                                                         policy_id=policy_id,
+                                                         policy_state=policy_present_state,
+                                                         task_status=0).values()
+        if not pending_tasks:
+            return True
+
+        # query = Q()
+        for task in pending_tasks:
+            if task.get('user_email') == user_email:
+                # TODO change to bulk update later
+                if task.get('task_type') == 'any':
+                    TenantPolicyTasks.objects.filter(tenant_id=tenant_id,
+                                                     policy_id=policy_id,
+                                                     policy_state=policy_present_state,
+                                                     task_status=0).update(task_status=1,
+                                                                           task_performed_by=user_email,
+                                                                           task_performed_on=datetime.now())
+                    break
+                else:
+                    TenantPolicyTasks.objects.filter(id=task.get('id')).update(task_status=1,
+                                                                               task_performed_on=datetime.now(),
+                                                                               task_performed_by=user_email)
+
+            elif not task.get('user_email'):
+                allowed_role = set(eval(task.get('allowed_roles')))
+                if allowed_role.intersection(set(role_types)):
+                    if task.get('task_type') == 'any':
+                        TenantPolicyTasks.objects.filter(tenant_id=tenant_id,
+                                                         policy_id=policy_id,
+                                                         policy_state=policy_present_state,
+                                                         task_status=0).update(task_status=1,
+                                                                               task_performed_on=datetime.now(),
+                                                                               task_performed_by=user_email)
+
+                        break
+                    else:
+                        TenantPolicyTasks.objects.filter(id=task.get('id')).update(task_status=1,
+                                                                                   task_performed_on=datetime.now(),
+                                                                                   task_performed_by=user_email)
+            else:
+                print('Different user task')
+
+        pending_tasks = TenantPolicyTasks.objects.filter(tenant_id=tenant_id,
+                                                         policy_id=policy_id,
+                                                         policy_state=policy_present_state,
+                                                         task_status=0).values()
+        return True if not pending_tasks else False
+
+    @staticmethod
+    def policy_task_creation(tenant_id, policy_details, data, user_email, next_state):
+        policy_id = policy_details.id
+        department_details = TenantPolicyDepartments.objects.filter(tenant_id=tenant_id,
+                                                                    tenant_policy_id=policy_id,
+                                                                    is_active=1).values()
+        task_type_obj = MetaData.objects.get(category='POLICYSTATUS', key=next_state)
+        user_type = task_type_obj.state_user
+        policy_users = TenantPolicyLifeCycleUsers.objects.filter(tenant_id=tenant_id,
+                                                                 policy_id=policy_id,
+                                                                 owner_type=user_type,
+                                                                 is_active=1).values()
+        if not policy_users:
+            department_tasks = []
+            for department in department_details:
+                department_id = department.get('tenant_dep_id')
+                department_tasks.append(TenantPolicyTasks(policy_id=policy_id,
+                                                          tenant_id=tenant_id,
+                                                          department_id=department_id,
+                                                          task_name=task_type_obj.state_display_name,
+                                                          policy_state=next_state,
+                                                          allowed_roles=task_type_obj.state_user,
+                                                          task_type=task_type_obj.task_verify))
+            TenantPolicyTasks.objects.bulk_create(department_tasks)
+
+        else:
+            user_tasks = []
+            for user in policy_users:
+                user_email = user.get('owner_email')
+                user_tasks.append(TenantPolicyTasks(policy_id=policy_id,
+                                                    tenant_id=tenant_id,
+                                                    task_name=task_type_obj.state_display_name,
+                                                    policy_state=next_state,
+                                                    task_type=task_type_obj.task_verify,
+                                                    user_email=user_email))
+            TenantPolicyTasks.objects.bulk_create(user_tasks)
 
     @staticmethod
     def get_complete_policy_details(policy_id, tenant_id):
@@ -244,7 +370,7 @@ class PolicyLifeCycleHandler:
         reviewers = []
         for each_user in users:
             owner_type = each_user.get("owner_type")
-            if owner_type == "assignee":
+            if owner_type == "assignee" or owner_type =="editors":
                 assignees.append(each_user)
             elif owner_type == "approver":
                 approvers.append(each_user)
@@ -261,7 +387,8 @@ class PolicyLifeCycleHandler:
             "policyPresentState": present,
             "nextState": next,
             "prevState": prev,
-            "assignee": assignees,
+            "assignees": assignees,
+            "editors": assignees,
             "approves": approvers,
             "reviewer": reviewers,
             "renewPeriod": policy_details.review_period,
@@ -296,14 +423,19 @@ class MetaDataDetails:
     @staticmethod
     def tenant_meta_data(tenant_id):
         meta_data = {}
-        meta_details = MetaData.objects.filter(category__in=['POLICYSTATUS', 'REV'])
+        meta_details = MetaData.objects.filter(category__in=['POLICYSTATUS', 'RENEWAL'])
         status_details = []
         review_details = []
         for met in meta_details:
             if met.category == 'POLICYSTATUS':
                 status_details.append({'key': met.key,
-                                       'displayName': met.display_name})
-            elif met.category == 'REV':
+                                       'displayName': met.display_name,
+                                       'next': met.next,
+                                       'prev': met.prev,
+                                       'state':met.state_display_name,
+                                       'stateUser':met.state_user,
+                                       'accessUser':met.access_user})
+            elif met.category == 'RENEWAL':
                 review_details.append({'key': met.key,
                                        'sortKey': int(met.sort_key),
                                        'displayName': met.display_name})

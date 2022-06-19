@@ -23,6 +23,7 @@ class Roles(Base):
     code = models.CharField(db_column='Code', max_length=5, null=True, default=None)
     tenant_id = models.IntegerField(db_column='tenantId')
     department_id = models.IntegerField(db_column='DepartmentId',null=True)
+    role_type = models.CharField(db_column='roleType', max_length=50, null=True, default=None)
 
     def __str__(self):
         return self.role_name
@@ -440,6 +441,10 @@ class MetaData(Base):
     prev = models.TextField(db_column='prev')
     state_display_name = models.CharField(db_column='stateDisplayName', max_length=150)
     sort_key = models.IntegerField(db_column='sortKey')
+    state_user = models.CharField(db_column='stateUser', max_length=150)
+    task_verify = models.CharField(db_column='taskVerify', max_length=150)
+    access_user = models.CharField(db_column='accessUser', max_length=100)
+
     class Meta:
         db_table = 'MetaData'
 
@@ -472,6 +477,25 @@ class TenantPolicyLifeCycleUsers(Base):
 
     class Meta:
         db_table = 'TenantPolicyLifeCycleUsers'
+
+
+class TenantPolicyTasks(Base):
+    id = models.AutoField(primary_key=True, db_column='id')
+    tenant_id = models.IntegerField(db_column='tenantId', null=False)
+    policy_id = models.IntegerField(db_column='policyId', null=False)
+    department_id = models.IntegerField(db_column='departmentId', null=False)
+    task_name = models.CharField(db_column="taskName", max_length=250, null=True)
+    user_email = models.CharField(db_column="userEmail", max_length=250, null=True)
+    task_type = models.CharField(db_column="taskType", max_length=250, null=True)
+    summery = models.TextField(db_column="summery", null=True)
+    task_status = models.IntegerField(db_column="taskStatus", default=0) # 0-pending, 1-completed, 2-cancelled
+    allowed_roles = models.CharField(db_column="allowedRoles", max_length=250, null=True) #need to think about it
+    policy_state = models.CharField(db_column='policyState', max_length=250, null=True)
+    task_performed_by = models.CharField(db_column="taskPerformedBy", max_length=250, null=True)
+    task_performed_on = models.DateTimeField(db_column="performedOn", null=True)
+
+    class Meta:
+        db_table = 'TenantPolicyTasks'
 
 
 

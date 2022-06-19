@@ -25,8 +25,6 @@ urlpatterns = [
     url("^tenant/policy-parameters", TenantPolicyVariables.as_view()),
 
     url("^tenant/frameworks", TenantFrameworkMasterAPI.as_view()),
-    # url("^tenant/all", ControlsManagementAPIALl.as_view()),
-
     url("^tenant/logo", TenantLogoUploaderAPI.as_view()),
     url("^policy/get-policy", PolicyDetailsAPI.as_view()),
     url("^policy/policy-renew-update", PolicyRenewUpdateAPI.as_view()),

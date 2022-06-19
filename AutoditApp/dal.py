@@ -54,7 +54,10 @@ class RolesData(BaseConstant):
     @staticmethod
     def save_single_role(data):
         department_id = data.get("departments", [])
-        role_obj = Roles(role_name=data.get("role_name"), code=data.get("role_code"), tenant_id=data.get("tenant_id"),
+        role_obj = Roles(role_name=data.get("role_name"),
+                         code=data.get("role_code"),
+                         tenant_id=data.get("tenant_id"),
+                         role_type=data.get('role_type'),
                          department_id=department_id[0] if department_id else None)
         role_obj.save()
 
@@ -597,17 +600,20 @@ class TenantPolicyCustomTagsData(BaseConstant):
         custom_tags_instancess = [TenantControlsCustomTags(tenant_id=data.get("tenant_id"),
                                                            tenant_policy_id=data.get("policyId"),
                                                            tag_name=each_tag.get("tagName"),
+                                                           tag_description='',
                                                            is_active=1) for each_tag in
                                   custom_tags]
 
         TenantControlsCustomTags.objects.bulk_create(custom_tags_instancess)
-        return True
+        tags = TenantPolicyCustomTagsData.get_policy_tags(data.get("policyId"), data.get("tenant_id"))
+        return tags
 
     @staticmethod
-    def delete_policy_custom_tag(tag_id):
+    def delete_policy_custom_tag(tag_id, tenant_id, policy_id):
         tcc_obj = TenantControlsCustomTags.objects.get(id=tag_id)
         tcc_obj.delete()
-        return True
+        tags = TenantPolicyCustomTagsData.get_policy_tags(policy_id,tenant_id)
+        return tags
 
     @staticmethod
     def get_policy_tags(policy_id, tenant_id):
@@ -624,11 +630,12 @@ class TenantPolicyLifeCycleUsersData(BaseConstant):
                                                            is_active=True).values("id",
                                                                                   "owner_type",
                                                                                   "owner_name",
-                                                                                  "owner_user_id")
+                                                                                  "owner_user_id", "owner_email")
         owners = [{"ownerId": owner.get("id"),
                    "owner_type": owner.get("owner_type"),
                    "owner_name": owner.get("owner_name"),
                    "user_id": owner.get("owner_user_id"),
+                   "owner_email": owner.get("owner_email"),
                    "owner_code": owner.get("owner_name")[:2]}
                   for owner in owners]
         return owners
@@ -636,10 +643,14 @@ class TenantPolicyLifeCycleUsersData(BaseConstant):
     @staticmethod
     def save_policy_assigned_users(data):
         assignee_type = data.get("type")
+        if assignee_type == 'assignee':
+            # TODO will remove once complete integration is done
+            assignee_type = 'editor'
         policy_id = data.get("policyId")
         tenant_id = data.get("tenant_id")
         users = data.get("userDetails")
         for each_user in users:
+            # TODO If any pending task for this department is avaialbe then need to assign task for user
             tlc_obj, created = TenantPolicyLifeCycleUsers.objects.get_or_create(tenant_id=tenant_id,
                                                                                 policy_id=policy_id,
                                                                                 owner_type=assignee_type,
@@ -669,6 +680,7 @@ class TenantPolicyLifeCycleUsersData(BaseConstant):
                                                                    owner_type=assignee_type,
                                                                    is_active=True). \
             values("id", "owner_type", "owner_name", "owner_user_id", "owner_code")
+        # TODO If any pending task is der then either make it department task or another task
         return assignee_users
 
     @staticmethod
@@ -678,10 +690,11 @@ class TenantPolicyLifeCycleUsersData(BaseConstant):
                                                                    owner_type=assignee_type,
                                                                    is_active=True).values()
         department_details = TenantPolicyDepartments.objects.filter(tenant_id=tenant_id,
-                                                                   tenant_policy_id=policy_id).values("id",
+                                                                   tenant_policy_id=policy_id,
+                                                                    is_active=1).values("id",
                                                                                                       "department_name")
         if assignee_users:
-            if assignee_type == "assignee" or assignee_type == "DRF":
+            if assignee_type == "assignee" or assignee_type == "DRF" or assignee_type == "editor":
                 pass
             elif assignee_type == "REV" or assignee_type == "reviewer":
                 pass

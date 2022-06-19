@@ -57,6 +57,7 @@ class DepartmentsAPI(AuthMixin):
                                                                                                       each_role)),
                     "tenant_id": tenant_id,
                     "role_for": each_role, "departments": [dep_obj.id],
+                    "role_type": each_role.lower(),
                     "policy_name": dep_name}
             # default_roles.append(role)
             RolesData.save_single_role(role)
@@ -566,12 +567,12 @@ class TenantPolicyCustomTags(AuthMixin):
         data["tenant_id"] = request.user.tenant_id
         data['created_by'] = request.user.userid
         result = TenantPolicyCustomTagsData.save_custom_tags(data)
-        return Response({"status": result, "message": "Custom Tags Added Successfully"})
+        return Response({"status": True, "message": "Custom Tags Added Successfully", 'policyTags':result})
 
     def delete(self, request):
         custom_tag_id = request.GET.get("tagId")
-        result = TenantPolicyCustomTagsData.delete_policy_custom_tag(custom_tag_id)
-        return Response({"status": result, "message": "Custom Tags Deleted Successfully"})
+        result = TenantPolicyCustomTagsData.delete_policy_custom_tag(custom_tag_id, request.user.tenant_id, request.GET.get("policyId"))
+        return Response({"status": True, "message": "Custom Tags Deleted Successfully", 'policyTags':result})
 
 
 class MetaDetailsHandler(AuthMixin):
@@ -582,24 +583,8 @@ class MetaDetailsHandler(AuthMixin):
         return Response(details)
 
 
-class TenantDepartmentUsers(AuthMixin):
-    def get(self, request):
-        pass
-
-    def post(self, request):
-        pass
-
-
 class PolicyStatesHandler(AuthMixin):
     def post(self, request):
-        # Step 1 get next state or prev state
-        # Step 2 create tasks
-        # Step 3 publish to users
-        # {
-        #     "stateId": "REV",
-        #     "status": 1,
-        #     "displayText": "Move To Reveiw"
-        # },
         # TODO need to create tasks for users and publish to users
         # TODO check user has role or not
         data = request.data
@@ -607,27 +592,47 @@ class PolicyStatesHandler(AuthMixin):
         state_id = data.get('stateId')
         status = data.get('status')
         user = request.user
+        tenant_id = user.tenant_id
         policy_details = TenantPolicyManager.objects.get(id=int(policy_id))
-        policy_details.state = state_id
         new_version = policy_details.version
-        if state_id == 'PUB':
-            policy_details.published_date = datetime.now().strftime("%Y-%m-%d")
-            new_version = str(int(float((policy_details.version))) + 1)
+        if policy_details.state == 'DRF':
+            status = PolicyLifeCycleHandler.policy_submit(tenant_id, policy_details, data, user)
+            if status:
+                PolicyLifeCycleHandler.policy_task_creation(tenant_id, policy_details, data, user.email, state_id)
+                policy_details.state = state_id
+                policy_details.version = new_version
+                policy_details.save()
+            details = PolicyLifeCycleHandler.get_complete_policy_details(int(policy_id), int(tenant_id))
+            return Response(
+                {"message": "Policy State Updated Successfully", "status": True, "policyDetails": details})
 
-        TenantPolicyVersionHistory(tenant_id=request.user.tenant_id,
-                                   policy_id=policy_id,
-                                   tenant_policy_name=policy_details.tenant_policy_name,
-                                   old_version=str(policy_details.version),
-                                   new_version=str(new_version),
-                                   policy_file_name=policy_details.policy_file_name,
-                                   status='Approved' if policy_details.state == 'PUB' else 'Pending',
-                                   action_performed=state_id,
-                                   action_performed_by=user.username_cognito,
-                                   action_performed_by_id=user.email,
-                                   action_date=datetime.now()).save()
-        policy_details.version = new_version
-        policy_details.save()
-        return Response({"message": "Policy State Updated Successfully", "status": True})
+
+        else:
+            state_change = PolicyLifeCycleHandler.policy_state_tasks_check(tenant_id, policy_details, data, user, status)
+            if not state_change:
+                return Response({"message": "Policy Tasks are pending", "status": False})
+            if state_id == 'PUB':
+                policy_details.published_date = datetime.now().strftime("%Y-%m-%d")
+                new_version = str(int(float((policy_details.version))) + 1)
+                TenantPolicyVersionHistory(tenant_id=request.user.tenant_id,
+                                           policy_id=policy_id,
+                                           tenant_policy_name=policy_details.tenant_policy_name,
+                                           old_version=str(policy_details.version),
+                                           new_version=str(new_version),
+                                           policy_file_name=policy_details.policy_file_name,
+                                           status='Approved' if state_id == 'PUB' else 'Pending',
+                                           action_performed=state_id,
+                                           action_performed_by=user.username_cognito,
+                                           action_performed_by_id=user.email,
+                                           action_date=datetime.now()).save()
+
+            else:
+                PolicyLifeCycleHandler.policy_task_creation(tenant_id, policy_details, data, user.email, state_id)
+            policy_details.state = state_id
+            policy_details.version = new_version
+            policy_details.save()
+            details = PolicyLifeCycleHandler.get_complete_policy_details(int(policy_id), int(tenant_id))
+            return Response({"message": "Policy State Updated Successfully", "status": True, "policyDetails": details})
 
 
 class PolicyEligibleUsers(AuthMixin):
