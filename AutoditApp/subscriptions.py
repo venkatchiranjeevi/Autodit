@@ -22,7 +22,7 @@ class Subscription:
         subscription_data = {"plan_id": plan_id, "total_count": 2, "quantity": 1, "addons": selected_frameworks,
                              "expire_by": int(round(tm.timestamp())), "customer_notify": 0}
         framework_master = FrameworkMaster.objects.filter(id__in=framework__master_pks)
-        tenant_frameworks = [];
+        tenant_frameworks = []
         for framework_master_var in framework_master:
             tenant_frameworks.append(
                 TenantFrameworkMaster(tenant_framework_name=framework_master_var.framework_name,
