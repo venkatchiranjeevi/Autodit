@@ -79,7 +79,8 @@ class DepartmentsAPI(AuthMixin):
 
 class GlobalVariablesAPI(AuthMixin):
     def get(self, request):
-        global_variables = GlobalVariablesData()
+        tenant_id = request.user.tenant_id
+        global_variables = GlobalVariablesData.get_global_variables()
         return global_variables
 
 

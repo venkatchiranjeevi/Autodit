@@ -88,7 +88,7 @@ class UserProfile(AuthMixin):
             department_ids += policy.get("departments", [])
             if policy.get('actionPermissions'):
                 action_permissions.update(policy.get('actionPermissions', {}))
-        department_details = DeparmentsData.get_department_data(department_ids)
+        department_details = DeparmentsData.get_department_data(tenant_id,department_ids)
         return Response({"username": user.name,
                          "email": user.email,
                          "mobile_number": user.mobnmbr,

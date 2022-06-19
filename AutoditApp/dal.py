@@ -143,7 +143,7 @@ class DeparmentsData(BaseConstant):
 
 class GlobalVariablesData(BaseConstant):
     @staticmethod
-    def get_global_variables():
+    def get_global_variables(teant_id):
         global_variables = list(GlobalVariables.objects.all().values())
         return global_variables
 
