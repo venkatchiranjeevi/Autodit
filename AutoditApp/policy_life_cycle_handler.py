@@ -335,6 +335,7 @@ class PolicyLifeCycleHandler:
                                                     tenant_id=tenant_id,
                                                     task_name=task_type_obj.state_display_name,
                                                     policy_state=next_state,
+                                                    department_id=0,
                                                     task_type=task_type_obj.task_verify,
                                                     user_email=user_email))
             TenantPolicyTasks.objects.bulk_create(user_tasks)
