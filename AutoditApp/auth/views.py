@@ -68,11 +68,14 @@ class SignUp(APIView):
                                                     policy={"views": DEFAULT_VIEWS, 'actions': []}, type="GENERAL")
         role_policies = RolePolicies.objects.create(role_id=role_obj.role_id, accesspolicy_id=access_policy.logid)
         message, status = UsersList.add_new_user_to_cognito_userpool(new_user_data)
-        password_response = Cognito.CLIENT.admin_set_user_password(
-            UserPoolId=settings.COGNITO_USERPOOL_ID,
-            Username=user_name,
-            Password=new_user_data.get("password"),
-            Permanent=True
-        )
+        if status:
+            password_response = Cognito.CLIENT.admin_set_user_password(
+                UserPoolId=settings.COGNITO_USERPOOL_ID,
+                Username=user_name,
+                Password=new_user_data.get("password"),
+                Permanent=True
+            )
+        else:
+            return Response({"message": "User SignUp Failed", "status": status, "error_hint":message})
         # TODO import all global variable
         return Response({"message": message, "status": status} )

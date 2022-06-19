@@ -53,7 +53,7 @@ class UsersList(AuthMixin):
                                   "Password must have uppercase characters'",\
                                   False
             else:
-                message, status = "User Creation Failed", False
+                message, status = str(e), False
             return message, status
 
         return message, status
