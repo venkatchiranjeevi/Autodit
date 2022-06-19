@@ -704,17 +704,20 @@ class TenantPolicyLifeCycleUsersData(BaseConstant):
             # TODO If any pending task for this department is avaialbe then need to assign task for user
             user_id = each_user.get("userId")
 
-            user_details = Cognito.get_cognito_user_by_user_id(user_id)
-            user_role_ids = eval(user_details.get('custom:role_id', "[]"))
-            role_types = Roles.objects.filter(role_id__in=user_role_ids).values('role_type')
-            role_types = [each_role_type.get("role_type") for each_role_type in role_types]
-            if access_user in role_types:
+            # user_details = Cognito.get_cognito_user_by_user_id(user_id)
+            # user_role_ids = eval(user_details.get('custom:role_id', "[]"))
+            # role_types = Roles.objects.filter(role_id__in=user_role_ids).values('role_type')
+            # role_types = [each_role_type.get("role_type") for each_role_type in role_types]
+            if access_user == assignee_type:
                 query = (Q(user_email__isnull=True) | Q(user_email=""))
                 query &= Q(tenant_id=tenant_id, policy_id=policy_id, policy_state=policy_meta_data[0].get("key"))
                 TenantPolicyTasks.objects.filter(query).update(task_status=2)
-                TenantPolicyTasks.objects.create(tenant_id=tenant_id, policy_id=policy_id,
-                                                 task_status=0, user_email=each_user.get("ownerEmail"),
-                                                 task_type=task_verify, allowed_roles=state_users,
+                TenantPolicyTasks.objects.create(tenant_id=tenant_id,
+                                                 policy_id=policy_id,
+                                                 task_status=0,
+                                                 user_email=each_user.get("ownerEmail"),
+                                                 task_type=task_verify,
+                                                 allowed_roles=state_users,
                                                  task_name=policy_meta_data[0].get("state_display_name"),
                                                  policy_state=policy_meta_data[0].get("key"),
                                                  department_id=0)
