@@ -365,7 +365,7 @@ class PolicyLifeCycleHandler:
             gb = eval(global_varialbles.result)
         except:
             gb = {}
-        policy_details = TenantPolicyManager.objects.get(id=int(policy_id))
+        policy_details = TenantPolicyManager.objects.get(id=int(policy_id),tenant_id=tenant_id)
         # TODO need to find if policy content exists
         policy_content = PolicyLifeCycleHandler.get_or_create_policy_content(policy_details, tenant_id)
         departments = PolicyDepartmentsHandlerData.get_departments_by_policy_id(tenant_id, policy_id)
