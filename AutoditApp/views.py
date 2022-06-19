@@ -10,7 +10,8 @@ from AutoditApp.models import TenantGlobalVariables, TenantDepartment, Roles, Fr
     TenantPolicyLifeCycleUsers
 from AutoditApp.dal import DeparmentsData, TenantGlobalVariableData, TenantMasterData, RolesData, GlobalVariablesData, \
     RolePoliciesData, TenantFrameworkData, TennatControlHelpers, PolicyDetailsData, TenantControlMasterData, \
-    ControlManagementDetailData, PolicyDepartmentsHandlerData, TenantPolicyCustomTagsData,TenantPolicyLifeCycleUsersData
+    ControlManagementDetailData, PolicyDepartmentsHandlerData, TenantPolicyCustomTagsData, \
+    TenantPolicyLifeCycleUsersData, DashBoardData
 from AutoditApp.constants import RolesConstant as RC, TENANT_LOGOS_BUCKET, S3_ROOT
 from AutoditApp.Admin_Handler.dal import FrameworkMasterData
 from .AWSCognito import Cognito
@@ -734,7 +735,10 @@ class SubscriptionsPolicyAPI(AuthMixin):
         return Response({"subscription_id": Subscription.createSubscription(data=request_body)})
 
 
-
-
-
-
+class DashBoardAPIHandler(AuthMixin):
+    def get(self, request):
+        user = request.user
+        tenant_id = user.tenant_id
+        framework_id = request.GET.get('frameworkId')
+        data = DashBoardData.get_dashboard_data(tenant_id, framework_id)
+        return Response(data)

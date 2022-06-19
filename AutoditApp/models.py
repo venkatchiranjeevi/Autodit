@@ -335,6 +335,7 @@ class TenantPolicyManager(Base):
     published_date = CustomDateTimeField(db_column='publishedDate', null=True)
     code = models.CharField(db_column='code', max_length=50)
     policy_file_name=models.CharField(db_column='policyFileName', max_length=250, null=True)
+    master_framework_id = models.IntegerField(db_column="masterFrameworkId")
 
     def __int__(self):
         return self.id

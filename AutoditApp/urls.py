@@ -6,7 +6,8 @@ from AutoditApp.views import DepartmentsAPI, RolesAPI, SettingManagementAPI, Con
     ControlsManagementAPIALl, ControlManagementDetailAPI, ControlManagementDetailHistoryAPI, \
     PolicyDetailsHandler, PolicyContentHandler, MetaDetailsHandler, PolicyDepartmentsHandler, TenantPolicyCustomTags, \
     TenantPolicyVariables, PolicyCommentsHandler, PolicyEligibleUsers, PolicyStatesHandler, PolicyVersionHistory, \
-    PolicyVersionHistoryDetails, TenantPolicyLifeCycleUsersAPI, SubscriptionsPolicyAPI, PolicyRenewUpdateAPI
+    PolicyVersionHistoryDetails, TenantPolicyLifeCycleUsersAPI, SubscriptionsPolicyAPI, PolicyRenewUpdateAPI, \
+    DashBoardAPIHandler
 
 urlpatterns = [
     url("user/", user_management.UsersList.as_view()),
@@ -38,6 +39,6 @@ urlpatterns = [
     url("^policy/version_history", PolicyVersionHistory.as_view()),
     url("^policy/version-history-details", PolicyVersionHistoryDetails.as_view()),
     url("^policy/lifecycle-users", TenantPolicyLifeCycleUsersAPI.as_view()),
-    # url("user-dashboard")
+    url("user-dashboard", DashBoardAPIHandler.as_view()),
     url("^subscriptions/create", SubscriptionsPolicyAPI.as_view())
 ]

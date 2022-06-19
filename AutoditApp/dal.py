@@ -684,26 +684,77 @@ class TenantPolicyLifeCycleUsersData(BaseConstant):
         # TODO If any pending task is der then either make it department task or another task
         return assignee_users
 
+
+class DashBoardData(BaseConstant):
+
     @staticmethod
-    def create_tasks(assignee_type, policy_id, tenant_id):
-        assignee_users = TenantPolicyLifeCycleUsers.objects.filter(tenant_id=tenant_id,
-                                                                   policy_id=policy_id,
-                                                                   owner_type=assignee_type,
-                                                                   is_active=True).values()
-        department_details = TenantPolicyDepartments.objects.filter(tenant_id=tenant_id,
-                                                                   tenant_policy_id=policy_id,
-                                                                    is_active=1).values("id",
-                                                                                                      "department_name")
-        if assignee_users:
-            if assignee_type == "assignee" or assignee_type == "DRF" or assignee_type == "editor":
-                pass
-            elif assignee_type == "REV" or assignee_type == "reviewer":
-                pass
-            elif assignee_type == "APR" or assignee_type == "approver":
-                pass
-            elif assignee_type == "PUB" or assignee_type == "publisher":
-                pass
-        else:
-            # Create Department Task
-            pass
+    def get_dashboard_controls_details(tenant_id, master_f_id):
+        result = {}
+        selected_controls, tenant_framework_id = TenantFrameworkData.get_tenant_selected_controls(tenant_id,
+                                                                                                  master_f_id)
+        all_controls = ControlMaster.objects.filter(framework_id=int(master_f_id)).values('id',
+                                                                                                  'control_name',
+                                                                                                  'control_code',
+                                                                                                  'category')
+        framework_policy_counts = TenantFrameworkData.get_policy_counts(tenant_framework_id=tenant_framework_id,
+                                                                        tenant_id=tenant_id)
+        selected_control_ids = selected_controls.keys()
+        control_details_list = []
+        selected_count = 0
+        for control in all_controls:
+            opted = False
+            control_details = {'master_control_id': control.get('id'), 'control_name': control.get('control_name'),
+                               'control_code': control.get('control_code'), 'policies_count': 0}
+            if control.get('id') in selected_control_ids:
+                selected_con = selected_controls[control.get('id')]
+                control_details['control_name'] = selected_con.get('ControlName')
+                control_details['control_code'] = selected_con.get('ControlCode')
+                control_details['policies_count'] = framework_policy_counts.get(selected_con.get('tenantControlid'), 0)
+                opted = True
+                selected_count += 1
+            control_details['is_control_selected'] = opted
+            control_details_list.append(control_details)
+        result['controls'] = control_details_list
+        result['totalControls']= len(control_details_list)
+        result['selectedControls'] = selected_count
+        result['pendingControls'] = result['totalControls'] - result['selectedControls']
+        return result
+
+    @staticmethod
+    def get_policies_details(tenant_id, master_f_id):
+        total_policies = "SELECT * from PolicyMaster pm where Id in (SELECT DISTINCT(PolicyId) from HirerecyMapper where Fid=%s)" % master_f_id
+        total_policies_res = fetch_data_from_sql_query(total_policies)
+        selected_policies = TenantPolicyManager.objects.filter(tenant_id=tenant_id,is_active=True,master_framework_id=master_f_id).values()
+        selected_count = 0
+        approved_count = 0
+        final_details = {}
+        formated_selected_polices = {sel.get('parent_policy_id'): sel for sel in selected_policies}
+        policy_dets = []
+        for total_pop in total_policies_res:
+            details = {'masterPolicyId': total_pop.get('id'), 'masterPolicyName': total_pop.get('PolicyName'),
+                          'masterPolicyCode': total_pop.get('policy_code'), 'masterPolicySummery': total_pop.get('Summery')}
+            if formated_selected_polices.get(total_pop.get('id')):
+                selected_count += 1
+                if formated_selected_polices.get(total_pop.get('id')).get('state') == 'PUB':
+                    approved_count += 1
+                    details['isPolicyApproved'] = True
+                details['isPolicySelected'] = True
+            policy_dets.append(details)
+        final_details['policyDetails'] = policy_dets
+        final_details['totalPoliciesCount'] = len(total_policies_res)
+        final_details['selectedPoliciesCount'] = selected_count
+        final_details['approvedPoliciesCount'] = approved_count
+        final_details['pendingPoliciesCount'] = final_details['selectedPoliciesCount'] - final_details['approvedPoliciesCount']
+        return final_details
+
+
+    @staticmethod
+    def get_dashboard_data(tenant_id, framework_id):
+        # STEP1: Get policy details
+        data={}
+        data['controlDetails'] = DashBoardData.get_dashboard_controls_details(tenant_id, framework_id)
+        data['policyDetails'] = DashBoardData.get_policies_details(tenant_id, framework_id)
+        data['pendingTasks'] = {}
+        data['recentActivities'] = {}
+        return data
 
