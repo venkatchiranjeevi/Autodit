@@ -432,18 +432,21 @@ class TennatControlHelpers(BaseConstant):
             need_insertion = []
             for pol in new_master_policy_ids:
                 master_policy = fcd.get(pol)
-                need_insertion.append(TenantPolicyManager(tenant_id=tenant_id,
-                                                          tenant_policy_name=master_policy.get('policy_name'),
-                                                          category=master_policy.get('category'),
-                                                          summery=master_policy.get('policy_summery'),
-                                                          created_by=user_email,
-                                                          version='1',
-                                                          status=1,
-                                                          is_active=1,
-                                                          user_id=user_id,
-                                                          parent_policy_id = master_policy.get('id'),
-                                                          code=master_policy.get('policy_code'),
-                                                          master_framework_id=master_framework_id))
+                try:
+                    need_insertion.append(TenantPolicyManager(tenant_id=tenant_id,
+                                                              tenant_policy_name=master_policy.get('policy_name'),
+                                                              category=master_policy.get('category'),
+                                                              summery=master_policy.get('policy_summery'),
+                                                              created_by=user_email,
+                                                              version='1',
+                                                              status=1,
+                                                              is_active=1,
+                                                              user_id=user_id,
+                                                              parent_policy_id = master_policy.get('id'),
+                                                              code=master_policy.get('policy_code'),
+                                                              master_framework_id=master_framework_id))
+                except:
+                    pass
             TenantPolicyManager.objects.bulk_create(need_insertion)
 
 
