@@ -106,8 +106,8 @@ class TenantMasterData(BaseConstant):
 class DeparmentsData(BaseConstant):
 
     @staticmethod
-    def get_department_data(department_ids=[]):
-        query = Q()
+    def get_department_data(tenant_id, department_ids=[]):
+        query = Q(tenant_id=tenant_id)
         if department_ids:
             query = Q(id__in=department_ids)
         department_data = Departments.objects.filter(query).values("id", "name", "code")

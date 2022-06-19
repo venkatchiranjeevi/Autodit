@@ -31,7 +31,8 @@ from .policy_life_cycle_handler import PolicyLifeCycleHandler, MetaDataDetails
 class DepartmentsAPI(AuthMixin):
 
     def get(self, request):
-        departments_data = DeparmentsData.get_department_data()
+        tenant_id = request.user.tenant_id
+        departments_data = DeparmentsData.get_department_data(tenant_id)
         return Response(departments_data)
 
     def post(self, request):
