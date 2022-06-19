@@ -6,7 +6,7 @@ from AutoditApp.models import TenantSubscriptions, SubscriptionBillingDetails
 class Subscription:
     @staticmethod
     def createSubscription(data):
-        plan_id = data['plan_id'];
+        plan_id = data['plan_id']
         if plan_id:
             client = razorpay.Client(auth=("rzp_test_WRFdDZQHEaoM2q", "srk7PllgG016CY2DrczYYPbQ"))
             client.set_app_details({"title": "Autodit", "version": "1.0"})
@@ -39,3 +39,26 @@ class Subscription:
                 return {"status": "FAILURE"}
         else:
             return {"status": "SUCCESS", "payment_required": "false"}
+
+    @staticmethod
+    def handlePaymentSubscription(tenant_id, data):
+        try:
+            subscription_id = data.get("razorpay_subscription_id")
+            payment_id = data.get("razorpay_payment_id")
+            tenant_subscription = TenantSubscriptions.objects.get(tenant_id=tenant_id, subscription_id=subscription_id,
+                                                                  status="PENDING")
+            print(tenant_subscription)
+            client = razorpay.Client(auth=("rzp_test_WRFdDZQHEaoM2q", "srk7PllgG016CY2DrczYYPbQ"))
+            client.utility.verify_subscription_payment_signature({
+                'razorpay_subscription_id': subscription_id,
+                'razorpay_payment_id': payment_id,
+                'razorpay_signature': data.get("razorpay_signature")
+            })
+            tenant_subscription.status = "SUCCESS"
+            tenant_subscription.payment_id = payment_id
+            tenant_subscription.save()
+            return {"verified": "true"}
+        except Exception as e:
+            print(e)
+            return {"verified": "false"}
+

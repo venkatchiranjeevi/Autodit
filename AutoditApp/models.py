@@ -505,9 +505,6 @@ class TenantSubscriptions(Base):
     status = models.CharField(db_column='status', max_length=50, null=False)
     expire_by = models.CharField(db_column="expireBy", max_length=250, null=True)
 
-    def __int__(self):
-        return self.id
-
     class Meta:
         db_table = 'TenantSubscriptions'
 
@@ -524,9 +521,6 @@ class SubscriptionBillingDetails(Base):
     country = models.CharField(db_column="country", max_length=100, null=True)
     organization = models.CharField(db_column="organization", max_length=250, null=True)
     gst_number = models.CharField(db_column="gstNumber", max_length=100, null=True)
-
-    def __init__(self):
-        return self.id
 
     class Meta:
         db_table = 'SubscriptionBillingDetails'

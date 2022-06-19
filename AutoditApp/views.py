@@ -730,9 +730,22 @@ class PolicyVersionHistoryDetails(AuthMixin):
 
 class SubscriptionsPolicyAPI(AuthMixin):
     def post(self, request):
-        request_body = json.loads(request.body.decode("utf-8"))
+        #request_body = json.loads(request.body.decode("utf-8"))
+        request_body = request.data
         request_body["tenant_id"] = request.user.tenant_id
         return Response(Subscription.createSubscription(data=request_body))
+
+
+class SubscriptionPaymentHandlerAPI(AuthMixin):
+    def post(self, request):
+        print(request.data)
+        data = request.data
+        tenant_id = request.user.tenant_id;
+        print(data.get("razorpay_payment_id"))
+        print(data.get("razorpay_subscription_id"))
+        print(data.get("razorpay_signature"))
+        return Response(Subscription.handlePaymentSubscription(tenant_id, data))
+
 
 
 class DashBoardAPIHandler(AuthMixin):
