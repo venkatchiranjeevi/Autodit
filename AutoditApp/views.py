@@ -731,8 +731,8 @@ class PolicyVersionHistoryDetails(AuthMixin):
 class SubscriptionsPolicyAPI(AuthMixin):
     def post(self, request):
         request_body = json.loads(request.body.decode("utf-8"))
-        print(request_body)
-        return Response({"subscription_id": Subscription.createSubscription(data=request_body)})
+        request_body["tenant_id"] = request.user.tenant_id
+        return Response(Subscription.createSubscription(data=request_body))
 
 
 class DashBoardAPIHandler(AuthMixin):
