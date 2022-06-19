@@ -170,7 +170,10 @@ class SettingManagementAPI(AuthMixin):
             user_roles = each_user.get("role_details")
             for each_role in user_roles:
                 department_id = formatted_role_departments.get(each_role.get("role_id"))
-                user_departments.append(formatted_departments.get(department_id))
+                try:
+                    user_departments.append(formatted_departments[department_id])
+                except:
+                    pass
             each_user["department_details"] = user_departments
 
         return Response({'globalVarialbes': global_varialbles_data,
