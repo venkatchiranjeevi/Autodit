@@ -6,13 +6,14 @@ from datetime import timedelta, date, datetime
 from django.db.models import Q
 
 from Autodit import settings
+from . import dal
 from .AWSCognito import Cognito
 from AutoditApp.S3_FileHandler import S3FileHandlerConstant
 from AutoditApp.core import fetch_data_from_sql_query, get_users_by_tenant_id
 from AutoditApp.models import TenantPolicyManager, TenantPolicyParameter, TenantPolicyVersionHistory, \
     TenantGlobalVariables, MetaData, TenantDepartment, TenantControlsCustomTags, TenantPolicyComments, \
     TenantPolicyTasks, TenantPolicyDepartments, TenantPolicyLifeCycleUsers, Roles, PolicyMaster, MasterPolicyParameter
-from AutoditApp.dal import PolicyDepartmentsHandlerData, TenantPolicyCustomTagsData, TenantPolicyLifeCycleUsersData
+# from AutoditApp.dal import PolicyDepartmentsHandlerData, TenantPolicyCustomTagsData, TenantPolicyLifeCycleUsersData
 
 
 class PolicyLifeCycleHandler:
