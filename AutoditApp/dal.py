@@ -670,7 +670,8 @@ class TenantPolicyLifeCycleUsersData(BaseConstant):
 
     @staticmethod
     def delete_assignee_user_by_assignee_id(assignee_id, policy_id, assignee_type, tenant_id):
-
+        if assignee_type == 'assignee':
+            assignee_type = 'editor'
         tplc_obj = TenantPolicyLifeCycleUsers.objects.get(id=assignee_id)
         tplc_obj.is_active = False
         tplc_obj.in_active_date = datetime.now()
