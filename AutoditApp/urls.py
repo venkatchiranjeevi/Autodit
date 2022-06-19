@@ -38,5 +38,6 @@ urlpatterns = [
     url("^policy/version_history", PolicyVersionHistory.as_view()),
     url("^policy/version-history-details", PolicyVersionHistoryDetails.as_view()),
     url("^policy/lifecycle-users", TenantPolicyLifeCycleUsersAPI.as_view()),
+    # url("user-dashboard")
     url("^subscriptions/create", SubscriptionsPolicyAPI.as_view())
 ]

@@ -309,7 +309,7 @@ class PolicyLifeCycleHandler:
                                                                     tenant_policy_id=policy_id,
                                                                     is_active=1).values()
         task_type_obj = MetaData.objects.get(category='POLICYSTATUS', key=next_state)
-        user_type = task_type_obj.state_user
+        user_type = task_type_obj.access_user
         policy_users = TenantPolicyLifeCycleUsers.objects.filter(tenant_id=tenant_id,
                                                                  policy_id=policy_id,
                                                                  owner_type=user_type,
