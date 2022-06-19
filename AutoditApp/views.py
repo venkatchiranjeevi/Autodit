@@ -142,7 +142,7 @@ class TenantMasterAPI(AuthMixin):
 class SettingManagementAPI(AuthMixin):
     def get(self, request):
         user = request.user
-        tenant_id = 16
+        tenant_id = user.tenant_id
         t_global_var_data = TenantGlobalVariables.objects.filter(tenant_id=int(tenant_id))
         global_varialbles_data = eval(t_global_var_data[0].result if t_global_var_data else '{}')
         departments = list(TenantDepartment.objects.filter(tenant_id=int(tenant_id)).values('name', 'code', 'id'))
