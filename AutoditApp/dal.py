@@ -682,6 +682,9 @@ class TenantPolicyLifeCycleUsersData(BaseConstant):
         #   else
         # Create user task
 
+        # Tasks --> TenantPolicyTasks
+        # Meta Data --> MetaData
+
         assignee_type = data.get("type")
         if assignee_type == 'assignee':
             # TODO will remove once complete integration is done
