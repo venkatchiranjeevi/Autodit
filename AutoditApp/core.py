@@ -49,7 +49,7 @@ def get_policies_by_role(role_id=[]):
     else:
         return [{}]
     if not policies:
-        policies.append([{}])
+        policies.append({})
     return policies
 
 
