@@ -14,7 +14,10 @@ class Subscription:
         for framework in data['frameworks']:
             framework__master_pks.append(framework['id'])
             selected_frameworks.append(
-                {"item": {"name": framework['framework_name'], "amount": 200, "currency": "INR"}})
+                {"item": {"name": framework['framework_name'], "amount": 20000, "currency": "INR"}})
+        selected_frameworks.remove(0)
+        if plan_id == "plan_JjEjWlJkjOPTXe":
+            selected_frameworks.clear()
         subscription_data = {"plan_id": plan_id, "total_count": 2, "quantity": 1, "addons": selected_frameworks,
                              "expire_by": int(round(tm.timestamp())), "customer_notify": 0}
         framework_master = FrameworkMaster.objects.filter(id__in=framework__master_pks)
