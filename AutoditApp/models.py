@@ -328,7 +328,7 @@ class TenantPolicyManager(Base):
     status = models.IntegerField(db_column='Status', default=1)
     departments = models.TextField(db_column='Departments', null=True)
     is_active = models.IntegerField(db_column='IsActive', default=1)
-    state = models.CharField(db_column='State', max_length=50, default='Editing')
+    state = models.CharField(db_column='State', max_length=50, default='DRF')
     user_id = models.CharField(db_column='UserId', max_length=150, default='')
     parent_policy_id = models.IntegerField(db_column='ParentPolicyID', null=True)
     review_period = models.CharField(db_column='reviewPeriod', null=True, max_length=20)

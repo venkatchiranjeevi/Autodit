@@ -1,7 +1,7 @@
 from AutoditApp.models import TenantDepartment as Departments, Roles, TenantGlobalVariables, Tenant, GlobalVariables, \
     RolePolicies, AccessPolicy, TenantFrameworkMaster, TenantHierarchyMapping, TenantPolicyManager, \
     PolicyMaster, ControlMaster, TenantControlMaster, TenantControlAudit, TenantPolicyDepartments, \
-    TenantControlsCustomTags, TenantPolicyLifeCycleUsers, TenantPolicyTasks
+    TenantControlsCustomTags, TenantPolicyLifeCycleUsers, TenantPolicyTasks, HirerecyMapper
 from django.db.models import Q
 from .constants import DEFAULT_VIEWS, EDITIOR_VIEWS
 from AutoditApp.AWSCognito import Cognito
@@ -226,7 +226,7 @@ class TenantFrameworkData(BaseConstant):
     @staticmethod
     def get_tenant_selected_controls(tenant_id, framework_id):
         query = "select  Id as tenantControlid, TenantFrameworkId, Master_Control_Id as ControlId," \
-                " ControlName, Description, Category, ControlCode from TenantControlMaster tcm where TenantFrameworkId  in" \
+                " ControlName, Description, Category, ControlCode from TenantControlMaster tcm where TenantFrameworkId in" \
                 " (select id from TenantFrameworkMaster tfm where MasterFid = {master_f_id}) and tenantId = {t_id}" \
                 " and IsActive = 1"
         tenant_controls_query = query.format(master_f_id=framework_id,
@@ -331,7 +331,7 @@ class TenantControlMasterData(BaseConstant):
 class TennatControlHelpers(BaseConstant):
 
     @staticmethod
-    def control_update_handler(tenant_id, data, user_id):
+    def control_update_handler(tenant_id, data, user_id, user_email):
         control_details = data.get('controlDetails', [])
         master_framework_id = data.get('frameworkId')
         selected_control_ids = [entry.get('controlId') for entry in control_details]
@@ -358,13 +358,11 @@ class TennatControlHelpers(BaseConstant):
             q2 = Q(master_framework_id=int(master_framework_id))
             q3 = Q(master_control_id__in=controls_to_inactive)
             TenantControlMaster.objects.filter(q1 & q2 & q3).update(is_active=0)
-        #     TODO play with policies
         if controls_to_active_ids:
             q1 = Q(tenant_id=int(tenant_id))
             q2 = Q(master_framework_id=int(master_framework_id))
             q3 = Q(master_control_id__in=controls_to_active_ids)
             TenantControlMaster.objects.filter(q1 & q2 & q3).update(is_active=1)
-        #     TODO play with policies
         if new_master_controls:
             control_details = ControlMaster.objects.filter(id__in=new_master_controls).values()
             fcd = {cont.get('id'): cont for cont in control_details}
@@ -376,50 +374,78 @@ class TennatControlHelpers(BaseConstant):
                                                           master_control_id=control,
                                                           control_name=master_control.get('control_name'),
                                                           control_description=master_control.get('description'),
-                                                          created_by=user_id,
+                                                          created_by=user_email,
                                                           master_framework_id=master_framework_id))
             TenantControlMaster.objects.bulk_create(need_insertion)
-        # TODO change this to local control ids instead of query. For ease of purpose querying
-        if new_master_controls or controls_to_inactive or controls_to_active_ids:
-            q1 = Q(tenant_id=int(tenant_id))
-            q2 = Q(master_framework_id=master_framework_id)
-            q3 = Q(is_active=1)
-            # TODO at present going with one policy for one framework
-            selected_framework_controls = TenantControlMaster.objects.filter(q1 & q2 & q3).values('master_control_id')
-            selected_master_controls = [con['master_control_id'] for con in selected_framework_controls]
-            # TennatControlHelpers.policy_handler_on_control_selection(tenant_id,
-            #                                                          master_framework_id,
-            #                                                          framework_details,
-            #                                                          selected_master_controls)
+
+        q1 = Q(tenant_id=int(tenant_id))
+        q2 = Q(master_framework_id=master_framework_id)
+        q3 = Q(is_active=1)
+        selected_framework_controls = TenantControlMaster.objects.filter(q1 & q2 & q3).values('master_control_id',
+                                                                                              'master_framework_id',
+                                                                                              'tenant_framework_id',
+                                                                                              'id')
+
+        TennatControlHelpers.policy_handler_on_control_selection(tenant_id,
+                                                                 master_framework_id,
+                                                                 selected_framework_controls,
+                                                                 user_id,
+                                                                 user_email)
 
     @staticmethod
     def policy_handler_on_control_selection(tenant_id,
                                             master_framework_id,
-                                            tenant_framework_details,
-                                            inactivated_controls,
-                                            activated_controls,
-                                            added_controls):
-        if inactivated_controls:
-            if len(inactivated_controls) == 1:
-                inactivated_controls += 1
+                                            selected_framework_controls,
+                                            user_id,
+                                            user_email):
+        selcted_control = [con.get('master_control_id') for con in selected_framework_controls]
+        master_selected_polices = HirerecyMapper.objects.filter(f_id=master_framework_id,
+                                                         c_id__in=selcted_control).values('policy_id').distinct()
+        formatted_master_selected_policies = {sp.get('policy_id'): sp for sp in master_selected_polices}
+        exiting_policies = TenantPolicyManager.objects.filter(tenant_id=tenant_id,master_framework_id=master_framework_id ).values()
+        active_policies = {}
+        inactive_polices = {}
+        existing_all_policies = {}
+        for pol in exiting_policies:
+            existing_all_policies[pol.get('parent_policy_id')] = pol
+            if pol.get('is_active'):
+                active_policies[pol.get('parent_policy_id')] = pol
+            else:
+                inactive_polices[pol.get('parent_policy_id')] = pol
 
-        if activated_controls:
-            if len(activated_controls) == 1:
-                activated_controls += 1
+        new_master_policy_ids = list(set(formatted_master_selected_policies.keys()) - set(list(existing_all_policies.keys())))
+        inactive_policy_ids = list(set(list(existing_all_policies.keys())) - set(formatted_master_selected_policies))
+        policies_to_active_ids = list(set(inactive_polices.keys()).intersection(set(formatted_master_selected_policies)))
+        if inactive_policy_ids:
+            q1 = Q(tenant_id=int(tenant_id))
+            q2 = Q(master_framework_id=int(master_framework_id))
+            q3 = Q(parent_policy_id__in=inactive_policy_ids)
+            TenantPolicyManager.objects.filter(q1 & q2 & q3).update(is_active=0)
+        if policies_to_active_ids:
+            q1 = Q(tenant_id=int(tenant_id))
+            q2 = Q(master_framework_id=int(master_framework_id))
+            q3 = Q(parent_policy_id__in=policies_to_active_ids)
+            TenantPolicyManager.objects.filter(q1 & q2 & q3).update(is_active=1)
+        if new_master_policy_ids:
+            policy_details = PolicyMaster.objects.filter(id__in=new_master_policy_ids).values()
+            fcd = {cont.get('id'): cont for cont in policy_details}
+            need_insertion = []
+            for pol in new_master_policy_ids:
+                master_policy = fcd.get(pol)
+                need_insertion.append(TenantPolicyManager(tenant_id=tenant_id,
+                                                          tenant_policy_name=master_policy.get('policy_name'),
+                                                          category=master_policy.get('category'),
+                                                          summery=master_policy.get('policy_summery'),
+                                                          created_by=user_email,
+                                                          version='1',
+                                                          status=1,
+                                                          is_active=1,
+                                                          user_id=user_id,
+                                                          parent_policy_id = master_policy.get('id'),
+                                                          code=master_policy.get('policy_code'),
+                                                          master_framework_id=master_framework_id))
+            TenantPolicyManager.objects.bulk_create(need_insertion)
 
-        if added_controls:
-            if len(added_controls) == 1:
-                added_controls += 1
-
-        polices_query = "select id as policyId, PolicyName, policy_code, Summery from PolicyMaster pm  " \
-                        "where id in (select DISTINCT(PolicyId) from HirerecyMapper hm where Fid  = {f_id} and Cid  " \
-                        "in {cids}}) "
-        if len(selected_controls) == 1:
-            selected_controls += 1
-        polices_query = polices_query.format(f_id=str(master_framework_id),
-                                             cids=str(tuple(selected_controls)))
-        policy_details = fetch_data_from_sql_query(polices_query)
-        formatted_policy_details = {po.get('policyId'): po for po in policy_details}
 
     @staticmethod
     def policy_handler_for_new_controls(added_controls, tennant_id, master_framework_id):

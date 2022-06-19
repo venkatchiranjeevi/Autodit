@@ -11,7 +11,7 @@ from AutoditApp.S3_FileHandler import S3FileHandlerConstant
 from AutoditApp.core import fetch_data_from_sql_query, get_users_by_tenant_id
 from AutoditApp.models import TenantPolicyManager, TenantPolicyParameter, TenantPolicyVersionHistory, \
     TenantGlobalVariables, MetaData, TenantDepartment, TenantControlsCustomTags, TenantPolicyComments, \
-    TenantPolicyTasks, TenantPolicyDepartments, TenantPolicyLifeCycleUsers, Roles
+    TenantPolicyTasks, TenantPolicyDepartments, TenantPolicyLifeCycleUsers, Roles, PolicyMaster
 from AutoditApp.dal import PolicyDepartmentsHandlerData, TenantPolicyCustomTagsData, TenantPolicyLifeCycleUsersData
 
 
@@ -341,6 +341,24 @@ class PolicyLifeCycleHandler:
             TenantPolicyTasks.objects.bulk_create(user_tasks)
 
     @staticmethod
+    def get_or_create_policy_content(tenant_policy_details, tennat_id):
+        if not tenant_policy_details.policy_file_name:
+            master_policy_details = PolicyMaster.objects.get(id=tenant_policy_details.parent_policy_id)
+            content = S3FileHandlerConstant.read_s3_content(master_policy_details.policy_file_name)
+            file_names = master_policy_details.policy_file_name.split('/')
+            file_name = '{root}/{tenant_id}/{policyId}/{version}/{file_name}'
+            file_name = file_name.format(root=file_names[0],
+                                         tenant_id=str(tennat_id),
+                                         policyId=str(tenant_policy_details.id),
+                                         version=str(1),
+                                         file_name=file_names[-1])
+            reference = S3FileHandlerConstant.upload_s3_file(content, file_name)
+            tenant_policy_details.policy_file_name=file_name
+            tenant_policy_details.version='1'
+            tenant_policy_details.save()
+        return S3FileHandlerConstant.read_s3_content(tenant_policy_details.policy_file_name)
+
+    @staticmethod
     def get_complete_policy_details(policy_id, tenant_id):
         global_varialbles = TenantGlobalVariables.objects.get(tenant_id=int(tenant_id))
         try:
@@ -348,7 +366,8 @@ class PolicyLifeCycleHandler:
         except:
             gb = {}
         policy_details = TenantPolicyManager.objects.get(id=int(policy_id))
-        policy_content = S3FileHandlerConstant.read_s3_content(policy_details.policy_file_name)
+        # TODO need to find if policy content exists
+        policy_content = PolicyLifeCycleHandler.get_or_create_policy_content(policy_details, tenant_id)
         departments = PolicyDepartmentsHandlerData.get_departments_by_policy_id(tenant_id, policy_id)
         eligible_users = PolicyLifeCycleHandler.get_eligible_users(policy_id, tenant_id)
         published_date = policy_details.published_date

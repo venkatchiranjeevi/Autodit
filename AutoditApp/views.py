@@ -290,8 +290,8 @@ class ControlsManagementAPI(APIView):
         data = request.data
         tenant_id = request.user.tenant_id
         user_id = request.user.userid
-        control_details = data.get('controlDetails', [])
-        TennatControlHelpers.control_update_handler(tenant_id, data, user_id)
+        user_email =request.user.email
+        TennatControlHelpers.control_update_handler(tenant_id, data, user_id, user_email)
         return Response({'status': 200, 'data': 'Controls updated successfully'})
 
 
