@@ -345,7 +345,7 @@ class PolicyManagementAPI(AuthMixin):
                                                   'a.State, md.stateDisplayName, b.id as FrameworkId, b.FrameworkName, b.Description '
                                                   'from TenantPolicyManager a'
                                                   ' Inner Join FrameworkMaster b on a.MasterFrameworkId = b.id '
-                                                  'Left  Join MetaData md  on a.state = md.key where a.tenant_id={}'.format(tenant_id))
+                                                  'Left  Join MetaData md  on a.state = md.key where a.tenant_id={} and a.isActive=1'.format(tenant_id))
 
         departments = TenantPolicyDepartments.objects.filter(tenant_id=tenant_id).filter(is_active=1).values()
         policy_users = TenantPolicyLifeCycleUsers.objects.filter(tenant_id=tenant_id, is_active=True).values()
