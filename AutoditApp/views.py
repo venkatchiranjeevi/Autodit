@@ -358,7 +358,7 @@ class PolicyManagementAPI(AuthMixin):
                 isAdmin = True
                 break
 
-        if not isAdmin:
+        if isAdmin:
             policies_data = fetch_data_from_sql_query('select a.id as policyId, a.code as policyCode, a.tenant_id, a.tenantPolicyName, a.version, '
                                                       'a.PolicyReference,'
                                                       'a.State, md.stateDisplayName, b.id as FrameworkId, b.FrameworkName, b.Description '

@@ -794,10 +794,30 @@ class DashBoardData(BaseConstant):
         return result
 
     @staticmethod
-    def get_policies_details(tenant_id, master_f_id):
+    def get_policies_details(tenant_id, master_f_id, user):
         # total_policies = "SELECT * from PolicyMaster pm where Id in (SELECT DISTINCT(PolicyId) from HirerecyMapper where Fid=%s)" % master_f_id
         # total_policies_res = fetch_data_from_sql_query(total_policies)
-        selected_policies = TenantPolicyManager.objects.filter(tenant_id=tenant_id,is_active=True,master_framework_id=master_f_id).values()
+        role_details = eval(user.role_id)
+        role_details = Roles.objects.filter(role_id__in=role_details).values('role_type', 'department_id')
+        department_ids = [role.get('department_id') for role in role_details]
+        isAdmin = False
+
+        for role in role_details:
+            if role.get('role_type') == 'ADMIN':
+                isAdmin = True
+                break
+
+        if not isAdmin:
+            selected_policies = TenantPolicyManager.objects.filter(tenant_id=tenant_id,is_active=True,master_framework_id=master_f_id).values()
+        else:
+            selected_policies = fetch_data_from_sql_query(
+                'select a.tenantPolicyName as tenant_policy_name, a.code as policy_code, a.id, a.category, a.State as state'
+                ' from TenantPolicyManager a'
+                ' where a.tenant_id={} and a.isActive=1'
+                ' and a.MasterFrameworkId={} and (a.id in (Select policyId from TenantPolicyLifeCycleUsers where ownerUserId = "{}") or'
+                '(a.id in (Select TenantPolicyId from TenantPolicyDepartments tpd where tenant_id = {} and TenantDepartment_id in {})))'
+                .format(tenant_id, master_f_id, user.userid, tenant_id, "({})".format(','.join(str(x) for x in department_ids))))
+
         approved_count = 0
         final_details = {}
         policy_dets = []
@@ -862,7 +882,7 @@ class DashBoardData(BaseConstant):
     def get_dashboard_data(tenant_id, framework_id, user):
         # STEP1: Get policy details
         data={}
-        data['policyDetails'], formatted_policies = DashBoardData.get_policies_details(tenant_id, framework_id)
+        data['policyDetails'], formatted_policies = DashBoardData.get_policies_details(tenant_id, framework_id, user)
         data['pendingTasks'] = DashBoardData.pending_tasks(tenant_id, framework_id, user, formatted_policies)
         data['recentActivities'] = DashBoardData.pending_tasks(tenant_id, framework_id, user, formatted_policies)
         data['controlDetails'] = DashBoardData.get_dashboard_controls_details(tenant_id, framework_id)
