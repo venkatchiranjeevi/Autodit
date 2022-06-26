@@ -3,7 +3,7 @@ from AutoditApp.models import TenantDepartment as Departments, Roles, TenantGlob
     PolicyMaster, ControlMaster, TenantControlMaster, TenantControlAudit, TenantPolicyDepartments, \
     TenantControlsCustomTags, TenantPolicyLifeCycleUsers, TenantPolicyTasks, HirerecyMapper
 from django.db.models import Q
-from .constants import DEFAULT_VIEWS, EDITIOR_VIEWS
+from .constants import DEFAULT_VIEWS, EDITIOR_VIEWS, ACTIONS_DATA
 from AutoditApp.AWSCognito import Cognito
 from .core import fetch_data_from_sql_query
 from .S3_FileHandler import S3FileHandlerConstant
@@ -62,9 +62,11 @@ class RolesData(BaseConstant):
                          department_id=department_id[0] if department_id else None)
         role_obj.save()
 
+        actions = ACTIONS_DATA[data.get('role_for')]
+
         access_policy = AccessPolicy.objects.create(policyname=data.get("policy_name"),
                                                     policy={"views": DEFAULT_VIEWS if data.get(
-                                                        'role_for') != 'Editor' else EDITIOR_VIEWS, 'actions': [],
+                                                        'role_for') != 'Editor' else EDITIOR_VIEWS, 'actions': actions,
                                                             "departments": data.get("departments", [])},
                                                     type="GENERAL")
         role_policies = RolePolicies.objects.create(role_id=role_obj.role_id, accesspolicy_id=access_policy.logid)
@@ -792,7 +794,7 @@ class DashBoardData(BaseConstant):
         return result
 
     @staticmethod
-    def get_policies_details(tenant_id, master_f_id):
+    def get_policies_details(tenant_id, master_f_id, user):
         # total_policies = "SELECT * from PolicyMaster pm where Id in (SELECT DISTINCT(PolicyId) from HirerecyMapper where Fid=%s)" % master_f_id
         # total_policies_res = fetch_data_from_sql_query(total_policies)
         selected_policies = TenantPolicyManager.objects.filter(tenant_id=tenant_id,is_active=True,master_framework_id=master_f_id).values()
