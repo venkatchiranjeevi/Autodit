@@ -348,12 +348,34 @@ class PolicyManagementAPI(AuthMixin):
         # GET departments of policy and add it in response
         tenant_id = request.user.tenant_id
 
-        policies_data = fetch_data_from_sql_query('select a.id as policyId, a.code as policyCode, a.tenant_id, a.tenantPolicyName, a.version, '
-                                                  'a.PolicyReference,'
-                                                  'a.State, md.stateDisplayName, b.id as FrameworkId, b.FrameworkName, b.Description '
-                                                  'from TenantPolicyManager a'
-                                                  ' Inner Join FrameworkMaster b on a.MasterFrameworkId = b.id '
-                                                  'Left  Join MetaData md  on a.state = md.key where a.tenant_id={} and a.isActive=1'.format(tenant_id))
+        role_details = eval(request.user.role_id)
+        role_details = Roles.objects.filter(role_id__in=role_details).values('role_type', 'department_id')
+        department_ids = [role.get('department_id') for role in role_details]
+        isAdmin = False
+
+        for role in role_details:
+            if role.get('role_type') == 'ADMIN':
+                isAdmin = True
+                break
+
+        if not isAdmin:
+            policies_data = fetch_data_from_sql_query('select a.id as policyId, a.code as policyCode, a.tenant_id, a.tenantPolicyName, a.version, '
+                                                      'a.PolicyReference,'
+                                                      'a.State, md.stateDisplayName, b.id as FrameworkId, b.FrameworkName, b.Description '
+                                                      'from TenantPolicyManager a'
+                                                      ' Inner Join FrameworkMaster b on a.MasterFrameworkId = b.id '
+                                                      'Left  Join MetaData md  on a.state = md.key where a.tenant_id={} and a.isActive=1'.format(tenant_id))
+
+        else:
+            policies_data = fetch_data_from_sql_query(
+                'select a.id as policyId, a.code as policyCode, a.tenant_id, a.tenantPolicyName, a.version, a.PolicyReference,'
+                ' a.State, md.stateDisplayName, b.id as FrameworkId, b.FrameworkName, b.Description'
+                ' from TenantPolicyManager a'
+                ' Inner Join FrameworkMaster b on a.MasterFrameworkId = b.id'
+                ' Left  Join MetaData md  on a.state = md.key where a.tenant_id={} and a.isActive=1'
+                ' and (a.id in (Select policyId from TenantPolicyLifeCycleUsers where ownerUserId = "{}")) or'
+                ' (a.id in (Select TenantPolicyId from TenantPolicyDepartments tpd where tenant_id = {} and TenantDepartment_id in {}))'
+                .format(tenant_id, request.user.userid, tenant_id, "({})".format(','.join(str(x) for x in department_ids))))
 
         departments = TenantPolicyDepartments.objects.filter(tenant_id=tenant_id).filter(is_active=1).values()
         policy_users = TenantPolicyLifeCycleUsers.objects.filter(tenant_id=tenant_id, is_active=True).values()
