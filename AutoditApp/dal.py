@@ -794,7 +794,7 @@ class DashBoardData(BaseConstant):
         return result
 
     @staticmethod
-    def get_policies_details(tenant_id, master_f_id, user):
+    def get_policies_details(tenant_id, master_f_id):
         # total_policies = "SELECT * from PolicyMaster pm where Id in (SELECT DISTINCT(PolicyId) from HirerecyMapper where Fid=%s)" % master_f_id
         # total_policies_res = fetch_data_from_sql_query(total_policies)
         selected_policies = TenantPolicyManager.objects.filter(tenant_id=tenant_id,is_active=True,master_framework_id=master_f_id).values()
