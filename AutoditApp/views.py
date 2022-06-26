@@ -348,15 +348,8 @@ class PolicyManagementAPI(AuthMixin):
         # GET departments of policy and add it in response
         tenant_id = request.user.tenant_id
 
-        role_details = eval(request.user.role_id)
-        role_details = Roles.objects.filter(role_id__in=role_details).values('role_type', 'department_id')
-        department_ids = [role.get('department_id') for role in role_details]
-        isAdmin = False
-
-        for role in role_details:
-            if role.get('role_type') == 'ADMIN':
-                isAdmin = True
-                break
+        department_ids = request.user.departments
+        isAdmin = request.user.isAdmin
 
         if isAdmin:
             policies_data = fetch_data_from_sql_query('select a.id as policyId, a.code as policyCode, a.tenant_id, a.tenantPolicyName, a.version, '

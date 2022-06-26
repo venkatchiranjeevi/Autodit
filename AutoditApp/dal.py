@@ -797,17 +797,10 @@ class DashBoardData(BaseConstant):
     def get_policies_details(tenant_id, master_f_id, user):
         # total_policies = "SELECT * from PolicyMaster pm where Id in (SELECT DISTINCT(PolicyId) from HirerecyMapper where Fid=%s)" % master_f_id
         # total_policies_res = fetch_data_from_sql_query(total_policies)
-        role_details = eval(user.role_id)
-        role_details = Roles.objects.filter(role_id__in=role_details).values('role_type', 'department_id')
-        department_ids = [role.get('department_id') for role in role_details]
-        isAdmin = False
+        department_ids = user.departments
+        isAdmin = user.isAdmin
 
-        for role in role_details:
-            if role.get('role_type') == 'ADMIN':
-                isAdmin = True
-                break
-
-        if not isAdmin:
+        if isAdmin:
             selected_policies = TenantPolicyManager.objects.filter(tenant_id=tenant_id,is_active=True,master_framework_id=master_f_id).values()
         else:
             selected_policies = fetch_data_from_sql_query(
@@ -858,7 +851,10 @@ class DashBoardData(BaseConstant):
             department_ids.append(role.get('department_id'))
             role_types.append(role.get('role_type'))
 
-        tasks = TenantPolicyTasks.objects.filter(tenant_id=tenant_id).values()
+        if user.isAdmin:
+            tasks = TenantPolicyTasks.objects.filter(tenant_id=tenant_id).values()
+        else:
+            tasks = TenantPolicyTasks.objects.filter(tenant_id=tenant_id, user_email=user.email).values()
         details = []
         status = {0: 'Pending', 1:'Completed', 2:'Rejected'}
         for task in tasks:

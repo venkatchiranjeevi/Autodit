@@ -7,6 +7,7 @@ from django.core.cache import cache
 from django.utils.functional import SimpleLazyObject
 # from AutoditApp.constants import Cognito
 from AutoditApp.AWSCognito import Cognito
+from AutoditApp.models import Roles
 
 profiler = getattr(settings, 'PROFILER', {})
 profiler_enabled = profiler.get('enabled', False)
@@ -44,7 +45,19 @@ class AutoDitAuthenticationMiddleware(AuthenticationMiddleware):
                                             ) % ("_CLASSES" if settings.MIDDLEWARE is None else "")
 
         setattr(request, 'csrf_processing_done', True)
-        request.user = get_user(request)
+        user = get_user(request)
+        request.user = user
+        role_details = eval(user.role_id)
+        role_details = Roles.objects.filter(role_id__in=role_details).values('role_type', 'department_id')
+        department_ids = [role.get('department_id') for role in role_details]
+        isAdmin = False
+
+        for role in role_details:
+            if role.get('role_type') == 'ADMIN':
+                isAdmin = True
+                break
+        request.user.isAdmin = not isAdmin
+        request.user.departments = department_ids
 
     def process_view(self, request, callback, callback_args, callback_kwargs):
         if profiler_enabled:
