@@ -149,14 +149,16 @@ class SettingManagementAPI(AuthMixin):
         global_varialbles_data = eval(t_global_var_data[0].result if t_global_var_data else '{}')
         departments = list(TenantDepartment.objects.filter(tenant_id=int(tenant_id)).values('name', 'code', 'id'))
         tenant_roles = list(
-            Roles.objects.filter(tenant_id=int(tenant_id)).values('role_id', 'role_name', 'code', 'department_id', 'tenant_id'))
+            Roles.objects.filter(tenant_id=int(tenant_id)).values('role_id', 'role_name', 'code', 'department_id',
+                                                                  'tenant_id'))
         selected_frameworks = TenantFrameworkMaster.objects.filter(is_active=1).filter(tenant_id=int(tenant_id)).values(
             'master_framework_id')
         select_framework_ids = [entry['master_framework_id'] for entry in selected_frameworks]
         total_frameworks = FrameworkMaster.objects.filter(is_active=1).values('id', 'framework_name', 'framework_type',
                                                                               'description')
         formatted_departments = list_of_dict_to_dict(departments, "id")
-        formatted_role_departments = {each_role.get("role_id"): each_role.get("department_id") for each_role in tenant_roles}
+        formatted_role_departments = {each_role.get("role_id"): each_role.get("department_id") for each_role in
+                                      tenant_roles}
         framework_details = []
         for det in total_frameworks:
             entry = det
@@ -182,6 +184,7 @@ class SettingManagementAPI(AuthMixin):
                          'groups': tenant_roles,
                          'userDetails': tenant_users})
 
+
 # TODO not using inactive anywhere
 class ControlsManagementAPI(APIView):
     def get(self, request):
@@ -191,21 +194,26 @@ class ControlsManagementAPI(APIView):
         if not master_framework_id:
             return self.get_v2(request)
         result = {}
-        selected_controls, tenant_framework_id = TenantFrameworkData.get_tenant_selected_controls(tenant_id, master_framework_id)
+        selected_controls, tenant_framework_id = TenantFrameworkData.get_tenant_selected_controls(tenant_id,
+                                                                                                  master_framework_id)
         all_controls = ControlMaster.objects.filter(framework_id=int(master_framework_id)).values('id',
                                                                                                   'control_name',
                                                                                                   'control_code',
-                                                                                                  'category')
+                                                                                                  'category',
+                                                                                                  'framework_id')
         framework_policy_counts = TenantFrameworkData.get_policy_counts(tenant_framework_id=tenant_framework_id,
                                                                         tenant_id=tenant_id)
         selected_control_ids = selected_controls.keys()
         control_details_list = []
         for control in all_controls:
             opted = False
-            control_details = {'master_control_id': control.get('id'), 'control_name': control.get('control_name'),
-                               'control_code': control.get('control_code'), 'policies_count': 0}
+            control_details = {'master_control_id': control.get('id'),
+                               'control_name': control.get('control_name'),
+                               'control_code': control.get('control_code'),
+                               'master_framework_id': control.get('framework_id'),
+                               'policies_count': 0}
             if control.get('id') in selected_control_ids:
-                selected_con  = selected_controls[control.get('id')]
+                selected_con = selected_controls[control.get('id')]
                 control_details['control_name'] = selected_con.get('ControlName')
                 control_details['control_code'] = selected_con.get('ControlCode')
                 control_details['policies_count'] = framework_policy_counts.get(selected_con.get('tenantControlid'), 0)
@@ -220,24 +228,26 @@ class ControlsManagementAPI(APIView):
         tenant_id = user.tenant_id
         # master_framework_id = request.GET.get("framework_id")
         result = {}
-        selected_controls, tenant_framework_id = TenantFrameworkData.get_all_tenant_controls(tenant_id)
-        all_controls = ControlMaster.objects.filter(framework_id=int(master_framework_id)).values('id',
-                                                                                                  'control_name',
-                                                                                                  'control_code',
-                                                                                                  'category')
-        framework_policy_counts = TenantFrameworkData.get_policy_counts(tenant_framework_id=tenant_framework_id,
-                                                                        tenant_id=tenant_id)
+        selected_controls, frameworkids = TenantFrameworkData.get_all_tenant_controls(tenant_id)
+        all_controls = ControlMaster.objects.filter(framework_id__in=frameworkids).values('id',
+                                                                                          'control_name',
+                                                                                          'control_code',
+                                                                                          'category',
+                                                                                          'framework_id')
         selected_control_ids = selected_controls.keys()
         control_details_list = []
         for control in all_controls:
             opted = False
-            control_details = {'master_control_id': control.get('id'), 'control_name': control.get('control_name'),
-                               'control_code': control.get('control_code'), 'policies_count': 0}
+            control_details = {'master_control_id': control.get('id'),
+                               'control_name': control.get('control_name'),
+                               'control_code': control.get('control_code'),
+                               'master_framework_id': control.get('framework_id'),
+                               'policies_count': 0}
             if control.get('id') in selected_control_ids:
                 selected_con = selected_controls[control.get('id')]
                 control_details['control_name'] = selected_con.get('ControlName')
                 control_details['control_code'] = selected_con.get('ControlCode')
-                control_details['policies_count'] = framework_policy_counts.get(selected_con.get('tenantControlid'), 0)
+                # control_details['policies_count'] = framework_policy_counts.get(selected_con.get('tenantControlid'), 0)
                 opted = True
             control_details['is_control_selected'] = opted
             control_details_list.append(control_details)
@@ -252,13 +262,13 @@ class ControlsManagementAPI(APIView):
         data['created_by'] = user
         tenant_control_obj = TenantControlMasterData.save_tenant_controls(data)
         return Response({"status": "Updated Controls Successfully", "data": data,
-                         "new_control_id":tenant_control_obj.id if tenant_control_obj else None})
+                         "new_control_id": tenant_control_obj.id if tenant_control_obj else None})
 
     def post(self, request):
         data = request.data
         tenant_id = request.user.tenant_id
         user_id = request.user.userid
-        user_email =request.user.email
+        user_email = request.user.email
         TennatControlHelpers.control_update_handler(tenant_id, data, user_id, user_email)
         return Response({'status': 200, 'data': 'Controls updated successfully'})
 
@@ -269,7 +279,8 @@ class ControlManagementDetailAPI(APIView):
         tenant_id = request.user.tenant_id
         master_framework_id = request.GET.get("master_framework_id")
         master_control_id = request.GET.get("master_control_id")
-        tenant_framework_details = TenantControlMaster.objects.get(master_control_id=master_control_id, tenant_id=tenant_id)
+        tenant_framework_details = TenantControlMaster.objects.get(master_control_id=master_control_id,
+                                                                   tenant_id=tenant_id)
         details = {'tenant_c_id': tenant_framework_details.id,
                    'tenant_f_id': tenant_framework_details.tenant_framework_id,
                    "ControlName": tenant_framework_details.control_name,
@@ -313,12 +324,13 @@ class PolicyManagementAPI(AuthMixin):
         isAdmin = request.user.isAdmin
 
         if isAdmin:
-            policies_data = fetch_data_from_sql_query('select a.id as policyId, a.code as policyCode, a.tenant_id, a.tenantPolicyName, a.version, '
-                                                      'a.PolicyReference,'
-                                                      'a.State, md.stateDisplayName, b.id as FrameworkId, b.FrameworkName, b.Description '
-                                                      'from TenantPolicyManager a'
-                                                      ' Inner Join FrameworkMaster b on a.MasterFrameworkId = b.id '
-                                                      'Left  Join MetaData md  on a.state = md.key where a.tenant_id={} and a.isActive=1'.format(tenant_id))
+            policies_data = fetch_data_from_sql_query(
+                'select a.id as policyId, a.code as policyCode, a.tenant_id, a.tenantPolicyName, a.version, '
+                'a.PolicyReference,'
+                'a.State, md.stateDisplayName, b.id as FrameworkId, b.FrameworkName, b.Description '
+                'from TenantPolicyManager a'
+                ' Inner Join FrameworkMaster b on a.MasterFrameworkId = b.id '
+                'Left  Join MetaData md  on a.state = md.key where a.tenant_id={} and a.isActive=1'.format(tenant_id))
 
         else:
             policies_data = fetch_data_from_sql_query(
@@ -329,7 +341,8 @@ class PolicyManagementAPI(AuthMixin):
                 ' Left  Join MetaData md  on a.state = md.key where a.tenant_id={} and a.isActive=1'
                 ' and (a.id in (Select policyId from TenantPolicyLifeCycleUsers where ownerUserId = "{}")) or'
                 ' (a.id in (Select TenantPolicyId from TenantPolicyDepartments tpd where tenant_id = {} and TenantDepartment_id in {}))'
-                .format(tenant_id, request.user.userid, tenant_id, "({})".format(','.join(str(x) for x in department_ids))))
+                    .format(tenant_id, request.user.userid, tenant_id,
+                            "({})".format(','.join(str(x) for x in department_ids))))
 
         departments = TenantPolicyDepartments.objects.filter(tenant_id=tenant_id).filter(is_active=1).values()
         policy_users = TenantPolicyLifeCycleUsers.objects.filter(tenant_id=tenant_id, is_active=True).values()
@@ -373,7 +386,6 @@ class ControlsCostomTagsAPI(AuthMixin):
         return Response({'data': 'got success'})
 
 
-
 class TenantFrameworkMasterAPI(AuthMixin):
 
     def get(self, request):
@@ -384,8 +396,8 @@ class TenantFrameworkMasterAPI(AuthMixin):
                                                                                                   'master_framework_id',
                                                                                                   'description')
         result = [{'frameworkName': det.get('tenant_framework_name'),
-                       'masterFrameworkId': det.get('master_framework_id'),
-                       'description': det.get('description')} for det in framework_details]
+                   'masterFrameworkId': det.get('master_framework_id'),
+                   'description': det.get('description')} for det in framework_details]
         return Response(result)
 
     def post(self, request):
@@ -414,7 +426,7 @@ class TenantLogoUploaderAPI(AuthMixin):
         tenant_result['logo_url'] = logo_url
         tenant_obj.result = tenant_result
         tenant_obj.save()
-        return Response({"message": "Logo Uploaded Successfully", "status": True, "logo_url":logo_url})
+        return Response({"message": "Logo Uploaded Successfully", "status": True, "logo_url": logo_url})
 
 
 class PolicyDetailsAPI(AuthMixin):
@@ -427,6 +439,7 @@ class PolicyDetailsAPI(AuthMixin):
         details = PolicyLifeCycleHandler.get_complete_policy_details(int(policy_id), int(tenant_id))
         return Response(details)
 
+
 class PolicyRenewUpdateAPI(AuthMixin):
 
     def post(self, request):
@@ -434,6 +447,7 @@ class PolicyRenewUpdateAPI(AuthMixin):
         policy_id = data.get('policyId')
         details = PolicyLifeCycleHandler.policy_revision_period_handler(data, policy_id)
         return Response({"message": "Review Period Updated Successfully", "status": True, "details": details})
+
 
 class ControlsManagementAPIALl(APIView):
 
@@ -512,14 +526,14 @@ class PolicyDetailsHandler(AuthMixin):
         details = PolicyLifeCycleHandler.get_complete_policy_details(policy_id, tenant_id)
         return Response(details)
 
-
     def post(self, request):
         data = request.data
         policy_id = data.get('policyId')
         user = request.user
         tenant_id = user.tenant_id
         updated_policy_data = PolicyLifeCycleHandler.policy_summery_details_handler(data, policy_id)
-        updated_policy_data['policy_params'] = PolicyLifeCycleHandler.policy_variables_handler(data, policy_id, tenant_id)
+        updated_policy_data['policy_params'] = PolicyLifeCycleHandler.policy_variables_handler(data, policy_id,
+                                                                                               tenant_id)
         return Response({"message": "Policy Details Updated Successfully", "status": True, "data": updated_policy_data})
 
 
@@ -530,7 +544,8 @@ class PolicyContentHandler(AuthMixin):
         policy_id = data.get('policyId')
         user = request.user
         tenant_id = user.tenant_id
-        PolicyLifeCycleHandler.policy_content_details_handler(data, policy_id, tenant_id, user.username_cognito, user.email)
+        PolicyLifeCycleHandler.policy_content_details_handler(data, policy_id, tenant_id, user.username_cognito,
+                                                              user.email)
         return Response({"message": "Policy Content updated successfully", "status": True})
 
 
@@ -557,12 +572,13 @@ class TenantPolicyCustomTags(AuthMixin):
         data["tenant_id"] = request.user.tenant_id
         data['created_by'] = request.user.userid
         result = TenantPolicyCustomTagsData.save_custom_tags(data)
-        return Response({"status": True, "message": "Custom Tags Added Successfully", 'policyTags':result})
+        return Response({"status": True, "message": "Custom Tags Added Successfully", 'policyTags': result})
 
     def delete(self, request):
         custom_tag_id = request.GET.get("tagId")
-        result = TenantPolicyCustomTagsData.delete_policy_custom_tag(custom_tag_id, request.user.tenant_id, request.GET.get("policyId"))
-        return Response({"status": True, "message": "Custom Tags Deleted Successfully", 'policyTags':result})
+        result = TenantPolicyCustomTagsData.delete_policy_custom_tag(custom_tag_id, request.user.tenant_id,
+                                                                     request.GET.get("policyId"))
+        return Response({"status": True, "message": "Custom Tags Deleted Successfully", 'policyTags': result})
 
 
 class MetaDetailsHandler(AuthMixin):
@@ -598,7 +614,8 @@ class PolicyStatesHandler(AuthMixin):
 
 
         else:
-            state_change = PolicyLifeCycleHandler.policy_state_tasks_check(tenant_id, policy_details, data, user, status)
+            state_change = PolicyLifeCycleHandler.policy_state_tasks_check(tenant_id, policy_details, data, user,
+                                                                           status)
             if not state_change:
                 return Response({"message": "Policy Tasks are pending", "status": False})
             if state_id == 'PUB':
@@ -633,6 +650,7 @@ class PolicyEligibleUsers(AuthMixin):
         users = PolicyLifeCycleHandler.get_eligible_users(policy_id, tenant_id)
         return Response(users)
 
+
 class PolicyCommentsHandler(AuthMixin):
     def get(self, request):
         policy_id = request.GET.get('policyId')
@@ -640,7 +658,7 @@ class PolicyCommentsHandler(AuthMixin):
         tenant_id = user.tenant_id
         try:
             comment_details = TenantPolicyComments.objects.filter(tenant_policy_id=policy_id,
-                                                       tenant_id=tenant_id).values('comment')[0]
+                                                                  tenant_id=tenant_id).values('comment')[0]
             comment = eval(comment_details['comment'])
         except:
             comment = []
@@ -696,7 +714,6 @@ class TenantPolicyLifeCycleUsersAPI(AuthMixin):
         return Response({"status": True, "message": "Deleted Successfully", "users": result})
 
 
-
 class PolicyVersionHistory(AuthMixin):
     def get(self, request):
         policy_id = request.GET.get('policyId')
@@ -719,7 +736,7 @@ class PolicyVersionHistoryDetails(AuthMixin):
 
 class SubscriptionsPolicyAPI(AuthMixin):
     def post(self, request):
-        #request_body = json.loads(request.body.decode("utf-8"))
+        # request_body = json.loads(request.body.decode("utf-8"))
         request_body = request.data
         request_body["tenant_id"] = request.user.tenant_id
         return Response(Subscription.createSubscription(data=request_body))
@@ -734,7 +751,6 @@ class SubscriptionPaymentHandlerAPI(AuthMixin):
         print(data.get("razorpay_subscription_id"))
         print(data.get("razorpay_signature"))
         return Response(Subscription.handlePaymentSubscription(tenant_id, data))
-
 
 
 class DashBoardAPIHandler(AuthMixin):

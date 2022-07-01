@@ -245,17 +245,17 @@ class TenantFrameworkData(BaseConstant):
     @staticmethod
     def get_all_tenant_controls(tenant_id):
         query = "select  Id as tenantControlid, TenantFrameworkId, Master_Control_Id as ControlId," \
-                " ControlName, Description, Category, ControlCode from TenantControlMaster tcm where TenantFrameworkId in" \
+                " ControlName, Description, Category, ControlCode, masterFrameworkId from TenantControlMaster tcm where TenantFrameworkId in" \
                 " (select id from TenantFrameworkMaster tfm where tenantId = {t_id}" \
-                " and IsActive = 1"
+                " and IsActive = 1)"
         tenant_controls_query = query.format(t_id=int(tenant_id))
         tenant_controls = fetch_data_from_sql_query(tenant_controls_query)
         selected_controls_formatted_data = {}
         tenant_framework_id = []
         for tenant_control in tenant_controls:
-            tenant_framework_id.append(tenant_control.get('TenantFrameworkId'))
+            tenant_framework_id.append(tenant_control.get('masterFrameworkId'))
             selected_controls_formatted_data[tenant_control['ControlId']] = tenant_control
-        return selected_controls_formatted_data, tenant_framework_id[0] if tenant_framework_id else -99999
+        return selected_controls_formatted_data, list(set(tenant_framework_id))
 
     @staticmethod
     def get_policy_counts(tenant_framework_id, tenant_id):
