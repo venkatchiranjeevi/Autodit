@@ -15,11 +15,6 @@ class BaseConstant:
 
 
 class ControlHandlerData(BaseConstant):
-    @staticmethod
-    def get_control_master_data_by_control_ids(control_ids):
-        all_controls = ControlMaster.objects.filter(id__in=control_ids, is_deleted=False, is_active=True). \
-            values("id", "control_name", "control_type", "control_code", "description")
-        return all_controls
 
     @staticmethod
     def save_controls_data(data, user_id):
@@ -86,12 +81,6 @@ class HirerecyMapperData(BaseConstant):
                                                       "description",
                                                       "is_active",
                                                       "category"))
-        return frameworks_data
-
-    @staticmethod
-    def get_framework_and_policies_by_policy_id(policies_ids):
-        frameworks_data = list(HirerecyMapper.objects.filter(policy_id__in=policies_ids).values("id",
-                                                                                                "f_id", "policy_id"))
         return frameworks_data
 
     @staticmethod
@@ -231,11 +220,6 @@ class PolicyMasterData(BaseConstant):
             ex_poc.parameter_value = latest.get('paramType')
             ex_poc.created_by = user_id
             ex_poc.save()
-
-    @staticmethod
-    def get_policy_details(query):
-        policy_details = PolicyMaster.objects.filter(query).values("policy_name", "category")
-        return policy_details
 
     @staticmethod
     def save_policy_details(data, user_id):

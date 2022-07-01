@@ -5,12 +5,6 @@ CONTROLS_MASTER = """ select cm.Id as c_id ,ControlCode ,ControlName ,
                       cm.created_by from ControlMaster cm """
 
 
-TENANT_CONTROL_ID = """select tcm.Id as Tenant_control_Id, tcm.Master_Control_Id  as master_control_id, 
-tcm.TenantFrameworkId as tenant_framework_id , tfm.MasterFId  as master_framework_id
-                        from TenantControlMaster tcm left join TenantFrameworkMaster tfm on tcm.TenantFrameworkId =tfm.Id 
-                        where  TenantFrameworkId in ({}) """
-
-
 TENANT_FRAMEWORK_DETAILS = """ select cm.Id as control_id,cm.ControlName ,cm.Description , tfm.Id  as tenant_framework_id from ControlMaster cm 
                            left join TenantFrameworkMaster tfm on cm.FrameworkId =tfm.MasterFId 
                              where cm.Id ={} and cm.FrameworkId ={} and tfm.tenantId ={} """

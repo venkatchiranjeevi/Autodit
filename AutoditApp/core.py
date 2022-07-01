@@ -1,9 +1,7 @@
 from django.db import connections
-from collections import defaultdict, OrderedDict
+from collections import  OrderedDict
 from AutoditApp.Utils import coalesce
 from AutoditApp.sql_queries import ROLE_POLICIES
-from AutoditApp.models import TenantDepartment as Departments, Roles, TenantGlobalVariables, Tenant
-from django.db.models import Q
 import random, string
 
 
@@ -40,7 +38,7 @@ def get_session_value(request):
                     request.META.get('HTTP_SESSION', None)
                     )
 
-# TODO need to check with mani this
+
 def get_policies_by_role(role_id=[]):
     role_id = "','".join([str(i) for i in eval(role_id)])
     if role_id:

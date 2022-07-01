@@ -1,5 +1,3 @@
-from collections import defaultdict
-
 from django.forms import model_to_dict
 from rest_framework.response import Response
 
@@ -9,7 +7,6 @@ from AutoditApp.Admin_Handler.dal import ControlHandlerData, FrameworkMasterData
 from AutoditApp.Admin_Handler.sql_queries import policy_master_details, policy_master_by_f_id
 from AutoditApp.core import fetch_data_from_sql_query
 from rest_framework.views import APIView
-from django.db.models import Q
 
 from AutoditApp.models import MasterPolicyParameter
 

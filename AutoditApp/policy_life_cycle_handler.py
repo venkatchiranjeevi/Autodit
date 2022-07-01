@@ -1,7 +1,6 @@
 import calendar
-import json
 from collections import defaultdict
-from datetime import timedelta, date, datetime
+from datetime import date, datetime
 
 from django.db.models import Q
 
@@ -13,7 +12,6 @@ from AutoditApp.core import fetch_data_from_sql_query, get_users_by_tenant_id
 from AutoditApp.models import TenantPolicyManager, TenantPolicyParameter, TenantPolicyVersionHistory, \
     TenantGlobalVariables, MetaData, TenantDepartment, TenantControlsCustomTags, TenantPolicyComments, \
     TenantPolicyTasks, TenantPolicyDepartments, TenantPolicyLifeCycleUsers, Roles, PolicyMaster, MasterPolicyParameter
-# from AutoditApp.dal import PolicyDepartmentsHandlerData, TenantPolicyCustomTagsData, TenantPolicyLifeCycleUsersData
 
 
 class PolicyLifeCycleHandler:

@@ -203,25 +203,6 @@ class TenantControlAudit(Base):
         db_table = 'TenantControlAudit'
 
 
-class TenantHierarchyMapping(Base):
-    id = models.AutoField(primary_key=True, db_column='id')
-    tenant_id = models.IntegerField(db_column='tenantId')
-    # TODO can we delete need to check
-    master_hierarchy_id = models.IntegerField(db_column='masterHierarchyId')
-    category = models.CharField(db_column='Category', max_length=150)
-    tenant_policy_id = models.IntegerField(db_column='TenantPolicyId')
-    is_deleted = models.IntegerField(db_column='is_delete', default=0)
-    is_active = models.IntegerField(db_column='is_active', default=1)
-    tenant_framework_id = models.IntegerField(db_column='tenantFrameworkId')
-    tenant_control_id = models.IntegerField(db_column='tenantControlId')
-
-    def __int__(self):
-        return self.id
-
-    class Meta:
-        db_table = 'TenantHierarchyMapping'
-
-
 class GlobalVariables(Base):
     id = models.AutoField(primary_key=True, db_column='id')
     key = models.CharField(db_column='key', max_length=120)

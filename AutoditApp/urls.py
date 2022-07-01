@@ -3,7 +3,7 @@ from AutoditApp import user_management
 from AutoditApp.user_management import UserProfile
 from AutoditApp.views import DepartmentsAPI, RolesAPI, SettingManagementAPI, ControlsManagementAPI, GlobalVariablesAPI, \
     PolicyManagementAPI, TenantGlobalVariablesAPI, TenantFrameworkMasterAPI, TenantLogoUploaderAPI, PolicyDetailsAPI, \
-    ControlsManagementAPIALl, ControlManagementDetailAPI, ControlManagementDetailHistoryAPI, \
+     ControlManagementDetailAPI, ControlManagementDetailHistoryAPI, \
     PolicyDetailsHandler, PolicyContentHandler, MetaDetailsHandler, PolicyDepartmentsHandler, TenantPolicyCustomTags, \
     TenantPolicyVariables, PolicyCommentsHandler, PolicyEligibleUsers, PolicyStatesHandler, PolicyVersionHistory, \
     PolicyVersionHistoryDetails, TenantPolicyLifeCycleUsersAPI, SubscriptionsPolicyAPI, PolicyRenewUpdateAPI, \
