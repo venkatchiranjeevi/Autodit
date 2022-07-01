@@ -54,14 +54,17 @@ class AutoDitAuthenticationMiddleware(AuthenticationMiddleware):
         if role_details:
             role_details = eval(user.role_id)
             role_details = Roles.objects.filter(role_id__in=role_details).values('role_type', 'department_id')
-            department_ids = [role.get('department_id') for role in role_details]
+            rolesWithDepartments = filter(lambda role: role.get('department_id') is not None , role_details)
+            department_ids = [role.get('department_id') for role in rolesWithDepartments]
             isAdmin = False
 
+            if len(department_ids) == 0:
+                department_ids.append(-1)
             for role in role_details:
                 if role.get('role_type') == 'ADMIN':
                     isAdmin = True
                     break
-            request.user.isAdmin = not isAdmin
+            request.user.isAdmin = isAdmin
             request.user.departments = department_ids
 
 

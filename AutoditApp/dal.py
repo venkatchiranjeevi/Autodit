@@ -51,7 +51,7 @@ class RolesData(BaseConstant):
 
         access_policy = AccessPolicy.objects.create(policyname=data.get("policy_name"),
                                                     policy={"views": DEFAULT_VIEWS if data.get(
-                                                        'role_for') != 'Editor' else EDITIOR_VIEWS, 'actions': actions,
+                                                        'role_for') != 'Editor' else EDITIOR_VIEWS, 'actionPermissions': actions,
                                                             "departments": data.get("departments", [])},
                                                     type="GENERAL")
         role_policies = RolePolicies.objects.create(role_id=role_obj.role_id, accesspolicy_id=access_policy.logid)

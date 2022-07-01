@@ -298,7 +298,7 @@ class PolicyManagementAPI(AuthMixin):
         # GET departments of policy and add it in response
         tenant_id = request.user.tenant_id
 
-        department_ids = request.user.departments
+        department_ids = request.user.departments if request.user.departments is not None else []
         isAdmin = request.user.isAdmin
 
         if isAdmin:
@@ -317,8 +317,8 @@ class PolicyManagementAPI(AuthMixin):
                 ' from TenantPolicyManager a'
                 ' Inner Join FrameworkMaster b on a.MasterFrameworkId = b.id'
                 ' Left  Join MetaData md  on a.state = md.key where a.tenant_id={} and a.isActive=1'
-                ' and (a.id in (Select policyId from TenantPolicyLifeCycleUsers where ownerUserId = "{}")) or'
-                ' (a.id in (Select TenantPolicyId from TenantPolicyDepartments tpd where tenant_id = {} and TenantDepartment_id in {}))'
+                ' and (a.id in (Select policyId from TenantPolicyLifeCycleUsers where ownerUserId = "{}"))'
+                ' or (a.id in (Select TenantPolicyId from TenantPolicyDepartments tpd where tenant_id = {} and TenantDepartment_id in {}))'
                     .format(tenant_id, request.user.userid, tenant_id,
                             "({})".format(','.join(str(x) for x in department_ids))))
 
