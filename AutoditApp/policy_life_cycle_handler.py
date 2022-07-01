@@ -90,22 +90,72 @@ class PolicyLifeCycleHandler:
         return policy_params
 
     @staticmethod
+    def policy_revision_history_save_handler(policy_data,
+                                             policy_details,
+                                             policy_id,
+                                             tennant_id,
+                                             version,
+                                             filename,
+                                             user_name,
+                                             user_id,
+                                             action):
+        try:
+            revision_history = str(eval(policy_data.get('revisionHistory')))
+        except:
+            revision_history = '{}'
+        policy_revision_blob = TenantPolicyVersionHistory.objects.filter(version_type='revisionHistory',
+                                                                         policy_id=policy_id,
+                                                                         tenant_id=tennant_id,
+                                                                         new_version=version).order_by('-id').values()
+        if policy_revision_blob:
+            policy_revision = policy_revision_blob[0]
+            TenantPolicyVersionHistory.objects.filter(id=policy_revision['id']).update(revision_blob=revision_history,
+                                                                                       action_performed_by=user_name,
+                                                                                       action_performed_by_id=user_id)
+
+            return
+        TenantPolicyVersionHistory(tenant_id=tennant_id,
+                                   policy_id=policy_id,
+                                   tenant_policy_name=policy_details.tenant_policy_name,
+                                   old_policy_name=policy_details.policy_file_name,
+                                   old_version=str(version),
+                                   new_version=str(version),
+                                   policy_file_name=filename,
+                                   status=policy_details.state,
+                                   action_performed=action,
+                                   version_type='revisionHistory',
+                                   action_performed_by=user_name,
+                                   action_performed_by_id=user_id,
+                                   action_date=datetime.now(),
+                                   revision_blob=str(revision_history)).save()
+
+
+    @staticmethod
     def policy_content_details_handler(policy_data, policy_id, tennant_id, user_name, user_id):
         updated_content = policy_data.get('policyContent')
         policy_details = TenantPolicyManager.objects.get(id=policy_id)
         try:
-            version = float(policy_details.version)
+            version = policy_details.version
         except:
-            version = 1.0
-        new_version = round(version + 0.1, 2)
+            version = 1
+        # new_version = round(version + 0.1, 2)
         old_content = S3FileHandlerConstant.read_s3_content(policy_details.policy_file_name)
         file_names = policy_details.policy_file_name.split('/')
         file_name = '{root}/{tenant_id}/{policyId}/{version}/{file_name}'
         file_name = file_name.format(root=file_names[0],
                                      tenant_id=str(tennant_id),
                                      policyId=str(policy_id),
-                                     version=str(new_version),
+                                     version=str(version),
                                      file_name=file_names[-1])
+        PolicyLifeCycleHandler.policy_revision_history_save_handler(policy_data,
+                                                                    policy_details,
+                                                                    policy_id,
+                                                                    tennant_id,
+                                                                    version,
+                                                                    file_name,
+                                                                    user_name,
+                                                                    user_id,
+                                                                    'Save as Draft')
         version_url = S3FileHandlerConstant.upload_s3_file(old_content, policy_details.policy_file_name)
         new_content_url = S3FileHandlerConstant.upload_s3_file(updated_content, file_name)
         TenantPolicyVersionHistory(tenant_id=tennant_id,
@@ -113,17 +163,18 @@ class PolicyLifeCycleHandler:
                                    tenant_policy_name=policy_details.tenant_policy_name,
                                    old_policy_name=policy_details.policy_file_name,
                                    old_version=str(version),
-                                   new_version=str(new_version),
+                                   new_version=str(version),
                                    policy_file_name=file_name,
                                    status=policy_details.state,
                                    action_performed='Save as Draft',
+                                   version_type='track',
                                    action_performed_by=user_name,
                                    action_performed_by_id=user_id,
                                    action_date=datetime.now()).save()
         policy_details.version = version
         policy_details.policy_file_name = file_name
         policy_details.policy_reference = new_content_url
-        policy_details.version = str(new_version)
+        policy_details.version = str(version)
         policy_details.save()
 
     @staticmethod
@@ -135,7 +186,8 @@ class PolicyLifeCycleHandler:
         template_variables = PolicyLifeCycleHandler.get_template_parameters(policy_id, tenant_id)
         return {'versionContent': version_content,
                 'policyContent': policy_content,
-                'templateVariables': template_variables}
+                'templateVariables': template_variables,
+                'revisionHistory': version_history.revision_blob}
 
     @staticmethod
     def get_policy_version_history(policy_id, tennant_id):
@@ -143,7 +195,7 @@ class PolicyLifeCycleHandler:
                                                                                'prev', 'state_display_name')
         formatted_meta = {meta.get('key'): meta for meta in meta_details}
         query = Q(policy_id=policy_id) & Q(tenant_id=tennant_id)
-        query = query & Q(status__in=formatted_meta.keys())
+        query = query & Q(version_type='revisionHistory')
         history_objects = TenantPolicyVersionHistory.objects.filter(query).values().order_by('-action_date')
         history_details = []
         for history in history_objects:
@@ -153,6 +205,7 @@ class PolicyLifeCycleHandler:
                        'policyName': history.get('tenant_policy_name'),
                        'oldVersion': history.get('old_version'),
                        'newVersion': history.get('new_version'),
+                       'revisionHistory': history.get('revision_blob'),
                        'status': 'Approved' if history.get('status') == 'PUB' else 'Pending',
                        'actionPerformed': action_details.get('display_name'),
                        'actionPerformedBy': history.get('action_performed_by'),

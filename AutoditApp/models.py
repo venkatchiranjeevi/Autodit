@@ -355,6 +355,8 @@ class TenantPolicyVersionHistory(Base):
     action_performed_by = models.CharField(db_column='actionPerformedBy', max_length=250)
     action_performed_by_id = models.CharField(db_column='actionPerformedById', max_length=250)
     action_date = models.DateTimeField(db_column='actionDate')
+    version_type = models.CharField(db_column='versionType', max_length=100, default='')
+    revision_blob = models.TextField(db_column='revisionBlob', default='')
 
     class Meta:
         db_table = 'TenantPolicyVersionHistory'

@@ -518,7 +518,7 @@ class PolicyStatesHandler(AuthMixin):
                 return Response({"message": "Policy Tasks are pending", "status": False})
             if state_id == 'PUB':
                 policy_details.published_date = datetime.now().strftime("%Y-%m-%d")
-                new_version = str(int(float((policy_details.version))) + 1)
+                new_version = str(int((policy_details.version)) + 1)
                 TenantPolicyVersionHistory(tenant_id=request.user.tenant_id,
                                            policy_id=policy_id,
                                            tenant_policy_name=policy_details.tenant_policy_name,
@@ -527,6 +527,7 @@ class PolicyStatesHandler(AuthMixin):
                                            policy_file_name=policy_details.policy_file_name,
                                            status='Approved' if state_id == 'PUB' else 'Pending',
                                            action_performed=state_id,
+                                           version_type='track',
                                            action_performed_by=user.username_cognito,
                                            action_performed_by_id=user.email,
                                            action_date=datetime.now()).save()
