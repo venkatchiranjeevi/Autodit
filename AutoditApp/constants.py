@@ -1,6 +1,4 @@
 from boto3 import client as botoclient
-from jose import jwk, jwt, JWTError
-from jose.utils import base64url_decode
 from django.conf import settings
 from time import time as current_time
 from AutoditApp.models import Users
@@ -16,6 +14,16 @@ DEFAULT_VIEWS = ["Dashboard", "Settings", "Admin", "M_ITM_DASH","M_ITM_PLCM", "M
                  "M_ITM_EVDCM","M_ITM_CALDM", "M_ITM_STNGS"]
 
 EDITIOR_VIEWS = ["M_ITM_DASH","M_ITM_PLCM"]
+
+ADMIN_ACTIONS = ["POLICY_EDIT", "POLICY_COMMENT", "POLICY_VIEW", "POLICY_SEND_TO_APPROVAL", "POLICY_PUBLISH", "POLICY_SETTINGS"]
+
+EDITOR_ACTIONS = ["POLICY_EDIT", "POLICY_VIEW", "POLICY_COMMENT"]
+
+REVIEWER_ACTIONS = ["POLICY_EDIT", "POLICY_COMMENT", "POLICY_VIEW", "POLICY_SEND_TO_APPROVAL"]
+
+APPROVER_ACTIONS = ["POLICY_EDIT", "POLICY_COMMENT", "POLICY_VIEW", "POLICY_SEND_TO_APPROVAL", "POLICY_PUBLISH"]
+
+ACTIONS_DATA = {'Editor': EDITOR_ACTIONS, 'Reviewer': REVIEWER_ACTIONS, 'Approver': APPROVER_ACTIONS, 'Admin': ADMIN_ACTIONS}
 
 TENANT_LOGOS_BUCKET = "autodit-development-app"
 S3_ROOT = "https://autodit-development-app.s3.ap-south-1.amazonaws.com/{}"
