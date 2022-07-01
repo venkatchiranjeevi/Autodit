@@ -9,7 +9,7 @@ from .core import fetch_data_from_sql_query
 from .S3_FileHandler import S3FileHandlerConstant
 from datetime import datetime
 from .policy_life_cycle_handler import PolicyLifeCycleHandler, MetaDataDetails
-from .sql_queries import TENANT_CONTROL_ID, CONTROLS_MASTER, TENANT_FRAMEWORK_DETAILS, TENANT_FRAMEWORK_POLICIES, \
+from .sql_queries import TENANT_CONTROL_ID, CONTROLS_MASTER, TENANT_FRAMEWORK_DETAILS, \
     CONTROL_FRAMEWORK_DETAILS
 from .sql_queries import TENANT_CONTROL_ID, CONTROLS_MASTER
 
@@ -495,9 +495,13 @@ class ControlManagementDetailData(BaseConstant):
 
     @staticmethod
     def get_policies_by_tenant_framework_id_and_tenant_control_id(tenant_f_id, tenant_c_id, tenant_id):
-        query = TENANT_FRAMEWORK_POLICIES.format(tenant_f_id, tenant_c_id, tenant_id)
+        query = "select tenantPolicyName from TenantPolicyManager tpm  where ParentPolicyID in " \
+                "(select PolicyId from HirerecyMapper hm where Fid ={f_id} and Cid ={c_id}) and tenant_id = {t_id}"
+
+        query = query.format(f_id=tenant_f_id, c_id=tenant_c_id, t_id=tenant_id)
         tenant_policies = fetch_data_from_sql_query(query)
-        return tenant_policies
+        tenant_pol = [pol.get('tenantPolicyName') for pol in tenant_policies]
+        return tenant_pol
 
     @staticmethod
     def get_control_history(tenant_id, control_id):

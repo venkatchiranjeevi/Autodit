@@ -315,13 +315,11 @@ class ControlManagementDetailAPI(APIView):
                    "frameWork_id": tenant_framework_details.master_framework_id,
                    "FrameworkName": ''}
         if tenant_framework_details:
-            tenant_f_id = tenant_framework_details.tenant_framework_id
-            tenant_c_id = tenant_framework_details.id
             hierarchy_data = ControlManagementDetailData.get_policies_by_tenant_framework_id_and_tenant_control_id(
-                tenant_f_id, tenant_c_id, tenant_id)
+                master_framework_id, master_control_id, tenant_id)
             details['policies'] = hierarchy_data
             framework_details = FrameworkMaster.objects.get(id=master_framework_id)
-            details['FrameworkName'] = framework_details.framework_name
+            details['frameworkName'] = framework_details.framework_name
 
         return Response(details)
 
