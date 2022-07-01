@@ -435,6 +435,20 @@ class PolicyLifeCycleHandler:
         return S3FileHandlerConstant.read_s3_content(tenant_policy_details.policy_file_name)
 
     @staticmethod
+    def get_policy_revision_blob(policy_id, tennant_id, version):
+        policy_revision_blob = TenantPolicyVersionHistory.objects.filter(version_type='revisionHistory',
+                                                                         policy_id=policy_id,
+                                                                         tenant_id=tennant_id,
+                                                                         new_version=version).order_by('-id').values()
+        revision_blob = '{}'
+        if policy_revision_blob:
+            policy_revision = policy_revision_blob[0]
+            revision_blob = policy_revision.get('revision_blob')
+        return revision_blob
+
+
+
+    @staticmethod
     def get_complete_policy_details(policy_id, tenant_id):
         global_varialbles = TenantGlobalVariables.objects.get(tenant_id=int(tenant_id))
         try:
@@ -464,6 +478,7 @@ class PolicyLifeCycleHandler:
         approvers = []
         assignees = []
         reviewers = []
+
         for each_user in users:
             owner_type = each_user.get("owner_type")
             if owner_type == "assignee" or owner_type == "editor":
@@ -492,6 +507,9 @@ class PolicyLifeCycleHandler:
             'policyComments': comment,
             "policyTags": dal.TenantPolicyCustomTagsData.get_policy_tags(policy_id, tenant_id),
             "departments": departments,
+            "revisionHistory": PolicyLifeCycleHandler.get_policy_revision_blob(policy_id,
+                                                                               tenant_id,
+                                                                               policy_details.version),
             "policyControls": [{"id": 1,
                                 "frameworkId": 1,
                                 "controlCode": "code",
