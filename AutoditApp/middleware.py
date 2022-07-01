@@ -47,7 +47,11 @@ class AutoDitAuthenticationMiddleware(AuthenticationMiddleware):
         setattr(request, 'csrf_processing_done', True)
         user = get_user(request)
         request.user = user
-        if user:
+        try:
+            role_details = eval(user.role_id)
+        except:
+            role_details = None
+        if role_details:
             role_details = eval(user.role_id)
             role_details = Roles.objects.filter(role_id__in=role_details).values('role_type', 'department_id')
             department_ids = [role.get('department_id') for role in role_details]

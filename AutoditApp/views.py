@@ -220,8 +220,7 @@ class ControlsManagementAPI(APIView):
         tenant_id = user.tenant_id
         # master_framework_id = request.GET.get("framework_id")
         result = {}
-        selected_controls, tenant_framework_id = TenantFrameworkData.get_tenant_selected_controls(tenant_id,
-                                                                                                  master_framework_id)
+        selected_controls, tenant_framework_id = TenantFrameworkData.get_all_tenant_controls(tenant_id)
         all_controls = ControlMaster.objects.filter(framework_id=int(master_framework_id)).values('id',
                                                                                                   'control_name',
                                                                                                   'control_code',
