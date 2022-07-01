@@ -356,6 +356,8 @@ class TennatControlHelpers(BaseConstant):
         new_master_controls = list(set(selected_control_ids) - set(list(all_controls.keys())))
         controls_to_inactive = list(set(list(active_controls.keys())) - set(selected_control_ids))
         controls_to_active_ids = list(set(inactive_controls.keys()).intersection(set(selected_control_ids)))
+        if not new_master_controls and not controls_to_inactive and not controls_to_active_ids:
+            return True
         if controls_to_inactive:
             q1 = Q(tenant_id=int(tenant_id))
             q2 = Q(master_framework_id=int(master_framework_id))
@@ -449,7 +451,7 @@ class TennatControlHelpers(BaseConstant):
                                                               parent_policy_id = master_policy.get('id'),
                                                               code=master_policy.get('policy_code'),
                                                               master_framework_id=master_framework_id))
-                except:
+                except Exception as e:
                     pass
             TenantPolicyManager.objects.bulk_create(need_insertion)
 
