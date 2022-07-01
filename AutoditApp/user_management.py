@@ -99,5 +99,5 @@ class UserProfile(AuthMixin):
                          "departments": department_details,
                          "tenantDetails": tenant_details,
                          "role_policies": {'screenPermissions': screen_policies,
-                                           'ActionPermissions':action_permissions }
+                                           'actionPermissions': action_permissions }
                          })
