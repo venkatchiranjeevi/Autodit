@@ -81,7 +81,7 @@ class UserProfile(AuthMixin):
         screen_policies = []
         tenant_details = TenantMasterData.get_tenant_details(tenant_id)
         department_ids = []
-        action_permissions = {}
+        action_permissions = []
         for po in role_policies:
             policy = eval(po.get('Policy', '{}'))
             screen_policies += policy.get('views', [])
