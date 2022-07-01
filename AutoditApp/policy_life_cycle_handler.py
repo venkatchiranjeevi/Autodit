@@ -395,7 +395,8 @@ class PolicyLifeCycleHandler:
                                                     policy_state=next_state,
                                                     department_id=0,
                                                     task_type=task_type_obj.task_verify,
-                                                    user_email=user_email))
+                                                    user_email=user_email,
+                                                    user_id=user.get('owner_user_id')))
             TenantPolicyTasks.objects.bulk_create(user_tasks)
 
     @staticmethod

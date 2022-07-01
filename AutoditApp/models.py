@@ -467,6 +467,7 @@ class TenantPolicyTasks(Base):
     department_id = models.IntegerField(db_column='departmentId', null=False)
     task_name = models.CharField(db_column="taskName", max_length=250, null=True)
     user_email = models.CharField(db_column="userEmail", max_length=250, null=True)
+    user_id = models.CharField(db_column='userId', max_length=250, null=True)
     task_type = models.CharField(db_column="taskType", max_length=250, null=True)
     summery = models.TextField(db_column="summery", null=True)
     task_status = models.IntegerField(db_column="taskStatus", default=0) # 0-pending, 1-completed, 2-cancelled

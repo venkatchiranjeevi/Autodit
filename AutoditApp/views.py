@@ -645,7 +645,7 @@ class SubscriptionPaymentHandlerAPI(AuthMixin):
     def post(self, request):
         print(request.data)
         data = request.data
-        tenant_id = request.user.tenant_id;
+        tenant_id = request.user.tenant_id
         print(data.get("razorpay_payment_id"))
         print(data.get("razorpay_subscription_id"))
         print(data.get("razorpay_signature"))
