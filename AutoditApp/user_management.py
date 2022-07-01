@@ -81,13 +81,12 @@ class UserProfile(AuthMixin):
         screen_policies = []
         tenant_details = TenantMasterData.get_tenant_details(tenant_id)
         department_ids = []
-        action_permissions = {}
+        action_permissions = []
         for po in role_policies:
             policy = eval(po.get('Policy', '{}'))
             screen_policies += policy.get('views', [])
             department_ids += policy.get("departments", [])
-            if policy.get('actionPermissions'):
-                action_permissions.update(policy.get('actionPermissions', {}))
+            action_permissions += policy.get('actionPermissions', [])
         department_details = DeparmentsData.get_department_data(tenant_id,department_ids)
         return Response({"username": user.name,
                          "email": user.email,
@@ -100,5 +99,5 @@ class UserProfile(AuthMixin):
                          "departments": department_details,
                          "tenantDetails": tenant_details,
                          "role_policies": {'screenPermissions': screen_policies,
-                                           'ActionPermissions':action_permissions }
+                                           'actionPermissions': action_permissions }
                          })
