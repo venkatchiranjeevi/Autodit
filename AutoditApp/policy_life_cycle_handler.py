@@ -100,7 +100,7 @@ class PolicyLifeCycleHandler:
                                              user_id,
                                              action):
         try:
-            revision_history = str(eval(policy_data.get('revisionHistory')))
+            revision_history = str(policy_data.get('revisionHistory'))
         except:
             revision_history = '{}'
         policy_revision_blob = TenantPolicyVersionHistory.objects.filter(version_type='revisionHistory',
