@@ -297,7 +297,7 @@ class PolicyManagementAPI(AuthMixin):
         # TODO get only those tenant related polices and framworks. if frameworkId is avaialbe then only those framework policies if not else all
         # GET departments of policy and add it in response
         tenant_id = request.user.tenant_id
-
+        framework_id = request.GET.get('frameworkId')
         department_ids = request.user.departments if request.user.departments is not None else []
         isAdmin = request.user.isAdmin
 
@@ -308,7 +308,8 @@ class PolicyManagementAPI(AuthMixin):
                 'a.State, md.stateDisplayName, b.id as FrameworkId, b.FrameworkName, b.Description '
                 'from TenantPolicyManager a'
                 ' Inner Join FrameworkMaster b on a.MasterFrameworkId = b.id '
-                'Left  Join MetaData md  on a.state = md.key where a.tenant_id={} and a.isActive=1'.format(tenant_id))
+                'Left  Join MetaData md  on a.state = md.key where a.tenant_id={t_id}'
+                ' and a.MasterFrameworkId={f_id} and a.isActive=1'.format(t_id=tenant_id,f_id=framework_id))
 
         else:
             policies_data = fetch_data_from_sql_query(
@@ -316,11 +317,14 @@ class PolicyManagementAPI(AuthMixin):
                 ' a.State, md.stateDisplayName, b.id as FrameworkId, b.FrameworkName, b.Description'
                 ' from TenantPolicyManager a'
                 ' Inner Join FrameworkMaster b on a.MasterFrameworkId = b.id'
-                ' Left  Join MetaData md  on a.state = md.key where a.tenant_id={} and a.isActive=1'
-                ' and (a.id in (Select policyId from TenantPolicyLifeCycleUsers where ownerUserId = "{}"))'
-                ' or (a.id in (Select TenantPolicyId from TenantPolicyDepartments tpd where tenant_id = {} and TenantDepartment_id in {}))'
-                    .format(tenant_id, request.user.userid, tenant_id,
-                            "({})".format(','.join(str(x) for x in department_ids))))
+                ' Left  Join MetaData md  on a.state = md.key where a.tenant_id={t_id} and a.isActive=1'
+                ' and (a.id in (Select policyId from TenantPolicyLifeCycleUsers where ownerUserId = "{uid}"))'
+                ' or (a.id in (Select TenantPolicyId from TenantPolicyDepartments tpd where tenant_id = {t_id}'
+                ' and b.id={f_id} and TenantDepartment_id in {d_id}))'
+                    .format(t_id=tenant_id,
+                            uid=request.user.userid,
+                            f_id=framework_id,
+                            d_id="({})".format(','.join(str(x) for x in department_ids))))
 
         departments = TenantPolicyDepartments.objects.filter(tenant_id=tenant_id).filter(is_active=1).values()
         policy_users = TenantPolicyLifeCycleUsers.objects.filter(tenant_id=tenant_id, is_active=True).values()
