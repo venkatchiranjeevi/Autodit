@@ -301,7 +301,7 @@ class PolicyManagementAPI(AuthMixin):
         department_ids = request.user.departments if request.user.departments is not None else []
         isAdmin = request.user.isAdmin
 
-        if isAdmin and False:
+        if isAdmin:
             policy_query = 'select a.id as policyId, a.code as policyCode, a.tenant_id, a.tenantPolicyName, a.version, ' \
                            'a.PolicyReference,a.State, md.stateDisplayName, b.id as FrameworkId, b.FrameworkName,' \
                            ' b.Description from TenantPolicyManager a Inner Join FrameworkMaster b on ' \
