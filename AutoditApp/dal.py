@@ -728,6 +728,8 @@ class DashBoardData(BaseConstant):
         status = {0: 'Pending', 1: 'Completed', 2: 'Rejected'}
         for task in tasks:
             policy_det = policy_details.get(task.get('policy_id'), {})
+            if not policy_det:
+                continue
             det = {'policyName': policy_det.get('tenant_policy_name'),
                    'policyId': task.get('policy_id'),
                    'taskName': task.get('task_name'),
@@ -746,6 +748,8 @@ class DashBoardData(BaseConstant):
 
         for task in department_tasks:
             policy_det = policy_details.get(task.get('policy_id'), {})
+            if not policy_det:
+                continue
             det = {'policyName': policy_det.get('tenant_policy_name'),
                    'policyId': task.get('policy_id'),
                    'taskName': task.get('task_name'),
@@ -770,6 +774,8 @@ class DashBoardData(BaseConstant):
             tasks = TenantPolicyVersionHistory.objects.filter(user_query).values()
         for task in tasks:
             policy_det = policy_details.get(task.get('policy_id'), {})
+            if not policy_det:
+                continue
             det = {'policyName': policy_det.get('tenant_policy_name'),
                    'policyId': task.get('policy_id'),
                    'taskName': task.get('action_performed'),
