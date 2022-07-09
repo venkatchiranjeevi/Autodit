@@ -11,7 +11,7 @@ from AutoditApp.core import get_policies_by_role, password_generator
 from AutoditApp.mixins import AuthMixin
 
 
-class UsersList(AuthMixin):
+class UsersList(APIView):
     @staticmethod
     def enable_or_diable_cognito_user(username, enable=None, disable=True):
         result=None
@@ -55,7 +55,7 @@ class UsersList(AuthMixin):
                 Filter='email^=\"{}\"'.format(str(email).strip())
             )
             if user_dict.get("Users"):
-                return "User Email already exist", False
+                return "User Email already exist", True
 
 
         try:
@@ -97,11 +97,11 @@ class UsersList(AuthMixin):
         user_name = data.get("userName")
         marked_for_deletion = str(data.get("markedForDeletion"))
         if marked_for_deletion and marked_for_deletion in Cognito.CONSTANT_TRUE_VALUE:
-            UsersList.enable_or_diable_cognito_user(data.get("username"), disable=True)
+            UsersList.enable_or_diable_cognito_user(user_name, disable=True)
         elif marked_for_deletion and marked_for_deletion in Cognito.CONSTANT_FALSE_VALUE:
-            UsersList.enable_or_diable_cognito_user(data.get("username"), enable=True)
+            UsersList.enable_or_diable_cognito_user(user_name, enable=True)
 
-        role_id = str(data.get("roleId"))
+        role_id = data.get("roleId")
         if role_id:
             update_attributes.append({"Name": 'custom:role_id', "Value": str([role_id])})
 
