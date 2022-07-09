@@ -708,9 +708,10 @@ class DashBoardData(BaseConstant):
         for role in role_details:
             department_ids.append(role.get('department_id'))
             role_types.append(role.get('role_type'))
-        query = "SELECT tcm.tenantId, hm.Cid, hm.PolicyId, tcm.ControlName," \
+        query = "SELECT tcm.tenantId, hm.Cid, tpm.id as PolicyId, tcm.ControlName," \
                 " tcm.Description, hm.Fid from TenantControlMaster tcm Inner join HirerecyMapper hm" \
-                " on tcm.Master_Control_Id = hm.Cid and hm.Fid = tcm.masterFrameworkId where " \
+                " on tcm.Master_Control_Id = hm.Cid and hm.Fid = tcm.masterFrameworkId  Inner Join " \
+                "TenantPolicyManager tpm  on tpm.ParentPolicyID = hm.PolicyId where " \
                 "hm.Fid = {f_id} and hm.PolicyId  in {policy_ids} and tcm.tenantId  = {tennant_id}" \
                 " and tcm.IsActive = 1 order by hm.id"
         if len(policy_ids) == 1:
@@ -742,7 +743,7 @@ class DashBoardData(BaseConstant):
         status = {0: 'Pending', 1: 'Completed', 2: 'Rejected'}
         for task in tasks:
             policy_det = policy_details.get(task.get('policy_id'), {})
-            policy_controls = policy_controls.get(task.get('policy_id'), [])
+            con_policy = policy_controls.get(task.get('policy_id'), [])
             if not policy_det:
                 continue
             det = {'policyName': policy_det.get('tenant_policy_name'),
@@ -756,8 +757,8 @@ class DashBoardData(BaseConstant):
                    'createdOn': task.get('created_on'),
                    'policyState': task.get('policy_state'),
                    'taskPerformedBy': task.get('task_performed_by'),
-                   'noofControlsEffected': len(policy_controls),
-                   'controlDetails': policy_controls,
+                   'noofControlsEffected': len(con_policy),
+                   'controlDetails': con_policy,
                     'lastUpdatedOn': task.get('action_date'),
                    'lastUpdatedBy':  task.get('action_performed_by')}
             details.append(det)
@@ -766,6 +767,7 @@ class DashBoardData(BaseConstant):
             policy_det = policy_details.get(task.get('policy_id'), {})
             if not policy_det:
                 continue
+            con_policy = policy_controls.get(task.get('policy_id'), [])
             det = {'policyName': policy_det.get('tenant_policy_name'),
                    'policyId': task.get('policy_id'),
                    'taskName': task.get('task_name'),
@@ -776,8 +778,8 @@ class DashBoardData(BaseConstant):
                    'createdOn': task.get('created_on'),
                    'taskType': 'departmentTask',
                    'policyState': task.get('policy_state'),
-                   'noofControlsEffected': len(policy_controls),
-                   'controlDetails': policy_controls,
+                   'noofControlsEffected': len(con_policy),
+                   'controlDetails': con_policy,
                    'lastUpdatedOn': task.get('action_date'),
                    'lastUpdatedBy': task.get('action_performed_by')}
             details.append(det)
@@ -793,6 +795,7 @@ class DashBoardData(BaseConstant):
             policy_det = policy_details.get(task.get('policy_id'), {})
             if not policy_det:
                 continue
+            con_policy = policy_controls.get(task.get('policy_id'), [])
             det = {'policyName': policy_det.get('tenant_policy_name'),
                    'policyId': task.get('policy_id'),
                    'taskName': task.get('action_performed'),
@@ -803,8 +806,8 @@ class DashBoardData(BaseConstant):
                    'createdOn': task.get('created_on'),
                    'taskType': 'policyOperations',
                    'policyState': task.get('status'),
-                   'noofControlsEffected': len(policy_controls),
-                   'controlDetails': policy_controls,
+                   'noofControlsEffected': len(con_policy),
+                   'controlDetails': con_policy,
                    'lastUpdatedOn': task.get('action_date'),
                    'lastUpdatedBy':  task.get('action_performed_by')}
             details.append(det)
