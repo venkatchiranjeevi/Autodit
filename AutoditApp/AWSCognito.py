@@ -42,7 +42,7 @@ class Cognito:
 
     REFRESH_TOKEN_AUTH_FLOW = 'REFRESH_TOKEN_AUTH'
     CONSTANT_TRUE_VALUE = ["true", "True"]
-    CONSTANT_FALSE_VALUE = "false"
+    CONSTANT_FALSE_VALUE = ["false", "False"]
     MOBILE_NUM_PREFIX = "+91"
 
 
