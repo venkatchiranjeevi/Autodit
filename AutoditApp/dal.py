@@ -686,11 +686,20 @@ class DashBoardData(BaseConstant):
 
     @staticmethod
     def get_recent_activities(tenant_id, master_f_id, user, policy_details, pending_tasks):
+
         present_date = datetime.now()
-        start_date = datetime.now() - timedelta(days=360)
+        start_date = datetime.now() - timedelta(days=10)
         start_date = start_date.replace(minute=0, hour=0, second=0)
         end_date = present_date
         policy_id_objects = TenantPolicyManager.objects.filter(master_framework_id=master_f_id).values('id')
+        # departments
+        policy_ids = []
+        parent_policy_ids = []
+        for pol in policy_id_objects:
+            policy_ids.append(pol.get('id'))
+            parent_policy_ids.append(pol.get('parent_policy_id'))
+        if not policy_ids:
+            return []
         policy_ids = [pol.get('id') for pol in policy_id_objects]
         role_details = eval(user.role_id)
         role_details = Roles.objects.filter(role_id__in=role_details).values('role_type', 'department_id')
@@ -699,6 +708,26 @@ class DashBoardData(BaseConstant):
         for role in role_details:
             department_ids.append(role.get('department_id'))
             role_types.append(role.get('role_type'))
+        query = "SELECT tcm.tenantId, hm.Cid, tpm.id as PolicyId, tcm.ControlName," \
+                " tcm.Description, hm.Fid from TenantControlMaster tcm Inner join HirerecyMapper hm" \
+                " on tcm.Master_Control_Id = hm.Cid and hm.Fid = tcm.masterFrameworkId  Inner Join " \
+                "TenantPolicyManager tpm  on tpm.ParentPolicyID = hm.PolicyId where " \
+                "hm.Fid = {f_id} and hm.PolicyId  in {policy_ids} and tcm.tenantId  = {tennant_id}" \
+                " and tcm.IsActive = 1 order by hm.id"
+        if len(policy_ids) == 1:
+            policy_ids += 1
+        query = query.format(f_id=master_f_id,
+                             policy_ids=str(tuple(policy_ids)),
+                             tennant_id=tenant_id)
+        control_details = fetch_data_from_sql_query(query)
+        policy_controls = defaultdict(list)
+        for con in control_details:
+            policy_controls[con.get('PolicyId')].append(con.get('ControlName'))
+        policy_departments =TenantPolicyDepartments.objects.filter(tenant_policy_id__in=policy_ids)
+        policy_department_formatted = defaultdict(list)
+        for po_depar in policy_departments:
+            policy_department_formatted[po_depar.tenant_policy_id].append(po_depar.department_name)
+
         department_tasks = []
         query = Q(tenant_id=tenant_id) & Q(policy_id__in=policy_ids)
         query = query & ~Q(task_status=0)
@@ -714,28 +743,45 @@ class DashBoardData(BaseConstant):
         status = {0: 'Pending', 1: 'Completed', 2: 'Rejected'}
         for task in tasks:
             policy_det = policy_details.get(task.get('policy_id'), {})
+            con_policy = policy_controls.get(task.get('policy_id'), [])
+            if not policy_det:
+                continue
             det = {'policyName': policy_det.get('tenant_policy_name'),
+                   'policyId': task.get('policy_id'),
                    'taskName': task.get('task_name'),
                    'taskAssignee': task.get('user_email'),
                    'taskType': 'userTask',
+                   'departments': policy_department_formatted.get(task.get('policy_id'), []),
+                   'version': policy_det.get('version'),
                    'taskStatus': status.get(task.get('task_status')),
                    'createdOn': task.get('created_on'),
                    'policyState': task.get('policy_state'),
                    'taskPerformedBy': task.get('task_performed_by'),
-                   'taskPerformedOn': task.get('task_performed_on')}
+                   'noofControlsEffected': len(con_policy),
+                   'controlDetails': con_policy,
+                    'lastUpdatedOn': task.get('action_date'),
+                   'lastUpdatedBy':  task.get('action_performed_by')}
             details.append(det)
 
         for task in department_tasks:
             policy_det = policy_details.get(task.get('policy_id'), {})
+            if not policy_det:
+                continue
+            con_policy = policy_controls.get(task.get('policy_id'), [])
             det = {'policyName': policy_det.get('tenant_policy_name'),
+                   'policyId': task.get('policy_id'),
                    'taskName': task.get('task_name'),
                    'taskAssignee': task.get('user_email'),
+                   'version': policy_det.get('version'),
                    'taskStatus': status.get(task.get('task_status')),
+                   'departments': policy_department_formatted.get(task.get('policy_id'),[]),
                    'createdOn': task.get('created_on'),
                    'taskType': 'departmentTask',
                    'policyState': task.get('policy_state'),
-                   'taskPerformedBy': task.get('task_performed_by'),
-                   'taskPerformedOn': task.get('task_performed_on')}
+                   'noofControlsEffected': len(con_policy),
+                   'controlDetails': con_policy,
+                   'lastUpdatedOn': task.get('action_date'),
+                   'lastUpdatedBy': task.get('action_performed_by')}
             details.append(det)
 
         version_query = Q(action_date__range=(start_date, end_date))
@@ -747,16 +793,26 @@ class DashBoardData(BaseConstant):
             tasks = TenantPolicyVersionHistory.objects.filter(user_query).values()
         for task in tasks:
             policy_det = policy_details.get(task.get('policy_id'), {})
+            if not policy_det:
+                continue
+            con_policy = policy_controls.get(task.get('policy_id'), [])
             det = {'policyName': policy_det.get('tenant_policy_name'),
+                   'policyId': task.get('policy_id'),
                    'taskName': task.get('action_performed'),
+                   'version': policy_det.get('version'),
                    'taskAssignee': task.get('action_performed_by'),
                    'taskStatus': status.get(task.get('version_type')),
+                   'departments': policy_department_formatted.get(task.get('policy_id'), []),
                    'createdOn': task.get('created_on'),
                    'taskType': 'policyOperations',
                    'policyState': task.get('status'),
-                   'taskPerformedBy': task.get('action_performed_by'),
-                   'taskPerformedOn': task.get('action_date')}
+                   'noofControlsEffected': len(con_policy),
+                   'controlDetails': con_policy,
+                   'lastUpdatedOn': task.get('action_date'),
+                   'lastUpdatedBy':  task.get('action_performed_by')}
             details.append(det)
+
+        # need to get policy controls, departments, version
         all_tasks = details
         return all_tasks
 

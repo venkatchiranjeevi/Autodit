@@ -64,13 +64,6 @@ class Users(models.Model):
     gender = models.CharField(db_column='Gender', max_length=6, blank=True)
     department_id = models.CharField(db_column='DepartmentID', max_length=20, blank=True)
     status = models.CharField(db_column='Status', max_length=40, blank=True)
-    ###
-    # _permissions_cache_key = 'permissions_cache'
-    # _flights_cache_key = 'flights_cache'
-    # _equipments_cache_key = 'equipments_cache'
-    # _activities_cache_key = 'activities_cache'
-    # _views_cache_key = 'views_cache'
-    # _alerts_cache_key = "alerts_cache"
 
     __permissions_fetched = False
 
