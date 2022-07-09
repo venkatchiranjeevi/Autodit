@@ -686,21 +686,20 @@ class DashBoardData(BaseConstant):
 
     @staticmethod
     def get_recent_activities(tenant_id, master_f_id, user, policy_details, pending_tasks):
-        # {
-        # // policyId: 1,
 
-        # // versionFromTo: "1.0.0 - 1.0.1",
-        # // lastUpdatedOn: new
-        # Date("2022-03-01").toLocaleDateString("en-US", {year: 'numeric', month: 'long', day: 'numeric'}),
-        # // lastUpdatedBy: "User 1",
-        # // noofControlsEffected: 10,
-        # //}
         present_date = datetime.now()
         start_date = datetime.now() - timedelta(days=10)
         start_date = start_date.replace(minute=0, hour=0, second=0)
         end_date = present_date
         policy_id_objects = TenantPolicyManager.objects.filter(master_framework_id=master_f_id).values('id')
         # departments
+        policy_ids = []
+        parent_policy_ids = []
+        for pol in policy_id_objects:
+            policy_ids.append(pol.get('id'))
+            parent_policy_ids.append(pol.get('parent_policy_id'))
+        if not policy_ids:
+            return []
         policy_ids = [pol.get('id') for pol in policy_id_objects]
         role_details = eval(user.role_id)
         role_details = Roles.objects.filter(role_id__in=role_details).values('role_type', 'department_id')
@@ -709,10 +708,25 @@ class DashBoardData(BaseConstant):
         for role in role_details:
             department_ids.append(role.get('department_id'))
             role_types.append(role.get('role_type'))
+        query = "SELECT tcm.tenantId, hm.Cid, hm.PolicyId, tcm.ControlName," \
+                " tcm.Description, hm.Fid from TenantControlMaster tcm Inner join HirerecyMapper hm" \
+                " on tcm.Master_Control_Id = hm.Cid and hm.Fid = tcm.masterFrameworkId where " \
+                "hm.Fid = {f_id} and hm.PolicyId  in {policy_ids} and tcm.tenantId  = {tennant_id}" \
+                " and tcm.IsActive = 1 order by hm.id"
+        if len(policy_ids) == 1:
+            policy_ids += 1
+        query = query.format(f_id=master_f_id,
+                             policy_ids=str(tuple(policy_ids)),
+                             tennant_id=tenant_id)
+        control_details = fetch_data_from_sql_query(query)
+        policy_controls = defaultdict(list)
+        for con in control_details:
+            policy_controls[con.get('PolicyId')].append(con.get('ControlName'))
         policy_departments =TenantPolicyDepartments.objects.filter(tenant_policy_id__in=policy_ids)
         policy_department_formatted = defaultdict(list)
         for po_depar in policy_departments:
             policy_department_formatted[po_depar.tenant_policy_id].append(po_depar.department_name)
+
         department_tasks = []
         query = Q(tenant_id=tenant_id) & Q(policy_id__in=policy_ids)
         query = query & ~Q(task_status=0)
@@ -728,6 +742,7 @@ class DashBoardData(BaseConstant):
         status = {0: 'Pending', 1: 'Completed', 2: 'Rejected'}
         for task in tasks:
             policy_det = policy_details.get(task.get('policy_id'), {})
+            policy_controls = policy_controls.get(task.get('policy_id'), [])
             if not policy_det:
                 continue
             det = {'policyName': policy_det.get('tenant_policy_name'),
@@ -741,7 +756,8 @@ class DashBoardData(BaseConstant):
                    'createdOn': task.get('created_on'),
                    'policyState': task.get('policy_state'),
                    'taskPerformedBy': task.get('task_performed_by'),
-                   'noofControlsEffected': 10,
+                   'noofControlsEffected': len(policy_controls),
+                   'controlDetails': policy_controls,
                     'lastUpdatedOn': task.get('action_date'),
                    'lastUpdatedBy':  task.get('action_performed_by')}
             details.append(det)
@@ -760,7 +776,8 @@ class DashBoardData(BaseConstant):
                    'createdOn': task.get('created_on'),
                    'taskType': 'departmentTask',
                    'policyState': task.get('policy_state'),
-                   'noofControlsEffected': 10,
+                   'noofControlsEffected': len(policy_controls),
+                   'controlDetails': policy_controls,
                    'lastUpdatedOn': task.get('action_date'),
                    'lastUpdatedBy': task.get('action_performed_by')}
             details.append(det)
@@ -786,7 +803,8 @@ class DashBoardData(BaseConstant):
                    'createdOn': task.get('created_on'),
                    'taskType': 'policyOperations',
                    'policyState': task.get('status'),
-                   'noofControlsEffected': 10,
+                   'noofControlsEffected': len(policy_controls),
+                   'controlDetails': policy_controls,
                    'lastUpdatedOn': task.get('action_date'),
                    'lastUpdatedBy':  task.get('action_performed_by')}
             details.append(det)
