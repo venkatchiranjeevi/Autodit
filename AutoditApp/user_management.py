@@ -12,6 +12,20 @@ from AutoditApp.mixins import AuthMixin
 
 
 class UsersList(AuthMixin):
+    @staticmethod
+    def enable_or_diable_cognito_user(username, enable=None, disable=True):
+        result=None
+        if enable:
+            result = Cognito.CLIENT.admin_enable_user(
+                UserPoolId=settings.COGNITO_USERPOOL_ID,
+                Username=username
+            )
+        elif disable:
+            result = Cognito.CLIENT.admin_disable_user(
+                UserPoolId=settings.COGNITO_USERPOOL_ID,
+                Username=username
+            )
+        return result
 
     @staticmethod
     def add_new_user_to_cognito_userpool(new_user_data):
@@ -36,6 +50,14 @@ class UsersList(AuthMixin):
         if email:
             attributes.append({"Name": 'email', "Value": new_user_data.get("email")})
             attributes.append({"Name": 'email_verified', "Value": 'false'})
+            user_dict = Cognito.CLIENT.list_users(
+                UserPoolId=settings.COGNITO_USERPOOL_ID,
+                Filter='email^=\"{}\"'.format(str(email).strip())
+            )
+            if user_dict.get("Users"):
+                return "User Email already exist", False
+
+
         try:
             response = Cognito.CLIENT.admin_create_user(
                 UserPoolId=settings.COGNITO_USERPOOL_ID,
@@ -68,6 +90,27 @@ class UsersList(AuthMixin):
         new_user_data['tenant_id'] = tenant_id
         message, status = UsersList.add_new_user_to_cognito_userpool(new_user_data)
         return Response({"message": message, "status": status})
+
+    def patch(self, request):
+        data = request.data
+        update_attributes = []
+        user_name = data.get("userName")
+        marked_for_deletion = str(data.get("markedForDeletion"))
+        if marked_for_deletion and marked_for_deletion in Cognito.CONSTANT_TRUE_VALUE:
+            UsersList.enable_or_diable_cognito_user(data.get("username"), disable=True)
+        elif marked_for_deletion and marked_for_deletion in Cognito.CONSTANT_FALSE_VALUE:
+            UsersList.enable_or_diable_cognito_user(data.get("username"), enable=True)
+
+        role_id = str(data.get("roleId"))
+        if role_id:
+            update_attributes.append({"Name": 'custom:role_id', "Value": str([role_id])})
+
+            updated_user = Cognito.CLIENT.admin_update_user_attributes(
+                UserPoolId=settings.COGNITO_USERPOOL_ID,
+                Username=user_name,
+                UserAttributes=update_attributes)
+
+        return Response({"status": "Updated Successfully"})
 
 
 class UserProfile(AuthMixin):
