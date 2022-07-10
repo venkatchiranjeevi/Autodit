@@ -813,7 +813,7 @@ class DashBoardData(BaseConstant):
             details.append(det)
 
         # need to get policy controls, departments, version
-        all_tasks = details
+        all_tasks = details[:10]
         return all_tasks
 
     @staticmethod
