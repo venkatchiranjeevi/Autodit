@@ -410,7 +410,7 @@ class PolicyDetailsAPI(AuthMixin):
         policy_id = data.get('policyId')
         user = request.user
         tenant_id = user.tenant_id
-        details = PolicyLifeCycleHandler.get_complete_policy_details(int(policy_id), int(tenant_id))
+        details = PolicyLifeCycleHandler.get_complete_policy_details(int(policy_id), int(tenant_id), request.user.email)
         return Response(details)
 
 

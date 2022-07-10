@@ -11,7 +11,8 @@ from AutoditApp.S3_FileHandler import S3FileHandlerConstant
 from AutoditApp.core import fetch_data_from_sql_query, get_users_by_tenant_id
 from AutoditApp.models import TenantPolicyManager, TenantPolicyParameter, TenantPolicyVersionHistory, \
     TenantGlobalVariables, MetaData, TenantDepartment, TenantControlsCustomTags, TenantPolicyComments, \
-    TenantPolicyTasks, TenantPolicyDepartments, TenantPolicyLifeCycleUsers, Roles, PolicyMaster, MasterPolicyParameter
+    TenantPolicyTasks, TenantPolicyDepartments, TenantPolicyLifeCycleUsers, Roles, PolicyMaster, MasterPolicyParameter, \
+    TenantControlMaster
 
 
 class PolicyLifeCycleHandler:
@@ -128,7 +129,6 @@ class PolicyLifeCycleHandler:
                                    action_performed_by_id=user_id,
                                    action_date=datetime.now(),
                                    revision_blob=str(revision_history)).save()
-
 
     @staticmethod
     def policy_content_details_handler(policy_data, policy_id, tennant_id, user_name, user_id):
@@ -447,10 +447,8 @@ class PolicyLifeCycleHandler:
             revision_blob = policy_revision.get('revision_blob')
         return revision_blob
 
-
-
     @staticmethod
-    def get_complete_policy_details(policy_id, tenant_id):
+    def get_complete_policy_details(policy_id, tenant_id, email):
         global_varialbles = TenantGlobalVariables.objects.get(tenant_id=int(tenant_id))
         try:
             gb = eval(global_varialbles.result)
@@ -488,7 +486,28 @@ class PolicyLifeCycleHandler:
                 approvers.append(each_user)
             elif owner_type == "reviewer":
                 reviewers.append(each_user)
+        # Pending Tasks
+        pending_tasks = TenantPolicyTasks.objects.filter(tenant_id=tenant_id, policy_id=policy_id,
+                                                         task_status=0)
 
+        query = "SELECT id, masterFrameworkId as frameworkId, ControlCode, ControlName, tenantId," \
+                " Description, IsActive, Category  " \
+                "from TenantControlMaster tcm where tenantId = {tennant_id} and Master_Control_Id in " \
+                "(SELECT Cid from HirerecyMapper hm where hm.Fid ={f_id} and hm.PolicyId = {policy_id}) and IsActive = 1"
+        query = query.format(f_id=policy_details.master_framework_id,
+                             policy_id=policy_details.parent_policy_id,
+                             tennant_id=tenant_id)
+        # control_details = TenantControlMaster.objects.filter(tenant_id=tenant_id,
+        #                                                      is_active=1,
+        #                                                      tenant_framework_id=policy_details.
+        control_details =  fetch_data_from_sql_query(query)
+        is_user_tasks_pending = False
+        for tasks in pending_tasks:
+            if tasks.user_email == email:
+                is_user_tasks_pending = True
+                break
+
+        is_tasks_pending = len(pending_tasks) >= 1
         return {
             "policyId": policy_id,
             "policyName": policy_details.tenant_policy_name,
@@ -506,28 +525,14 @@ class PolicyLifeCycleHandler:
             "renewPeriod": policy_details.review_period,
             "nextReviewDate": str(pub_date),
             'policyComments': comment,
+            'isPendingTasks': is_tasks_pending,
+            'isPresentUserPendingTask': is_user_tasks_pending,
             "policyTags": dal.TenantPolicyCustomTagsData.get_policy_tags(policy_id, tenant_id),
             "departments": departments,
             "revisionHistory": PolicyLifeCycleHandler.get_policy_revision_blob(policy_id,
                                                                                tenant_id,
                                                                                policy_details.version),
-            "policyControls": [{"id": 1,
-                                "frameworkId": 1,
-                                "controlCode": "code",
-                                "controlName": "4.1 Understanding the organization and its context",
-                                "description": "The organization shall determine external and internal issues that are relevant to its purpose and its strategic direction and that affect its ability to achieve the intended result(s) of its quality management system.\nThe organization shall monitor and review information about these external and internal issues.\nNOTE 1 Issues can include positive and negative factors or conditions for consideration.\nNOTE 2 Understanding the external context can be facilitated by considering issues arising from legal,\ntechnological, competitive, market, cultural, social and economic environments, whether international, national,\nregional or local.\nNOTE 3 Understanding the internal context can be facilitated by considering issues related to values, culture,\nknowledge and performance of the organization.",
-                                "isActive": 1,
-                                "category": None
-                                },
-                               {
-                                   "id": 2,
-                                   "frameworkId": 1,
-                                   "controlCode": "test",
-                                   "controlName": "4.2 Understanding the needs and expectations of in",
-                                   "description": "Due to their effect or potential effect on the organization’s ability to consistently provide products and services that meet customer and applicable statutory and regulatory requirements, the organization\nshall determine:\na) the interested parties that are relevant to the quality management system;\nb) the requirements of these interested parties that are relevant to the quality management system.\nThe organization shall monitor and review information about these interested parties and their\nrelevant requirements.",
-                                   "isActive": 1,
-                                   "category": None
-                               }],
+            "policyControls": control_details,
             "eligibleUsers": eligible_users,
             "globalVariables": gb,
             "templateVariables": PolicyLifeCycleHandler.get_template_parameters(policy_id, tenant_id)
