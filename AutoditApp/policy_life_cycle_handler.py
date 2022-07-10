@@ -490,8 +490,8 @@ class PolicyLifeCycleHandler:
         pending_tasks = TenantPolicyTasks.objects.filter(tenant_id=tenant_id, policy_id=policy_id,
                                                          task_status=0)
 
-        query = "SELECT id, masterFrameworkId as frameworkId, ControlCode, ControlName, tenantId," \
-                " Description, IsActive, Category  " \
+        query = "SELECT id, masterFrameworkId as frameworkId, controlCode, controlName, tenantId," \
+                " description, isActive, category  " \
                 "from TenantControlMaster tcm where tenantId = {tennant_id} and Master_Control_Id in " \
                 "(SELECT Cid from HirerecyMapper hm where hm.Fid ={f_id} and hm.PolicyId = {policy_id}) and IsActive = 1"
         query = query.format(f_id=policy_details.master_framework_id,
